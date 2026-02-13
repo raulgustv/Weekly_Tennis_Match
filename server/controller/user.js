@@ -1,4 +1,4 @@
-import admin from "../config/firebase.js";
+//import admin from "../config/firebase.js";
 import User from "../models/user.js";
 import { sendResetPasswordEmail } from "../utils/emailService.js";
 import { generateToken } from "../utils/generateToken.js";
@@ -107,55 +107,55 @@ export const login = async(req, res) =>{
     }
 }
 
-export const googleAuth = async(req, res) =>{
-    try {
+// export const googleAuth = async(req, res) =>{
+//     try {
         
-        const {token} = req.body;
+//         const {token} = req.body;
 
-        if(!token) return res.status(400).json({
-            ok: false,
-            message: "Token missing"
-        })
+//         if(!token) return res.status(400).json({
+//             ok: false,
+//             message: "Token missing"
+//         })
 
-        const decoded = await admin.auth().verifyIdToken(token);
+//         const decoded = await admin.auth().verifyIdToken(token);
 
-        const {uid, email, name} = decoded;
+//         const {uid, email, name} = decoded;
 
-        let user = await User.findOne({email});
+//         let user = await User.findOne({email});
 
-        if(!user){
-                const [first, ...last] = (name || "User").split(" ")
+//         if(!user){
+//                 const [first, ...last] = (name || "User").split(" ")
 
-                user = await User.create({
-                    name: first,
-                    lastname: last.join(" "),
-                    email,
-                    provider: "google",
-                    firebaseUid: uid
-                })
-        }
+//                 user = await User.create({
+//                     name: first,
+//                     lastname: last.join(" "),
+//                     email,
+//                     provider: "google",
+//                     firebaseUid: uid
+//                 })
+//         }
 
-        const isProfileComplete = !!user.phone && !!user.ntrplvl && !!user.phone && !!user.country
+//         const isProfileComplete = !!user.phone && !!user.ntrplvl && !!user.phone && !!user.country
 
-            res.json({
-                token: generateToken(user),
-                user: {
-                    id: user._id,
-                    email: user.email,
-                    role: user.role,
-                    name: user.name,
-                    isProfileComplete
-                }
-        })
+//             res.json({
+//                 token: generateToken(user),
+//                 user: {
+//                     id: user._id,
+//                     email: user.email,
+//                     role: user.role,
+//                     name: user.name,
+//                     isProfileComplete
+//                 }
+//         })
         
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            ok: false,
-            error: 'Internal google registery server error'
-        })
-    }
-}
+//     } catch (error) {
+//         console.log(error)
+//         res.status(500).json({
+//             ok: false,
+//             error: 'Internal google registery server error'
+//         })
+//     }
+// }
 
 export const viewAllUsers = async(req, res) =>{
     try {
