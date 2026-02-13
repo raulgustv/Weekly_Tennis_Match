@@ -1,0 +1,17 @@
+# Node
+node_modules/
+
+# Env
+.env
+
+# Firebase Admin SDK (CRÍTICO)
+*-firebase-adminsdk-*.json
+weeklytennis-firebase-adminsdk-*.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
