@@ -1,0 +1,1 @@
+export {default as EaseAnimation} from './EaseAnimation';
