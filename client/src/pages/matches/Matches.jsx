@@ -15,28 +15,29 @@ const Matches = () => {
 
   //const { Title, Text } = Typography;
 
-  return (
-    <>
-      <div style={{ marginBottom: 24 }}>
-        {/* <Title level={3} style={{ marginBottom: 0 }}>
-          Create matches
-        </Title>
-        <Text type="secondary">
-          Create and organize new tennis matches
-        </Text> */}
+ return (
+  <>
+    <div style={{ marginBottom: 24 }}>
+      <Row gutter={[24, 24]} align="stretch">
+        
+        {/* CREATE MATCH */}
+        <Col xs={24} lg={16}>
+          <CreateMatchForm refreshMatches={fetchMatches} />
+        </Col>
 
-        <Row gutter={[24, 24]}>
-          <Col span={16}>
-            <CreateMatchForm refreshMatches={fetchMatches} />
-          </Col>
+        {/* UPCOMING MATCHES */}
+        <Col xs={24} lg={8}>
+          <UpComingMatches
+            matches={matchLimit}
+            loadMatches={loadMatches}
+          />
+        </Col>
 
-          <Col span={8}>
-            <UpComingMatches  matches={matchLimit} loadMatches={loadMatches} />
-          </Col>
-        </Row>
-      </div>
-    </>
-  )
+      </Row>
+    </div>
+  </>
+);
+
 }
 
 export default Matches

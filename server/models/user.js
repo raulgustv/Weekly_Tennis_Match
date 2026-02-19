@@ -97,6 +97,13 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null,
         select: false
+    },
+    profilePicture:{
+        type:{
+            url: String,
+            public_id: String
+        },
+        default: null
     }
 }, {
     timestamps: true

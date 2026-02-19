@@ -239,6 +239,7 @@ const MatchesTable = () => {
                 dataSource={matches}
                 rowKey="_id"
                 loading={loadMatches}
+                scroll={{x: "max-content"}}
             />
 
             {/* ✅ MODAL */}

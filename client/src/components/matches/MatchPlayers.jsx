@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getMatch } from "../../actions/matches";
 import LoadingSpinner from "../utils/LoadingSpinner";
 import {
-  Badge,
+  //Badge,
   Button,
   Card,
   Col,
@@ -12,16 +12,20 @@ import {
   Typography,
   Avatar,
   Empty,
-  Tag
+  Tag,
 } from "antd";
-import { UserOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  ArrowLeftOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import MatchDetails from "./MatchDetails";
+
+const { Title, Text } = Typography;
 
 const MatchPlayers = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { Title, Text } = Typography;
 
   const [match, setMatch] = useState();
   const [loading, setLoading] = useState(false);
@@ -47,93 +51,73 @@ const MatchPlayers = () => {
   const isReady = match.status === "Ready";
 
   return (
-    <Flex vertical gap={24}>
-      {/* HEADER */}
-      <Flex justify="space-between" align="flex-start">
-        <div>
-          <Title level={3} style={{ marginBottom: 0 }}>
-            🎾 Match at: {match?.location?.name}
-            <br />
-            <Text type="secondary">
-              {dayjs(match?.date).format("dddd MMMM DD, YYYY")}
-            </Text>
+    <div style={{ padding: 20 }}>
+      
+      {/* HEADER SIMPLE (SIN CARD) */}
+      <Row
+        justify="space-between"
+        align="middle"
+        style={{ marginBottom: 32 }}
+      >
+        <Col xs={24} md={18}>
+          <Title level={3} style={{ marginBottom: 4 }}>
+            🎾 {match?.location?.name}
           </Title>
           <Text type="secondary">
-            {match?.startTime} - {match?.endTime}
+            {dayjs(match?.date).format(
+              "dddd MMMM DD, YYYY"
+            )}{" "}
+            · {match?.startTime} - {match?.endTime}
           </Text>
-        </div>
+        </Col>
 
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/dashboard")}
-        >
-          Back to matches
-        </Button>
-      </Flex>
+        <Col xs={24} md={6} style={{ textAlign: "right", marginTop: 12 }}>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate("/games")}
+            block
+          >
+            Back
+          </Button>
+        </Col>
+      </Row>
 
-      {/* ===================== */}
-      {/* READY → ONLY VERSUS */}
-      {/* ===================== */}
+      {/* READY STATE */}
       {isReady ? (
-        
-        <Row gutter={[20,20]} justify="start">
-          {match.generatedMatches.map((m, index) => (            
-            <Col
-              xs={24}
-              sm={12}
-              md={8}
-              key={index}
-            >
-              
-                <MatchDetails match={m} />
+        <Row gutter={[24, 24]}>
+          {match.generatedMatches.map((m, index) => (
+            <Col key={index} xs={24} sm={12} lg={8}>
+              <MatchDetails match={m} />
             </Col>
           ))}
         </Row>
       ) : (
-        <Row gutter={16}>
+        <Row gutter={[24, 24]}>
+          
           {/* PLAYERS */}
-          <Col span={12}>
-            <Card
-              title={
-                <Flex align="center" justify="space-evenly">
-                  <Title level={5}>Players</Title>
-                  <Button
-                    type="primary"
-                    variant="outlined"
-                    style={{ marginBottom: 12, marginLeft: 5 }}
-                  >
-                    Join this match
-                  </Button>
-                </Flex>
-              }
-            >
+          <Col xs={24} lg={12}>
+            <Card title="Players" variant="outlined">
               {match?.players?.length === 0 ? (
-                <Empty
-                  description="No players signed up yet"
-                  image="https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg"
-                />
+                <Empty description="No players signed up yet" />
               ) : (
-                <Flex vertical gap={8}>
+                <Flex vertical gap={12}>
                   {match.players.map((p, index) => (
                     <Card
-                      key={p?.user?._id || p?.user?.id || index}
+                      key={p?.user?._id || index}
                       size="small"
-                      hoverable
                       style={{ borderLeft: "4px solid #52c41a" }}
                     >
                       <Flex align="center" gap={12}>
-                        <Badge status="success">
-                          <Avatar
-                            size={36}
-                            icon={<UserOutlined />}
-                            style={{ backgroundColor: "#52c41a" }}
-                          />
-                        </Badge>
-
-                        <Flex vertical>
+                        <Avatar
+                          size={40}
+                          icon={<UserOutlined />}
+                          style={{ backgroundColor: "#52c41a" }}
+                        />
+                        <div>
                           <Text strong>{p?.user?.name}</Text>
+                          <br />
                           <Tag color="green">Confirmed</Tag>
-                        </Flex>
+                        </div>
                       </Flex>
                     </Card>
                   ))}
@@ -143,48 +127,29 @@ const MatchPlayers = () => {
           </Col>
 
           {/* BACKUPS */}
-          <Col span={12}>
-            <Card
-              title={
-                <Flex align="center" justify="space-evenly">
-                  <Title level={5}>Backups</Title>
-                  <Button
-                    type="default"
-                    variant="outlined"
-                    style={{ marginBottom: 12, marginLeft: 5 }}
-                  >
-                    Join as backup
-                  </Button>
-                </Flex>
-              }
-            >
+          <Col xs={24} lg={12}>
+            <Card title="Backups" variant="outlined">
               {match?.backUps?.length === 0 ? (
-                <Empty
-                  description="No backups signed up yet"
-                  image="https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg"
-                />
+                <Empty description="No backups signed up yet" />
               ) : (
-                <Flex vertical gap={8}>
+                <Flex vertical gap={12}>
                   {match.backUps.map((b, index) => (
                     <Card
-                      key={b?.user?._id || b?.user?.id || index}
+                      key={b?.user?._id || index}
                       size="small"
-                      hoverable
                       style={{ borderLeft: "4px solid #faad14" }}
                     >
                       <Flex align="center" gap={12}>
-                        <Badge status="warning">
-                          <Avatar
-                            size={36}
-                            icon={<UserOutlined />}
-                            style={{ backgroundColor: "#faad14" }}
-                          />
-                        </Badge>
-
-                        <Flex vertical>
+                        <Avatar
+                          size={40}
+                          icon={<UserOutlined />}
+                          style={{ backgroundColor: "#faad14" }}
+                        />
+                        <div>
                           <Text strong>{b?.user?.name}</Text>
+                          <br />
                           <Tag color="gold">Backup</Tag>
-                        </Flex>
+                        </div>
                       </Flex>
                     </Card>
                   ))}
@@ -192,9 +157,10 @@ const MatchPlayers = () => {
               )}
             </Card>
           </Col>
+
         </Row>
       )}
-    </Flex>
+    </div>
   );
 };
 

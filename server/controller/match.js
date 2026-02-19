@@ -18,6 +18,7 @@ export const newMatch = async (req, res) => {
             startTime,
             endTime,
             courtNumbers,
+            price,
             paymentMethods
         } = req.body;
 
@@ -59,6 +60,7 @@ export const newMatch = async (req, res) => {
             startTime,
             endTime,
             courtNumbers: courtNumbersParsed,
+            price,
             maxPlayers,
             paymentMethods
         });
@@ -77,14 +79,14 @@ export const newMatch = async (req, res) => {
 export const getAllMatches = async (req, res) => {
     try {
         const matches = await Match.find()
-                            .populate('location', 'name')
-                            .populate('players.user', 'name lastname')
-                            .populate('backUps.user', 'name lastname')
+                            .populate('location', 'name address')
+                            .populate('players.user', 'name lastname ntrplvl')
+                            .populate('backUps.user', 'name lastname ntrplvl')
                             .populate('createdBy', 'name lastname')
-                            .populate('generatedMatches.teamA.player1', 'name lastname')
-                            .populate('generatedMatches.teamA.player2', 'name lastname')
-                            .populate('generatedMatches.teamB.player1', 'name lastname')
-                            .populate('generatedMatches.teamB.player2', 'name lastname');
+                            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl')
+                            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl')
+                            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl')
+                            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl');
 
 
 
@@ -104,13 +106,13 @@ export const getMatch = async(req, res) =>{
 
         const match = await Match.findById(id)
             .populate('location', 'name')
-            .populate('players.user', 'name lastname')
-            .populate('backUps.user', 'name lastname')
+            .populate('players.user', 'name lastname ntrplvl')
+            .populate('backUps.user', 'name lastname ntrplvl')
             .populate('createdBy', 'name lastname')
-            .populate('generatedMatches.teamA.player1', 'name lastname email')
-            .populate('generatedMatches.teamA.player2', 'name lastname email')
-            .populate('generatedMatches.teamB.player1', 'name lastname email')
-            .populate('generatedMatches.teamB.player2', 'name lastname email');
+            .populate('generatedMatches.teamA.player1', 'name lastname email ntrplvl')
+            .populate('generatedMatches.teamA.player2', 'name lastname email ntrplvl')
+            .populate('generatedMatches.teamB.player1', 'name lastname email ntrplvl')
+            .populate('generatedMatches.teamB.player2', 'name lastname email ntrplvl');
 
 
         if(!match) return res.status(400).json({

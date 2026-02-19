@@ -1,4 +1,4 @@
-import { Button, Checkbox, Flex, Image, Popconfirm, Table, Typography } from "antd"
+import { Button, Checkbox, Flex, Image, Popconfirm, Table, Typography, Grid } from "antd"
 import { useCountries } from "../../hooks/useCountries";
 import { useMemo, useState } from "react";
 import { togglePlayerActive, toggleUserRole } from "../../actions/admin";
@@ -9,13 +9,16 @@ import NTRPModal from "../../components/modals/NTRPModal";
 
 const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint()
+
     const { countries } = useCountries();
 
     const [selectedPlayer, setSelectedPlayer] = useState(null)
 
     const { Text } = Typography;
 
-    //const { user } = useAuth();
+
 
     const countriesMap = useMemo(() => {
         return countries.reduce((acc, country) => {
@@ -56,7 +59,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
         }
     }
 
-    const toggleAdminRole = async(id) =>{
+    const toggleAdminRole = async (id) => {
         try {
 
             const res = await toggleUserRole(id);
@@ -64,10 +67,10 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             toast.success(`User successfully changed role to ${res?.user?.role}`)
 
             fetchPlayers()
-            
+
         } catch (error) {
             console.log(error)
-            toast.error()
+            toast.error(error?.response?.data?.message);
         }
     }
 
@@ -84,9 +87,15 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             })),
             filterSearch: true,
             onFilter: (value, record) => {
-                const fullName = `${record.name} ${record.lastName}`.toLowerCase();
+                const fullName = `${record.name} ${record.lastname}`.toLowerCase();
                 return fullName.startsWith(value.toLowerCase());
-            }
+            },
+            sorter: (a, b) => {
+                const nameA = `${a.name} ${a.lastname}`.toLowerCase();
+                const nameB = `${b.name} ${b.lastname}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+            },
+            sortDirections: ["ascend", "descend"], // opcional pero recomendado
         },
         {
             title: "Email",
@@ -102,9 +111,9 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             title: "Country",
             key: "country",
             render: ((p) => (
-                <Flex justify="space-between" align="center" gap="small">
+                <Flex justify="space-between" align="center" gap="small" vertical={screens.xs ? true : false}>
                     <span>{p?.country}</span>
-                    <Image preview={false} width="25px" alt={`${p?.country} flag`} src={p?.countryFlag} />
+                    <Image preview={false} width={screens.xs ? 18 : 25} alt={`${p?.country} flag`} src={p?.countryFlag} />
                 </Flex>
             ))
         },
@@ -112,9 +121,9 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             title: "NTRP Level",
             key: "ntrplvl",
             render: ((p) => (
-                <Flex justify="center" align="center" gap="middle">
+                <Flex justify="center" align="center" gap="middle" vertical={screens.xs ? true : false}>
                     <span>{p?.ntrplvl.toFixed(1)}</span>
-                    <Button size="small" type="primary" onClick={() => setSelectedPlayer(p)} >
+                    <Button size="small" type="primary" onClick={() => setSelectedPlayer(p)} block >
                         Adjust
                     </Button>
                 </Flex>
@@ -142,16 +151,26 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             key: 'role',
             render: ((p) => (
                 <>
-                    <Flex gap={"small"} justify="space-around">
-                        <Text type="secondary">{p?.role}</Text>
+                    <Flex
+                        direction={screens.xs ? "column" : "row"}
+                        align="center"
+                        gap="small"
+                        style={{ width: "100%" }}
+                    >
+                        <Text type="secondary" style={{ whiteSpace: "nowrap" }}>
+                            {p?.role}
+                        </Text>
+
                         <Button
                             size="small"
-                            type="primary"                            
+                            type="primary"
                             onClick={() => toggleAdminRole(p?._id)}
+                            block={screens.xs}
                         >
                             Toggle role
                         </Button>
                     </Flex>
+
                 </>
             ))
         }
@@ -164,6 +183,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                 columns={columns}
                 loading={loading}
                 rowKey="_id"
+                scroll={{ x: "max-content" }}
             />
 
 

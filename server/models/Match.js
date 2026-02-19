@@ -118,6 +118,10 @@ const matchSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    price: {
+        type: Number,
+        required: true,
+    },  
     paymentMethods:{
         type: [paymentMethodSchema],
         required: 'true'

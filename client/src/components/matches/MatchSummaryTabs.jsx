@@ -5,7 +5,8 @@ import {
     Row,
     Progress,
     Button,
-    Popconfirm
+    Popconfirm,
+    Flex
 } from "antd";
 import {
     ClockCircleOutlined,
@@ -16,12 +17,17 @@ import dayjs from "dayjs";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import colors from "../../themes/colors";
+import { useMemo } from "react";
 
-const MatchSummaryTabs = ({ matchSummary, showJoinButton = false, onJoin, onLeave }) => {
-    const { Text, Title } = Typography;
+const MatchSummaryTabs = ({
+    matchSummary,
+    showJoinButton = false,
+    onJoin,
+    onLeave
+}) => {
+    const { Text, Title, Link } = Typography;
     const { user } = useAuth();
-
-    const navigate = useNavigate()
+    const navigate = useNavigate();
 
     const {
         location,
@@ -29,28 +35,55 @@ const MatchSummaryTabs = ({ matchSummary, showJoinButton = false, onJoin, onLeav
         startTime,
         endTime,
         status,
+        price,
         maxPlayers,
         players = [],
         backUps = [],
         _id
-    } = matchSummary;
+    } = matchSummary || {};
 
-    const progress = Math.round((players.length / maxPlayers) * 100);
+    /* --------------------------
+       🔢 CALCULATE AVERAGE NTRP
+       (HOOKS ALWAYS ON TOP)
+    -------------------------- */
 
-    if (!user?._id) return null;
+    const averageNTRP = useMemo(() => {
+        if (!players.length) return 0;
 
+        const total = players.reduce((sum, player) => {
+            return sum + Number(player?.user?.ntrplvl || 0);
+        }, 0);
 
-    const getId = (v) => (typeof v === "string" ? v : v?.user?._id);
+        return total / players.length;
+    }, [players]);
+
+    const pricePerPerson = Number(price / maxPlayers).toFixed(2);
+
+    const userLevel = Number(user?.ntrplvl || 0);
+
+    const showWarning =
+        averageNTRP > 0 &&
+        players.length >= 2 &&
+        (averageNTRP - userLevel) >= 1;
+
+    const progress = maxPlayers
+        ? Math.round((players.length / maxPlayers) * 100)
+        : 0;
 
     const isJoinedPlayer = players.some(
-        p => String(getId(p?.user?._id)) === String(user._id)
+        p => String(p?.user?._id) === String(user?._id)
     );
 
     const isJoinedBackup = backUps.some(
-        b => String(getId(b?.user?._id)) === String(user._id)
+        b => String(b?.user?._id) === String(user?._id)
     );
 
     const isJoined = isJoinedPlayer || isJoinedBackup;
+
+
+
+    if (!user?._id) return null;
+
 
     return (
         <Space orientation="vertical" size="middle" style={{ width: "100%" }}>
@@ -64,22 +97,45 @@ const MatchSummaryTabs = ({ matchSummary, showJoinButton = false, onJoin, onLeav
             </div>
 
             <div>
-                <Text>
+                <Link href={location?.address} target="_blank">
                     <EnvironmentOutlined /> {location?.name}
-                </Text>
+                </Link>
             </div>
 
-            <Tag color="green">{status}</Tag>
+            <Flex justify="space-between">
+                <Tag color="green">{status}</Tag>
+                <Tag color="default">€{pricePerPerson} per player</Tag>
+            </Flex>
 
             <div>
                 <Row justify="space-between">
                     <Text>
                         <TeamOutlined /> Player availability
                         <br />
-                        <Button size="small" style={{marginTop: 5, background: colors.warning }} type="default" onClick={() => navigate(`/match/details/${_id}`)}>
+                        <Button
+                            size="small"
+                            style={{
+                                marginTop: 5,
+                                background: colors.warning
+                            }}
+                            type="default"
+                            onClick={() =>
+                                navigate(`/match/details/${_id}`)
+                            }
+                        >
                             View players and match details
                         </Button>
+                        <br />
+                        <small>
+                            Average NTRP level:{" "}
+                            <strong>
+                                {averageNTRP > 0
+                                    ? averageNTRP.toFixed(2)
+                                    : "-"}
+                            </strong>
+                        </small>
                     </Text>
+
                     <Text strong>
                         {players.length} / {maxPlayers}
                     </Text>
@@ -100,15 +156,36 @@ const MatchSummaryTabs = ({ matchSummary, showJoinButton = false, onJoin, onLeav
                 <div>
                     {!isJoined ? (
                         <>
-                            <Button
-                                type="primary"
-                                block
-                                disabled={players.length >= maxPlayers}
-                                onClick={() => onJoin(_id, false)}
-                                style={{ marginBottom: 10 }}
-                            >
-                                Join Match
-                            </Button>
+                            {showWarning ? (
+                                <Popconfirm
+                                    title="Skill level warning"
+                                    description={`Your NTRP level ${userLevel} is lower than the match average (${averageNTRP.toFixed(
+                                        2
+                                    )}). Are you sure you want to join?`}
+                                    onConfirm={() => onJoin(_id, false)}
+                                    okText="Yes, join"
+                                    cancelText="Cancel"
+                                >
+                                    <Button
+                                        type="primary"
+                                        block
+                                        disabled={players.length >= maxPlayers}
+                                        style={{ marginBottom: 10 }}
+                                    >
+                                        Join Match
+                                    </Button>
+                                </Popconfirm>
+                            ) : (
+                                <Button
+                                    type="primary"
+                                    block
+                                    disabled={players.length >= maxPlayers}
+                                    onClick={() => onJoin(_id, false)}
+                                    style={{ marginBottom: 10 }}
+                                >
+                                    Join Match
+                                </Button>
+                            )}
 
                             <Popconfirm
                                 title="Joining as backup"
