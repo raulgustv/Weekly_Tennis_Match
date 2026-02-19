@@ -91,7 +91,7 @@ export const login = async(req, res) =>{
             return res.status(401).json({message: "Invalid credentials"})
         }  
         
-        user.password = undefined;
+        user.password = undefined;      
 
         res.json({
             token: generateToken(user),
@@ -307,6 +307,36 @@ export const completeProfile = async (req, res) => {
     })
   }
 };
+
+export const completeOnboarding = async(req, res) =>{
+    try {
+
+        const userId = req.user._id
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            {isFirstLogin: false},
+            {new: true}            
+        ).select("-password");
+
+        if(!user) return res.status(500).json({
+            ok: false,
+            message: "User not found"
+        })
+
+        return res.status(200).json({
+            message: "Onboarding complete",
+            isFirstLogin: user.isFirstLogin
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: "Internal error completing onboarding"
+        })
+    }
+}
 
 
 

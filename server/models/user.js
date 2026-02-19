@@ -104,6 +104,14 @@ const userSchema = new mongoose.Schema({
             public_id: String
         },
         default: null
+    },
+    termsAndConditions: {
+        type: Boolean,
+        default: false
+    },
+    isFirstLogin: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true
