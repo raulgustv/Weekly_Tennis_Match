@@ -4,6 +4,8 @@ import { Flex, Form, Slider } from "antd"
 const NTRPLevel = () => {
 
     const sliderMarks = {
+        1.0: "1.0",
+        1.5: "1.5",
         2.0: "2.0",
         2.5: "2.5",
         3.0: "3.0",
@@ -20,7 +22,7 @@ const NTRPLevel = () => {
                 label="NTRP Level"
                 initialValue={2.0}
                 rules={[
-                    { type: 'number', required: true, min: 2, max: 5 },
+                    { type: 'number', required: true, min: 1, max: 5 },
                     { required: true, message: 'Please add a valid NTRP level' }
                 ]}
             >
