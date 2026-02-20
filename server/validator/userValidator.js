@@ -21,7 +21,7 @@ export const registerValidator = [
     body("ntrplvl")
     .notEmpty().withMessage("NTRP level is required")
     .custom(value => {
-        const levels = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, ];
+        const levels = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, ];
         if (!levels.includes(Number(value))) {
             throw new Error("Invalid NTRP level")
         }
