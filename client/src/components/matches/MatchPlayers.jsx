@@ -30,6 +30,8 @@ const MatchPlayers = () => {
   const [match, setMatch] = useState();
   const [loading, setLoading] = useState(false);
 
+  console.log(match)
+
   useEffect(() => {
     const fetchMatch = async () => {
       try {
@@ -114,7 +116,7 @@ const MatchPlayers = () => {
                           style={{ backgroundColor: "#52c41a" }}
                         />
                         <div>
-                          <Text strong>{p?.user?.name}</Text>
+                          <Text strong>{p?.user?.name} {p?.user?.lastname?.[0]} <small>({p?.user?.ntrplvl})</small></Text>
                           <br />
                           <Tag color="green">Confirmed</Tag>
                         </div>

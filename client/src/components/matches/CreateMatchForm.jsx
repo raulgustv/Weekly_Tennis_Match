@@ -181,29 +181,33 @@ const CreateMatchForm = ({ refreshMatches }) => {
         </Row>
 
 
-          <Form.Item
-            name="price"
-            label={
-              <Tooltip title="Total price of all selected courts">
-                Total price (€)
-              </Tooltip>
-            }
-            rules={[{ required: true }]}
-          >
-            <InputNumber
-              title="Enter courts total price"
-              prefix="€"
-              size="middle"
-              min={0}
-              suffix={
-                <small>
-                  {pricePlayer ? `${pricePlayer}€ / player` : null}
-                </small>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Form.Item
+              name="price"
+              label={
+                <Tooltip title="Total price of all selected courts">
+                  Total price (€)
+                </Tooltip>
               }
-              style={{width: '20%'}}
-            />
-          </Form.Item>
-
+              rules={[{ required: true }]}
+            >
+              <InputNumber
+                title="Enter courts total price"
+                prefix="€"
+                min={0}
+                style={{ width: "100%" }}
+                suffix={
+                  pricePlayer && (
+                    <span style={{ fontSize: 12 }}>
+                      {pricePlayer}€ / player
+                    </span>
+                  )
+                }
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
         {/* PAYMENT METHODS */}
         <Form.List name="paymentMethods">

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Button, Form, Input, Select, Space, Steps } from "antd";
+import { useState, useEffect } from "react";
+import { Button, Checkbox, Form, Input, Select, Space, Steps } from "antd";
 import { CheckOutlined, CloseOutlined, LoadingOutlined } from "@ant-design/icons";
 import NTRPLevel from "../../components/utils/NTRPLevel";
 import { register, checkEmailValidity } from "../../actions/auth";
@@ -13,13 +13,29 @@ const Register = () => {
   const [current, setCurrent] = useState(0);
   const [form] = Form.useForm();
   const { setSession } = useAuth();
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const { countries, loadCountries } = useCountries();
-
-
-  const [emailStatus, setEmailStatus] = useState("idle")
+  const [emailStatus, setEmailStatus] = useState("idle");
 
   const navigate = useNavigate();
+
+  /* -----------------------------
+     SINCRONIZAR PREFIX AUTOMÁTICO
+  ------------------------------*/
+  useEffect(() => {
+    if (!countries.length) return;
+
+    const selectedCountry = form.getFieldValue("country");
+    if (!selectedCountry) return;
+
+    const country = countries.find(c => c.name === selectedCountry);
+
+    if (country?.phoneCodes?.length) {
+      form.setFieldsValue({
+        prefix: country.phoneCodes[0]
+      });
+    }
+  }, [countries, form]);
 
   const renderEmailIcon = () => {
     switch (emailStatus) {
@@ -30,10 +46,9 @@ const Register = () => {
       case "invalid":
         return <CloseOutlined style={{ color: "red" }} />;
       default:
-        return <span style={{ width: 16 }} />
+        return <span style={{ width: 16 }} />;
     }
   };
-
 
   const stepItems = [
     { title: "Account" },
@@ -41,18 +56,23 @@ const Register = () => {
     { title: "Tennis level" }
   ];
 
-  const onCountryChange = countryName => {
-  const country = countries.find(c => c.name === countryName);
-  if (country?.phoneCodes?.length) {
-    form.setFieldsValue({ prefix: country.phoneCodes[0] });
-  }
-};
-
-
+  const onCountryChange = (countryName) => {
+    const country = countries.find(c => c.name === countryName);
+    if (country?.phoneCodes?.length) {
+      form.setFieldsValue({
+        prefix: country.phoneCodes[0]
+      });
+    }
+  };
 
   const prefixSelector = (
-    <Form.Item name="prefix" rules={[{required: true}]} noStyle>
+    <Form.Item
+      name="prefix"
+      rules={[{ required: true, message: "Prefix required" }]}
+      noStyle
+    >
       <Select
+        showSearch
         style={{ width: 90 }}
         placeholder="+34"
         options={
@@ -66,7 +86,6 @@ const Register = () => {
       />
     </Form.Item>
   );
-
 
   const next = async () => {
     try {
@@ -89,46 +108,41 @@ const Register = () => {
         ]);
       }
 
-      setCurrent((prev) => prev + 1);
+      setCurrent(prev => prev + 1);
     } catch (err) {
       console.log(err);
     }
   };
 
-  const validateEmail = async (email) => {
+  const prev = () => setCurrent(prev => prev - 1);
 
+  const validateEmail = async (email) => {
     if (!email) {
-      setEmailStatus("idle")
+      setEmailStatus("idle");
       return Promise.resolve();
     }
 
     try {
+      setEmailStatus("loading");
 
-      setEmailStatus("loading")
-
-      const available = await checkEmailValidity(email)
+      const available = await checkEmailValidity(email);
 
       if (!available) {
-        setEmailStatus("invalid")
-        return Promise.reject(new Error("Email already in use"))
+        setEmailStatus("invalid");
+        return Promise.reject(new Error("Email already in use"));
       }
 
-      setEmailStatus("valid")
-
-      return Promise.resolve()
+      setEmailStatus("valid");
+      return Promise.resolve();
 
     } catch (error) {
-      console.log(error)
-      setEmailStatus("invalid")
-      return Promise.reject(new Error("Error occurred validating email"))
+      setEmailStatus("invalid");
+      return Promise.reject(new Error("Error occurred validating email"));
     }
-  }
-
-  const prev = () => setCurrent((prev) => prev - 1);
+  };
 
   const handleRegister = async (values) => {
-
-    setLoading(true)
+    setLoading(true);
 
     const payload = {
       email: values.email,
@@ -138,23 +152,23 @@ const Register = () => {
       country: values.country,
       gender: values.gender,
       phone: `${values.prefix} ${values.phone}`,
-      ntrplvl: values.ntrplvl
-    }
+      ntrplvl: values.ntrplvl,
+      termsAndConditions: values.termsAndConditions
+    };
 
     try {
+      const data = await register(payload);
 
-      const data = await register(payload)
+      setSession(data?.token, data?.user);
 
-      setSession(data?.token, data?.user)
+      toast.success(`Registration complete, welcome ${data?.user?.name}`);
 
-      toast.success(`Registration complete, welcome ${data?.user?.name}`)
-
-      navigate('/games')
+      navigate("/games");
 
     } catch (error) {
-      toast.error(error?.response?.data?.message)
-    }finally{
-      setLoading(false)
+      toast.error(error?.response?.data?.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -167,7 +181,6 @@ const Register = () => {
         style={{ marginBottom: 24 }}
       />
 
-
       <Form
         form={form}
         name="register"
@@ -178,22 +191,16 @@ const Register = () => {
           country: "Spain"
         }}
       >
-        {/* STEP 1 — ACCOUNT (SIEMPRE MONTADO) */}
+        {/* STEP 1 */}
         <div style={{ display: current === 0 ? "block" : "none" }}>
           <Form.Item
             label="Email"
             name="email"
             validateTrigger="onBlur"
             rules={[
-              {
-                type: 'email', message: 'Please use a valid email format'
-              },
-              {
-                required: true, message: 'Email is required'
-              },
-              {
-                validator: (_, value) => validateEmail(value)
-              }
+              { type: "email", message: "Please use a valid email format" },
+              { required: true, message: "Email is required" },
+              { validator: (_, value) => validateEmail(value) }
             ]}
           >
             <Input placeholder="johndoe@john.com" suffix={renderEmailIcon()} />
@@ -203,9 +210,8 @@ const Register = () => {
             label="Password"
             name="password"
             rules={[
-              {required: true, message: 'Password is required'},
-              {min: 6, message: 'Password must be 6 characters long'}              
-
+              { required: true, message: "Password is required" },
+              { min: 6, message: "Password must be 6 characters long" }
             ]}
           >
             <Input.Password />
@@ -233,29 +239,25 @@ const Register = () => {
           </Form.Item>
         </div>
 
-        {/* STEP 2 — PERSONAL (SIEMPRE MONTADO) */}
+        {/* STEP 2 */}
         <div style={{ display: current === 1 ? "block" : "none" }}>
-          <Form.Item name="name" label="Name" rules={[
-            {required: true, message: 'Name is required'},
-          ]}>
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item name="lastname" label="Lastname" rules={[
-            {required: true, message: 'Lastname is required'},
-          ]}>
+          <Form.Item name="lastname" label="Lastname" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item name="country" rules={[
-            {required: true, message: 'Please select a country'}
-          ]}>
+          <Form.Item
+            name="country"
+            rules={[{ required: true }]}
+          >
             <Select
               showSearch
               placeholder="Country"
               loading={loadCountries}
               onChange={onCountryChange}
-              optionLabelProp="label"
               options={countries.map(c => ({
                 label: c.name,
                 value: c.name
@@ -263,9 +265,11 @@ const Register = () => {
             />
           </Form.Item>
 
-          <Form.Item name="gender" label="Gender" rules={[
-            {required: true, message: 'Please select your gender'},
-          ]}>
+          <Form.Item
+            name="gender"
+            label="Gender"
+            rules={[{ required: true }]}
+          >
             <Select
               options={[
                 { value: "male", label: "Male" },
@@ -275,9 +279,11 @@ const Register = () => {
             />
           </Form.Item>
 
-          <Form.Item name="phone" label="Phone number" rules={[
-            {required: true, message: 'A valid phone number is required'},            
-          ]}>
+          <Form.Item
+            name="phone"
+            label="Phone number"
+            rules={[{ required: true }]}
+          >
             <Space.Compact block>
               {prefixSelector}
               <Input />
@@ -285,9 +291,28 @@ const Register = () => {
           </Form.Item>
         </div>
 
-        {/* STEP 3 — NTRP (SIEMPRE MONTADO) */}
+        {/* STEP 3 */}
         <div style={{ display: current === 2 ? "block" : "none" }}>
           <NTRPLevel />
+
+          <Form.Item
+            name="termsAndConditions"
+            valuePropName="checked"
+            rules={[
+              {
+                validator: (_, value) =>
+                  value
+                    ? Promise.resolve()
+                    : Promise.reject(
+                        new Error("You must accept the terms and conditions")
+                      ),
+              },
+            ]}
+          >
+            <Checkbox>
+              I have read and accept the terms and conditions
+            </Checkbox>
+          </Form.Item>
         </div>
 
         {/* ACTIONS */}
@@ -306,7 +331,7 @@ const Register = () => {
 
           {current === 2 && (
             <Button type="primary" htmlType="submit" block disabled={loading}>
-              {loading ? <LoadingSpinner /> : "Register "}
+              {loading ? <LoadingSpinner /> : "Register"}
             </Button>
           )}
         </Space>
