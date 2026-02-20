@@ -26,7 +26,7 @@ const NTRPLevel = () => {
             >
 
                 <Slider
-                    min={2}
+                    min={1}
                     max={5}
                     step={0.5}
                     marks={sliderMarks}
