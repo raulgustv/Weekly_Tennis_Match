@@ -5,8 +5,12 @@ import {
     createPairsSmart,
     rotatePlayers
 } from '../utils/createPairs.js';
-import { isLessThan24h } from '../helpers/misc.js';
-import { inviteNextBackup } from '../utils/backups.js';
+import {
+    isLessThan24h
+} from '../helpers/misc.js';
+import {
+    inviteNextBackup
+} from '../utils/backups.js';
 import jwt from 'jsonwebtoken';
 
 
@@ -79,14 +83,14 @@ export const newMatch = async (req, res) => {
 export const getAllMatches = async (req, res) => {
     try {
         const matches = await Match.find()
-                            .populate('location', 'name address')
-                            .populate('players.user', 'name lastname ntrplvl')
-                            .populate('backUps.user', 'name lastname ntrplvl')
-                            .populate('createdBy', 'name lastname')
-                            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl')
-                            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl')
-                            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl')
-                            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl');
+            .populate('location', 'name address')
+            .populate('players.user', 'name lastname ntrplvl')
+            .populate('backUps.user', 'name lastname ntrplvl')
+            .populate('createdBy', 'name lastname')
+            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl')
+            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl')
+            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl')
+            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl');
 
 
 
@@ -100,9 +104,11 @@ export const getAllMatches = async (req, res) => {
     }
 }
 
-export const getMatch = async(req, res) =>{
+export const getMatch = async (req, res) => {
     try {
-        const {id} = req.params
+        const {
+            id
+        } = req.params
 
         const match = await Match.findById(id)
             .populate('location', 'name')
@@ -115,7 +121,7 @@ export const getMatch = async(req, res) =>{
             .populate('generatedMatches.teamB.player2', 'name lastname email ntrplvl');
 
 
-        if(!match) return res.status(400).json({
+        if (!match) return res.status(400).json({
             ok: false,
             message: "Match not found"
         });
@@ -252,9 +258,13 @@ export const updateMatch = async (req, res) => {
 
 export const joinMatch = async (req, res) => {
     try {
-        const { id } = req.params;
+        const {
+            id
+        } = req.params;
         const userId = req.user._id;
-        const { asBackup = false } = req.body;
+        const {
+            asBackup = false
+        } = req.body;
 
         const match = await Match.findById(id);
 
@@ -367,10 +377,10 @@ export const generateMatches = async (req, res) => {
             id
         } = req.params;
 
-          const match = await Match.findById(id)
+        const match = await Match.findById(id)
             .populate('location', 'name')
             .populate('players.user', 'name lastname ntrplvl')
-            .populate('backUps.user', 'name lastname')                
+            .populate('backUps.user', 'name lastname')
 
 
         if (!match) {
@@ -380,7 +390,7 @@ export const generateMatches = async (req, res) => {
             })
         }
 
-        if(match.generatedMatches.length > 0){
+        if (match.generatedMatches.length > 0) {
             return res.status(400).json({
                 ok: false,
                 message: 'Cannot generate new match as the matchup was already generated'
@@ -404,14 +414,19 @@ export const generateMatches = async (req, res) => {
             //parejas cercanas
             const pairs = createPairsSmart(roundPlayers);
 
+            pairs.sort((a, b) => {
+                return averageNTRP(b) - averageNTRP(a);
+            });
+
             for (let c = 0; c < courts; c++) {
+
 
 
                 const pairA = pairs[c * 2];
                 const pairB = pairs[c * 2 + 1];
 
                 if (!pairA || !pairB) continue;
-              
+
                 match.generatedMatches.push({
                     round,
                     court: match.courtNumbers[c],
@@ -501,7 +516,10 @@ export const updateMatchStatus = async (req, res) => {
 
 export const removeMatchCourts = async (req, res) => {
     try {
-        const { matchId, courtNumber } = req.params;
+        const {
+            matchId,
+            courtNumber
+        } = req.params;
 
         const match = await Match.findById(matchId);
 
@@ -609,25 +627,29 @@ export const removeMatchCourts = async (req, res) => {
     }
 };
 
-export const addMatchCourts = async(req, res) =>{
+export const addMatchCourts = async (req, res) => {
     try {
-        const {matchId} = req.params;
-        const {courts} = req.body;
+        const {
+            matchId
+        } = req.params;
+        const {
+            courts
+        } = req.body;
 
 
-        if(!Array.isArray(courts) || courts.length === 0) return res.status(400).json({
+        if (!Array.isArray(courts) || courts.length === 0) return res.status(400).json({
             ok: false,
             message: 'Courts array is required'
         })
 
         const match = await Match.findById(matchId).populate('location', 'courts')
 
-        if(!match) return res.status(400).json({
+        if (!match) return res.status(400).json({
             ok: false,
             message: 'Match not found'
         })
 
-        if(match.status !== 'Open' && match.status !== "Full") return res.status(400).json({
+        if (match.status !== 'Open' && match.status !== "Full") return res.status(400).json({
             ok: false,
             message: 'Can only add locations to open matches'
         });
@@ -642,28 +664,28 @@ export const addMatchCourts = async(req, res) =>{
 
         //console.log(invalidCourts)
 
-        if(invalidCourts.length > 0) return res.status(400).json({
+        if (invalidCourts.length > 0) return res.status(400).json({
             ok: false,
             message: 'Courts not available in selected location',
             invalidCourts
-        });       
+        });
 
         //courts ya añadidos al match 
         const duplicateCourts = courts.filter(
             c => match.courtNumbers.includes(c)
         )
 
-        if(duplicateCourts.length > 0) return res.status(400).json({
+        if (duplicateCourts.length > 0) return res.status(400).json({
             ok: false,
             message: 'Duplicate courts',
             duplicateCourts
-        });  
+        });
 
 
         const updatedCourts = [
             ...match.courtNumbers,
             ...courts
-        ].sort((a,b) => a-b);
+        ].sort((a, b) => a - b);
 
         match.courtNumbers = updatedCourts;
         match.maxPlayers = updatedCourts.length * 4;
@@ -686,21 +708,23 @@ export const addMatchCourts = async(req, res) =>{
 }
 
 
-export const leaveMatch = async(req, res) =>{
+export const leaveMatch = async (req, res) => {
 
     try {
-        const {matchId} = req.params;
+        const {
+            matchId
+        } = req.params;
         const userId = req.user._id.toString();
 
         const match = await Match.findById(matchId).populate('backUps.user', 'email')
 
 
-        if(!match) return res.status(400).json({
+        if (!match) return res.status(400).json({
             ok: false,
             message: 'Match not found'
         });
 
-        if(['Playing', 'Played', 'Cancelled', 'Closed'].includes(match.status)) return res.status(400).json({
+        if (['Playing', 'Played', 'Cancelled', 'Closed'].includes(match.status)) return res.status(400).json({
             ok: false,
             message: 'Can only leave open or full matches'
         });
@@ -708,7 +732,7 @@ export const leaveMatch = async(req, res) =>{
         const isPlayer = match.players.some(p => p.user.toString() === userId)
         const isBackup = match.backUps.some(b => b.user._id.toString() === userId)
 
-        if(!isPlayer && !isBackup) return res.status(400).json({
+        if (!isPlayer && !isBackup) return res.status(400).json({
             ok: false,
             message: 'Player not registered to this match'
         });
@@ -716,7 +740,7 @@ export const leaveMatch = async(req, res) =>{
         /* -------------------- */
         /* Leaving as BACKUP    */
         /* -------------------- */
-        if(isBackup){
+        if (isBackup) {
             match.backUps = match.backUps.filter(
                 b => b.user._id.toString() !== userId
             )
@@ -735,7 +759,7 @@ export const leaveMatch = async(req, res) =>{
         )
 
         //reopen for free spots
-        if(match.players.length < match.maxPlayers){
+        if (match.players.length < match.maxPlayers) {
             match.status = 'Open'
         }
 
@@ -754,7 +778,7 @@ export const leaveMatch = async(req, res) =>{
 
     } catch (error) {
         console.log(error)
-         res.status(500).json({
+        res.status(500).json({
             ok: false,
             message: 'Error leaving match'
         });
@@ -763,18 +787,24 @@ export const leaveMatch = async(req, res) =>{
 }
 
 //accept invite
-export const acceptInvite = async(req, res) =>{
+export const acceptInvite = async (req, res) => {
     try {
-        const {token} = req.query;
+        const {
+            token
+        } = req.query;
 
-        if(!token) return res.status(400).json({
+        if (!token) return res.status(400).json({
             ok: false,
             message: 'Invitation token not provided'
         });
 
-        const {matchId, userId, type} = jwt.verify(token, process.env.JWT_SECRET);
+        const {
+            matchId,
+            userId,
+            type
+        } = jwt.verify(token, process.env.JWT_SECRET);
 
-        if(type !== 'MATCH_INVITE') return res.status(400).json({
+        if (type !== 'MATCH_INVITE') return res.status(400).json({
             ok: false,
             message: 'Token does not match'
         });
@@ -785,12 +815,12 @@ export const acceptInvite = async(req, res) =>{
             b => b.user.toString() === userId && b.status === 'invited'
         );
 
-        if(backupIndex === -1)return res.status(400).json({
+        if (backupIndex === -1) return res.status(400).json({
             ok: false,
             message: 'No active invitation'
         })
 
-        if(match.players.length >= match.maxPlayers) return res.status(400).json({
+        if (match.players.length >= match.maxPlayers) return res.status(400).json({
             ok: false,
             message: 'Match already full'
         })
@@ -815,7 +845,7 @@ export const acceptInvite = async(req, res) =>{
 
     } catch (error) {
         console.log(error)
-         res.status(500).json({
+        res.status(500).json({
             ok: false,
             message: 'Error leaving match'
         });
@@ -824,7 +854,9 @@ export const acceptInvite = async(req, res) =>{
 
 export const declineInvite = async (req, res) => {
     try {
-        const { token } = req.query;
+        const {
+            token
+        } = req.query;
 
         if (!token) {
             return res.status(400).json({
@@ -833,7 +865,11 @@ export const declineInvite = async (req, res) => {
             });
         }
 
-        const { matchId, userId, type } = jwt.verify(
+        const {
+            matchId,
+            userId,
+            type
+        } = jwt.verify(
             token,
             process.env.JWT_SECRET
         );
@@ -857,8 +893,8 @@ export const declineInvite = async (req, res) => {
 
         const index = match.backUps.findIndex(
             b =>
-                b.user._id.toString() === userId &&
-                b.status === 'invited'
+            b.user._id.toString() === userId &&
+            b.status === 'invited'
         );
 
         if (index === -1) {
@@ -892,5 +928,3 @@ export const declineInvite = async (req, res) => {
         });
     }
 };
-
-
