@@ -140,7 +140,7 @@ export  const removePlayerMatch = async(req, res) =>{
         const user = await User.findById(playerId)
         const match = await Match.findById(matchId)
 
-        if(!user && !match){
+        if(!user || !match){
             return res.status(400).json({
                 ok: false,
                 message: 'User or match not found'
@@ -166,7 +166,7 @@ export  const removePlayerMatch = async(req, res) =>{
         }
 
         if(isBackup){
-            match.backUps = match.backUps.filter(id => id.toString() !== playerId.toString())
+            match.backUps = match.backUps.filter(p => p.user.toString() !== playerId.toString())
 
             await match.save();
 
@@ -177,7 +177,7 @@ export  const removePlayerMatch = async(req, res) =>{
         }
 
         //removing as player
-        match.players = match.players.filter(id => id.toString() !== playerId.toString())
+        match.players = match.players.filter(p => p.user.toString() !== playerId.toString())
 
         //autopromote
         if(match.backUps.length > 0){
