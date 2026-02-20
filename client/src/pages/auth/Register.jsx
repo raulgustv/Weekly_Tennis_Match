@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button, Checkbox, Form, Input, Select, Space, Steps } from "antd";
 import { CheckOutlined, CloseOutlined, LoadingOutlined } from "@ant-design/icons";
 import NTRPLevel from "../../components/utils/NTRPLevel";
@@ -16,26 +16,26 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { countries, loadCountries } = useCountries();
   const [emailStatus, setEmailStatus] = useState("idle");
-
+  
   const navigate = useNavigate();
 
   /* -----------------------------
      SINCRONIZAR PREFIX AUTOMÁTICO
   ------------------------------*/
-  useEffect(() => {
-    if (!countries.length) return;
+  // useEffect(() => {
+  //   if (!countries.length) return;
 
-    const selectedCountry = form.getFieldValue("country");
-    if (!selectedCountry) return;
+  //   const selectedCountry = form.getFieldValue("country");
+  //   if (!selectedCountry) return;
 
-    const country = countries.find(c => c.name === selectedCountry);
+  //   const country = countries.find(c => c.name === selectedCountry);
 
-    if (country?.phoneCodes?.length) {
-      form.setFieldsValue({
-        prefix: country.phoneCodes[0]
-      });
-    }
-  }, [countries, form]);
+  //   if (country?.phoneCodes?.length) {
+  //     form.setFieldsValue({
+  //       prefix: country.phoneCodes[0]
+  //     });
+  //   }
+  // }, [countries, form]);
 
   const renderEmailIcon = () => {
     switch (emailStatus) {
@@ -56,32 +56,36 @@ const Register = () => {
     { title: "Tennis level" }
   ];
 
-  const onCountryChange = (countryName) => {
-    const country = countries.find(c => c.name === countryName);
-    if (country?.phoneCodes?.length) {
-      form.setFieldsValue({
-        prefix: country.phoneCodes[0]
-      });
-    }
-  };
+  // const onCountryChange = (countryName) => {
+  //   const country = countries.find(c => c.name === countryName);
+  //   if (country?.phoneCodes?.length) {
+  //     form.setFieldsValue({
+  //       prefix: country.phoneCodes[0]
+  //     });
+  //   }
+  // };
 
   const prefixSelector = (
     <Form.Item
       name="prefix"
+      initialValue="+34"
       rules={[{ required: true, message: "Prefix required" }]}
       noStyle
     >
       <Select
         showSearch
-        style={{ width: 90 }}
+        style={{ width: 110 }}
         placeholder="+34"
         options={
           countries
-            .find(c => c.name === form.getFieldValue("country"))
-            ?.phoneCodes.map(code => ({
-              label: code,
-              value: code
-            })) || []
+            .flatMap(c =>
+              c.phoneCodes.map(code => ({
+                key: code,
+                label: `${code}`,
+                 value: `${code}-${c.iso}` 
+              }))
+            )
+            .sort((a, b) => a.label.localeCompare(b.label))
         }
       />
     </Form.Item>
@@ -257,7 +261,7 @@ const Register = () => {
               showSearch
               placeholder="Country"
               loading={loadCountries}
-              onChange={onCountryChange}
+              //onChange={onCountryChange}
               options={countries.map(c => ({
                 label: c.name,
                 value: c.name
@@ -304,8 +308,8 @@ const Register = () => {
                   value
                     ? Promise.resolve()
                     : Promise.reject(
-                        new Error("You must accept the terms and conditions")
-                      ),
+                      new Error("You must accept the terms and conditions")
+                    ),
               },
             ]}
           >

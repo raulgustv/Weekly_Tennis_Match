@@ -2,6 +2,7 @@ import { Row, Col } from "antd";
 import { useAuth } from "../../context";
 import { useMatches } from "../../context/MatchContext";
 import VoteCard from "../../components/matches/VoteCard";
+import EmptyVote from "../../components/matches/EmptyVote";
 
 const MatchVote = () => {
 
@@ -14,6 +15,9 @@ const MatchVote = () => {
             m.players?.some(p => p.user?._id === user._id)
         )
         .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    
+        if (!voteMatches || voteMatches.length === 0) return <EmptyVote />
 
 
     return (
