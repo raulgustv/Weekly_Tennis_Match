@@ -399,7 +399,9 @@ export const generateMatches = async (req, res) => {
 
         match.generatedMatches = [];
 
-        let players = [...match.players].sort((a, b) => b.ntrp - a.ntrp);
+        let players = [...match.players].sort(
+            (a, b) => b.user.ntrplvl - a.user.ntrplvl
+        );
 
         const courts = Math.floor(players.length / 4);
 

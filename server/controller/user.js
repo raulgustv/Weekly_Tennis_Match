@@ -76,13 +76,13 @@ export const login = async(req, res) =>{
 
         const user = await User.findOne({email}).select('+password -resetPasswordToken -resetPasswordExpire');    
 
-        if(!user.isActive) return res.status(400).json({
+        if(user?.isActive === false) return res.status(400).json({
             ok: false,
             message: 'This account is inactive'
         })
 
 
-        if(user.provider === 'google') return res.status(400).json({
+        if(user?.provider === 'google') return res.status(400).json({
             ok: false,
             message: "User registered with external provider (Google, Facebook, X)"
         })
