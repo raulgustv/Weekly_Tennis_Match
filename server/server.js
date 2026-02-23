@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 //Enviroment
 dotenv.config();
 import express from 'express'
+
 import cors from 'cors'
 import morgan from 'morgan'
 import connectDB from './config/db.js';
@@ -12,6 +13,7 @@ import profileRoutes from './routes/profile.js';
 import skillRoutes from './routes/skill.js';
 import adminRoutes from './routes/admin.js';
 import './jobs/matchStatus.js'
+import { globalLimiter } from './config/expressLimit.js';
 
 
 
@@ -20,8 +22,8 @@ import './jobs/matchStatus.js'
 const app = express();
 
 
-
 //Middleware
+app.use(globalLimiter)
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));

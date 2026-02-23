@@ -115,7 +115,7 @@ export const togglePlayerActivation = async(req, res) =>{
 
         user.isActive = !user.isActive
 
-        user.save();
+        await user.save();
 
         return res.status(200).json({
             active: user.isActive,
@@ -231,7 +231,7 @@ export const toggleAdminRole = async(req, res) =>{
 
         user.role = user.role === 'admin' ? 'user' : 'admin';
 
-        user.save();
+        await user.save();
 
         return res.status(200).json({
             message: 'User updated correctly',

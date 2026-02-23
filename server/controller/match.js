@@ -12,6 +12,8 @@ import {
     inviteNextBackup
 } from '../utils/backups.js';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+
 
 
 export const newMatch = async (req, res) => {
@@ -115,10 +117,10 @@ export const getMatch = async (req, res) => {
             .populate('players.user', 'name lastname ntrplvl')
             .populate('backUps.user', 'name lastname ntrplvl')
             .populate('createdBy', 'name lastname')
-            .populate('generatedMatches.teamA.player1', 'name lastname email ntrplvl')
-            .populate('generatedMatches.teamA.player2', 'name lastname email ntrplvl')
-            .populate('generatedMatches.teamB.player1', 'name lastname email ntrplvl')
-            .populate('generatedMatches.teamB.player2', 'name lastname email ntrplvl');
+            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl')
+            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl')
+            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl')
+            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl');
 
 
         if (!match) return res.status(400).json({
@@ -256,118 +258,252 @@ export const updateMatch = async (req, res) => {
     }
 }
 
+// export const joinMatch = async (req, res) => {
+//     try {
+//         const {
+//             id
+//         } = req.params;
+//         const userId = req.user._id;
+//         const {
+//             asBackup = false
+//         } = req.body;
+
+//         const match = await Match.findById(id);
+
+//         if (!match) {
+//             return res.status(404).json({
+//                 ok: false,
+//                 message: 'Match not found'
+//             });
+//         }
+
+//         if (!['Open', 'Full'].includes(match.status)) {
+//             return res.status(400).json({
+//                 ok: false,
+//                 message: 'Match is not open for registration'
+//             });
+//         }
+
+//         const alreadyJoined =
+//             match.players.some(p => p.user.toString() === userId.toString()) ||
+//             match.backUps.some(b => b.user.toString() === userId.toString());
+
+//         if (alreadyJoined) {
+//             return res.status(400).json({
+//                 ok: false,
+//                 message: 'User already registered in this match'
+//             });
+//         }
+
+//         /* -------------------- */
+//         /* Voluntary BACKUP     */
+//         /* -------------------- */
+//         if (asBackup === true) {
+//             if (match.backUps.length >= match.maxBackups) {
+//                 return res.status(400).json({
+//                     ok: false,
+//                     message: 'Backup list is full'
+//                 });
+//             }
+
+//             match.backUps.push({
+//                 user: userId,
+//                 joinedAt: new Date()
+//             });
+
+//             await match.save();
+
+//             return res.status(200).json({
+//                 role: 'backup',
+//                 match
+//             });
+//         }
+
+//         /* -------------------- */
+//         /* Normal PLAYER join   */
+//         /* -------------------- */
+//         if (match.players.length < match.maxPlayers) {
+//             match.players.push({
+//                 user: userId,
+//                 joinedAt: new Date()
+//             });
+
+//             // Status pasa a Full solo cuando se llena players
+//             if (match.players.length === match.maxPlayers) {
+//                 match.status = 'Full';
+//             }
+
+//             await match.save();
+
+//             return res.status(200).json({
+//                 role: 'player',
+//                 match
+//             });
+//         }
+
+//         /* -------------------- */
+//         /* Auto BACKUP          */
+//         /* -------------------- */
+//         if (match.backUps.length < match.maxBackups) {
+//             match.backUps.push({
+//                 user: userId,
+//                 joinedAt: new Date()
+//             });
+
+//             await match.save();
+
+//             return res.status(200).json({
+//                 role: 'backup',
+//                 match
+//             });
+//         }
+
+//         return res.status(400).json({
+//             ok: false,
+//             message: 'Match is fully booked'
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             ok: false,
+//             message: 'Internal error joining match'
+//         });
+//     }
+// };
+
+
+
 export const joinMatch = async (req, res) => {
-    try {
-        const {
-            id
-        } = req.params;
-        const userId = req.user._id;
-        const {
-            asBackup = false
-        } = req.body;
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const { asBackup = false } = req.body;
 
-        const match = await Match.findById(id);
-
-        if (!match) {
-            return res.status(404).json({
-                ok: false,
-                message: 'Match not found'
-            });
-        }
-
-        if (!['Open', 'Full'].includes(match.status)) {
-            return res.status(400).json({
-                ok: false,
-                message: 'Match is not open for registration'
-            });
-        }
-
-        const alreadyJoined =
-            match.players.some(p => p.user.toString() === userId.toString()) ||
-            match.backUps.some(b => b.user.toString() === userId.toString());
-
-        if (alreadyJoined) {
-            return res.status(400).json({
-                ok: false,
-                message: 'User already registered in this match'
-            });
-        }
-
-        /* -------------------- */
-        /* Voluntary BACKUP     */
-        /* -------------------- */
-        if (asBackup === true) {
-            if (match.backUps.length >= match.maxBackups) {
-                return res.status(400).json({
-                    ok: false,
-                    message: 'Backup list is full'
-                });
-            }
-
-            match.backUps.push({
-                user: userId,
-                joinedAt: new Date()
-            });
-
-            await match.save();
-
-            return res.status(200).json({
-                role: 'backup',
-                match
-            });
-        }
-
-        /* -------------------- */
-        /* Normal PLAYER join   */
-        /* -------------------- */
-        if (match.players.length < match.maxPlayers) {
-            match.players.push({
-                user: userId,
-                joinedAt: new Date()
-            });
-
-            // Status pasa a Full solo cuando se llena players
-            if (match.players.length === match.maxPlayers) {
-                match.status = 'Full';
-            }
-
-            await match.save();
-
-            return res.status(200).json({
-                role: 'player',
-                match
-            });
-        }
-
-        /* -------------------- */
-        /* Auto BACKUP          */
-        /* -------------------- */
-        if (match.backUps.length < match.maxBackups) {
-            match.backUps.push({
-                user: userId,
-                joinedAt: new Date()
-            });
-
-            await match.save();
-
-            return res.status(200).json({
-                role: 'backup',
-                match
-            });
-        }
-
-        return res.status(400).json({
-            ok: false,
-            message: 'Match is fully booked'
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            ok: false,
-            message: 'Internal error joining match'
-        });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid match ID"
+      });
     }
+
+    /* ===================================================== */
+    /* VOLUNTARY BACKUP JOIN (ATOMIC)                       */
+    /* ===================================================== */
+
+    if (asBackup === true) {
+
+      const updatedBackup = await Match.findOneAndUpdate(
+        {
+          _id: id,
+          status: { $in: ["Open", "Full"] },
+          players: { $not: { $elemMatch: { user: userId } } },
+          backUps: { $not: { $elemMatch: { user: userId } } },
+          $expr: { $lt: [{ $size: "$backUps" }, "$maxBackups"] }
+        },
+        {
+          $push: {
+            backUps: {
+              user: userId,
+              joinedAt: new Date()
+            }
+          }
+        },
+        { new: true }
+      );
+
+      if (!updatedBackup) {
+        return res.status(400).json({
+          ok: false,
+          message: "Backup list is full or already registered"
+        });
+      }
+
+      return res.status(200).json({
+        role: "backup",
+        match: updatedBackup
+      });
+    }
+
+    /* ===================================================== */
+    /* NORMAL PLAYER JOIN (ATOMIC - NO OVERBOOKING)         */
+    /* ===================================================== */
+
+    const updatedMatch = await Match.findOneAndUpdate(
+      {
+        _id: id,
+        status: { $in: ["Open", "Full"] },
+        players: { $not: { $elemMatch: { user: userId } } },
+        backUps: { $not: { $elemMatch: { user: userId } } },
+        $expr: { $lt: [{ $size: "$players" }, "$maxPlayers"] }
+      },
+      {
+        $push: {
+          players: {
+            user: userId,
+            joinedAt: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (updatedMatch) {
+
+      // If match just became full
+      if (updatedMatch.players.length === updatedMatch.maxPlayers) {
+        updatedMatch.status = "Full";
+        await updatedMatch.save();
+      }
+
+      return res.status(200).json({
+        role: "player",
+        match: updatedMatch
+      });
+    }
+
+    /* ===================================================== */
+    /* AUTO BACKUP IF FULL                                   */
+    /* ===================================================== */
+
+    const autoBackup = await Match.findOneAndUpdate(
+      {
+        _id: id,
+        status: { $in: ["Open", "Full"] },
+        players: { $not: { $elemMatch: { user: userId } } },
+        backUps: { $not: { $elemMatch: { user: userId } } },
+        $expr: { $lt: [{ $size: "$backUps" }, "$maxBackups"] }
+      },
+      {
+        $push: {
+          backUps: {
+            user: userId,
+            joinedAt: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (autoBackup) {
+      return res.status(200).json({
+        role: "backup",
+        match: autoBackup
+      });
+    }
+
+    return res.status(400).json({
+      ok: false,
+      message: "Match is fully booked"
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      ok: false,
+      message: "Internal error joining match"
+    });
+  }
 };
 
 export const generateMatches = async (req, res) => {
@@ -491,7 +627,7 @@ export const updateMatchStatus = async (req, res) => {
             })
         }
 
-        if (match === "Played" || match === 'Closed') {
+        if (match.status === "Played" || match.status === 'Closed') {
             return res.status(400).json({
                 ok: false,
                 message: 'Played or closed matches cannot be updated'
@@ -790,143 +926,146 @@ export const leaveMatch = async (req, res) => {
 
 //accept invite
 export const acceptInvite = async (req, res) => {
-    try {
-        const {
-            token
-        } = req.query;
+  try {
+    const { token } = req.query;
 
-        if (!token) return res.status(400).json({
-            ok: false,
-            message: 'Invitation token not provided'
-        });
-
-        const {
-            matchId,
-            userId,
-            type
-        } = jwt.verify(token, process.env.JWT_SECRET);
-
-        if (type !== 'MATCH_INVITE') return res.status(400).json({
-            ok: false,
-            message: 'Token does not match'
-        });
-
-        const match = await Match.findById(matchId);
-
-        const backupIndex = match.backUps.findIndex(
-            b => b.user.toString() === userId && b.status === 'invited'
-        );
-
-        if (backupIndex === -1) return res.status(400).json({
-            ok: false,
-            message: 'No active invitation'
-        })
-
-        if (match.players.length >= match.maxPlayers) return res.status(400).json({
-            ok: false,
-            message: 'Match already full'
-        })
-
-        const backup = match.backUps[backupIndex];
-
-        //promote to player
-        match.players.push({
-            user: backup.user,
-            joinedAt: new Date()
-        });
-
-        //remove from backup
-        match.backUps.splice(backupIndex, 1);
-
-        await match.save();
-
-        return res.status(200).json({
-            message: 'Joined match',
-            match
-        })
-
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            ok: false,
-            message: 'Error leaving match'
-        });
+    if (!token) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invitation token not provided"
+      });
     }
-}
+
+    // 🔐 Verify token
+    const { matchId, userId, type } = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    if (type !== "MATCH_INVITE") {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid invitation token"
+      });
+    }
+
+    // Atomic promotion
+    const updatedMatch = await Match.findOneAndUpdate(
+      {
+        _id: matchId,
+        "backUps.user": userId,
+        "backUps.status": "invited",
+        $expr: { $lt: [{ $size: "$players" }, "$maxPlayers"] }
+      },
+      {
+        $push: {
+          players: {
+            user: userId,
+            joinedAt: new Date()
+          }
+        },
+        $pull: {
+          backUps: {
+            user: userId,
+            status: "invited"
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedMatch) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invitation invalid, expired, or match full"
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: "Joined match successfully",
+      match: updatedMatch
+    });
+
+  } catch (error) {
+    return res.status(401).json({
+      ok: false,
+      message: "Invalid or expired invitation token"
+    });
+  }
+};
+
 
 export const declineInvite = async (req, res) => {
-    try {
-        const {
-            token
-        } = req.query;
+  try {
+    const { token } = req.query;
 
-        if (!token) {
-            return res.status(400).json({
-                ok: false,
-                message: 'Token not provided'
-            });
-        }
-
-        const {
-            matchId,
-            userId,
-            type
-        } = jwt.verify(
-            token,
-            process.env.JWT_SECRET
-        );
-
-        if (type !== 'MATCH_INVITE') {
-            return res.status(400).json({
-                ok: false,
-                message: 'Invalid invitation token'
-            });
-        }
-
-        const match = await Match.findById(matchId)
-            .populate('backUps.user', 'email');
-
-        if (!match) {
-            return res.status(400).json({
-                ok: false,
-                message: 'Match not found'
-            });
-        }
-
-        const index = match.backUps.findIndex(
-            b =>
-            b.user._id.toString() === userId &&
-            b.status === 'invited'
-        );
-
-        if (index === -1) {
-            return res.status(400).json({
-                ok: false,
-                message: 'No active invitation to decline'
-            });
-        }
-
-        /* -------------------- */
-        /* REMOVE FROM BACKUPS  */
-        /* -------------------- */
-        match.backUps.splice(index, 1);
-
-        await match.save();
-
-        /* -------------------- */
-        /* INVITE NEXT BACKUP   */
-        /* -------------------- */
-        inviteNextBackup(match).catch(console.error);
-
-        return res.status(200).json({
-            message: 'Invitation declined'
-        });
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            ok: false,
-            message: 'Error declining invitation'
-        });
+    if (!token) {
+      return res.status(400).json({
+        ok: false,
+        message: "Token not provided"
+      });
     }
+
+    // 🔐 Verify token
+    const { matchId, userId, type } = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    if (type !== "MATCH_INVITE") {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid invitation token"
+      });
+    }
+
+    // 🔒 Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(matchId)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid match ID"
+      });
+    }
+
+    // 🛡 Atomic removal
+    const updatedMatch = await Match.findOneAndUpdate(
+      {
+        _id: matchId,
+        "backUps.user": userId,
+        "backUps.status": "invited"
+      },
+      {
+        $pull: {
+          backUps: {
+            user: userId,
+            status: "invited"
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedMatch) {
+      return res.status(400).json({
+        ok: false,
+        message: "No active invitation to decline"
+      });
+    }
+
+    // 🔄 Invite next backup (safe to call after atomic update)
+    inviteNextBackup(updatedMatch).catch(console.error);
+
+    return res.status(200).json({
+      ok: true,
+      message: "Invitation declined"
+    });
+
+  } catch (error) {
+    console.log(error)
+    return res.status(401).json({
+      ok: false,
+      message: "Invalid or expired invitation token"
+    });
+  }
 };

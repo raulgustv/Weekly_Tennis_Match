@@ -26,6 +26,8 @@ const MatchesTable = () => {
     const { matches, fetchMatches, loadMatches } = useMatches();
     const { Timer } = Statistic;
 
+    console.log(matches)
+
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMatch, setSelectedMatch] = useState(null);
