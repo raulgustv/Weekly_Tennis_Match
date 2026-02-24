@@ -14,6 +14,7 @@ import skillRoutes from './routes/skill.js';
 import adminRoutes from './routes/admin.js';
 import './jobs/matchStatus.js'
 import { globalLimiter } from './config/expressLimit.js';
+import helmet from 'helmet'
 
 
 
@@ -27,6 +28,7 @@ app.use(globalLimiter)
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+app.use(helmet())
 
 
 //DB
