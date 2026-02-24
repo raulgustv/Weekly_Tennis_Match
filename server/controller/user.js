@@ -36,6 +36,9 @@ export const validateEmail = async(req, res) =>{
 export const register =  async(req, res) =>{
     try {
 
+
+        const {name, lastname, email, password, phone, ntrplvl, gender, country} = req.body;
+
         //check if exists
         const exists = await User.findOne({email: req.body.email})
 
@@ -44,8 +47,15 @@ export const register =  async(req, res) =>{
         }
 
         const user = await User.create({
-            ...req.body,
-            provider: "local"
+            name,
+            lastname,
+            email,
+            password,
+            phone,
+            ntrplvl,
+            gender,
+            country
+            
         });
 
         const userObj = user.toObject();
