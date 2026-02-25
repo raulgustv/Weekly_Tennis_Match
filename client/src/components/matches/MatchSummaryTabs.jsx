@@ -17,7 +17,8 @@ import dayjs from "dayjs";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import colors from "../../themes/colors";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "react-toastify";
 
 const MatchSummaryTabs = ({
     matchSummary,
@@ -39,13 +40,19 @@ const MatchSummaryTabs = ({
         maxPlayers,
         players = [],
         backUps = [],
+        paymentMethods = [],
         _id
     } = matchSummary || {};
+
+    const [openPaymentModal, setOpenPaymentModal] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState(null);
+
 
     /* --------------------------
        🔢 CALCULATE AVERAGE NTRP
        (HOOKS ALWAYS ON TOP)
     -------------------------- */
+
 
     const averageNTRP = useMemo(() => {
         if (!players.length) return 0;
@@ -80,9 +87,28 @@ const MatchSummaryTabs = ({
 
     const isJoined = isJoinedPlayer || isJoinedBackup;
 
-
-
     if (!user?._id) return null;
+
+    /* ================================
+     PAYMENT MODAL HANDLERS
+  ================================= */
+
+  const handlePaymentModal = () =>{
+    if(!paymentMethods.length){
+        toast.error("No payment methods available");
+        return;
+    }
+        setOpenPaymentModal(true)
+  }
+
+  const handleConfirmPayment = () =>{
+    if(!selectedPayment){
+        toast.error("Please select a payment method")
+        return;
+    }
+    setOpenPaymentModal(false)
+    onJoin(_id, false, selectedPayment)
+  }
 
 
     return (
@@ -211,6 +237,10 @@ const MatchSummaryTabs = ({
                 </div>
             )}
         </Space>
+
+
+
+
     );
 };
 

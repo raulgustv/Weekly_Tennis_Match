@@ -372,13 +372,11 @@ export const updateMatch = async (req, res) => {
 //     }
 // };
 
-
-
 export const joinMatch = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
-    const { asBackup = false } = req.body;
+    const { asBackup = false, paymentMethod } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -429,6 +427,34 @@ export const joinMatch = async (req, res) => {
     /* NORMAL PLAYER JOIN (ATOMIC - NO OVERBOOKING)         */
     /* ===================================================== */
 
+    if(!paymentMethod){
+        return res.status(400).json({
+            ok: false,
+            message: "Payment method required"
+        })
+    }
+
+    //match validation
+    const matchForValidation = await Match.findById(id).select("paymentMethods");
+
+    if(!matchForValidation) {
+        return res.status(400).json({
+            ok: false,
+            message: "Match does not exist"
+        })
+    }
+
+    const validPaymentMethod =matchForValidation.paymentMethods.find(
+        pm => pm.type === paymentMethod
+    )
+
+    if(!validPaymentMethod){
+        return res.status(400).json({
+            ok: false,
+            message: "Please select a valid payment method"
+        })
+    }
+
     const updatedMatch = await Match.findOneAndUpdate(
       {
         _id: id,
@@ -441,7 +467,11 @@ export const joinMatch = async (req, res) => {
         $push: {
           players: {
             user: userId,
-            joinedAt: new Date()
+            joinedAt: new Date(),
+            payment: {
+                method: paymentMethod,
+                status: "unpaid"
+            }
           }
         }
       },

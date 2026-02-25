@@ -112,6 +112,14 @@ const userSchema = new mongoose.Schema({
     isFirstLogin: {
         type: Boolean,
         default: true
+    },
+    loginAttempts:{
+        type: Number,
+        default: 0
+    },
+    lockUntil:{
+        type: Date,
+        default: null,
     }
 }, {
     timestamps: true

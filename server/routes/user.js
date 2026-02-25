@@ -3,12 +3,13 @@ import {  login, register, viewAllUsers, viewUser, resetPassword, resetPasswordE
 import { googleValidator, loginValidator, registerValidator } from '../validator/userValidator.js';
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 import { protect, verifyAdmin } from '../middlewares/auth.js';
+import { authLimiter, registerLimiter } from '../config/expressLimit.js';
 
 
 const router = Router();
 
 router.post("/register", registerValidator, validateFields, register)
-router.post("/login", loginValidator, validateFields, login)
+router.post("/login", authLimiter, loginValidator, validateFields, login)
 //router.post("/google", googleValidator, validateFields, googleAuth)
 router.get("/validate", validateEmail)
 

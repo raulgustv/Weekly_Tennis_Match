@@ -4,20 +4,39 @@ import {
 
 export const registerValidator = [
     body("name")
-    .notEmpty().withMessage("Name is required"),
+    .trim()
+    .notEmpty().withMessage("Name is required")
+    .isLength({min: 2, max: 50}).withMessage("Name must have between 2 and 50 characters")
+    .matches(/^[a-zA-ZÀ-ÿ\s'-]+$/).withMessage("Name contains invalid characters"),
+
     body("lastname")
-    .notEmpty().withMessage("Lastname is required"),
+    .notEmpty().withMessage("Lastname is required")
+    .isLength({min: 2, max: 50}).withMessage("Lastname must have between 2 and 50 characters")
+    .matches(/^[a-zA-ZÀ-ÿ\s'-]+$/).withMessage("Lastname contains invalid characters"),
+
     body("email")
     .notEmpty().withMessage("Email is required")
     .isEmail().withMessage("Invalid email"),
+
     body("password")
     .notEmpty().withMessage("Password is required")
     .isLength({
         min: 6,
         max: 80
-    }).withMessage("Password length must be between 6 and 80 characters"),
+    }).withMessage("Password length must be between 6 and 80 characters")
+    .matches(/[A-Z]/).withMessage("Password must contain at least one uppercase letter")
+    .matches(/[a-z]/).withMessage("Password must contain at least one lowercase letter")
+    .matches(/[0-9]/).withMessage("Password must contain at least one number"),
+
+
     body("phone")
-    .notEmpty().withMessage("Phone is required"),
+    .trim()
+    .notEmpty().withMessage("Phone is required")
+    .isLength({
+        min: 6,
+        max: 20
+    }).withMessage("Invalid phone number"),
+
     body("ntrplvl")
     .notEmpty().withMessage("NTRP level is required")
     .custom(value => {
@@ -31,6 +50,7 @@ export const registerValidator = [
     body("gender")
     .notEmpty().withMessage("Gender is required")
     .isIn(["male", "female", "other"]).withMessage("Gender must be male, female or other")
+
 ]
 
 export const loginValidator = [

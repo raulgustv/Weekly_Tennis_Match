@@ -90,7 +90,23 @@ const matchSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         },
-        joinedAt: {type: Date, default: Date.now}
+        joinedAt: {type: Date, default: Date.now},
+        payment:{
+            method: {
+                type: String,
+                required: true
+            },
+            status: {
+                type: String,
+                enum: ['pending', 'paid'],
+                default: 'pending'
+            },
+            confirmedAt: Date,
+            confirmedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User'
+            }
+        }
     }],
     backUps:[{
         user: {

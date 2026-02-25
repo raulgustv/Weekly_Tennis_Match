@@ -33,7 +33,6 @@ export const updateProfile = async (req, res) => {
             name,
             lastname,
             phone,
-            ntrplvl,
             gender,
         } = req.body;
 
@@ -49,7 +48,6 @@ export const updateProfile = async (req, res) => {
         if (name !== undefined) user.name = name;
         if (lastname !== undefined) user.lastname = lastname;
         if (phone !== undefined) user.phone = phone;
-        if (ntrplvl !== undefined) user.ntrplvl = ntrplvl;
         if (gender !== undefined) user.gender = gender;
 
         await user.save();

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { adjustNTRPLevels } from "../jobs/adjustNTRP.js";
 import Match from "../models/Match.js";
 import User from "../models/user.js";
@@ -133,47 +134,39 @@ export const togglePlayerActivation = async(req, res) =>{
 }
 
 export  const removePlayerMatch = async(req, res) =>{
-    try {
+
+    const session = await mongoose.startSession();
+
+    try {       
 
         const {playerId, matchId} = req.params;
 
-        const user = await User.findById(playerId)
-        const match = await Match.findById(matchId)
+        await session.withTransaction(async () => {        
+
+        const user = await User.findById(playerId).session(session)
+        const match = await Match.findById(matchId).session(session)
 
         if(!user || !match){
-            return res.status(400).json({
-                ok: false,
-                message: 'User or match not found'
-            });  
+            throw new Error("User or match not found");
         }
 
 
         if(match.status !== 'Open' && match.status !== 'Full'){
-            return res.status(400).json({
-                ok: false,
-                message: 'Cannot remove player for played, cancelled or closed matches'
-            }); 
+           throw new Error("Cannot remove player from this match status");
         }
 
         const isPlayer = match.players.some(p => p.user.toString() === user._id.toString())
         const isBackup = match.backUps.some(p => p.user.toString() === user._id.toString())
 
         if(!isPlayer && !isBackup){
-            return res.status(400).json({
-                ok: false,
-                message: 'Player not registered to this match'
-            }); 
+            throw new Error("Player not registered in this match");
         }
 
         if(isBackup){
             match.backUps = match.backUps.filter(p => p.user.toString() !== playerId.toString())
 
-            await match.save();
-
-            return res.status(200).json({
-                message: "Player removed from match",
-                match
-            })    
+            await match.save({session})
+            return;            
         }
 
         //removing as player
@@ -189,13 +182,13 @@ export  const removePlayerMatch = async(req, res) =>{
             match.status = 'Open'
         }
 
-        await match.save();
+        await match.save({session});
 
-        res.status(200).json({
-            message: 'User successfully removed from match',
-            match
         })
 
+        return res.status(200).json({
+            message: "Removed player from match"
+        })
 
     } catch (error) {
         console.log(error)
@@ -203,6 +196,8 @@ export  const removePlayerMatch = async(req, res) =>{
             ok: false,
             message: 'User not found'
         });  
+    }finally{
+        session.endSession();
     }
 }
 

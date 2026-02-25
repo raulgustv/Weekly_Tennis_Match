@@ -168,9 +168,8 @@ const Register = () => {
       toast.success(`Registration complete, welcome ${data?.user?.name}`);
 
       navigate("/games");
-
     } catch (error) {
-      toast.error(error?.response?.data?.message);
+      toast.error(error?.response?.data?.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }

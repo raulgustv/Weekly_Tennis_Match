@@ -97,9 +97,39 @@ export const login = async(req, res) =>{
             message: "User registered with external provider (Google, Facebook, X)"
         })
 
-        if(!user || !(await user.comparePassword(password))){
+        if(!user){
             return res.status(401).json({message: "Invalid credentials"})
         }  
+
+        if(user.lockUntil || user.lockUntil > Date.now()){
+            return res.status(401).json({
+                ok: false,
+                message: "Account is locked due to multiple login failed attempts"
+            })
+        }
+
+        const isMatch = await user.comparePassword(password);
+
+        if(!isMatch){
+
+            user.loginAttempts += 1;
+
+            if(user.loginAttempts >= 5){
+                user.lockUntil = Date.now() + (30*60*1000)
+            }
+
+            await user.save()
+
+            return res.status(401).json({
+                ok: false,
+                message: "Invalid credentials"
+            })
+        }
+
+        user.loginAttempts = 0;
+        user.lockUntil = null;
+
+        await user.save()
         
         user.password = undefined;      
 
@@ -259,7 +289,7 @@ export const resetPassword = async(req, res) =>{
             })
         }
 
-        const hashedToken = crypto.createHash("256").update(req.params.token).digest("hex");
+        const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
 
         const user = await User.findOne({
             resetPasswordToken: hashedToken,
@@ -278,7 +308,7 @@ export const resetPassword = async(req, res) =>{
 
         //clean tokens 
         user.resetPasswordToken = null;
-        user.resetPasswordToken = null;
+        user.resetPasswordExpire = null;
 
         await user.save();
 
