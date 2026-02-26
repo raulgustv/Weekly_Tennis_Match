@@ -20,8 +20,8 @@ router.get('/view-match/:id', protect, validateObjectId("id"), getMatch)
 //post match creation
 router.post('/join/:id', protect, validateObjectId("id"), joinMatch)
 router.post('/leave/:matchId', protect, validateObjectId("matchId"), leaveMatch)
-router.get('/invite/accept', acceptInvite)
-router.get('/invite/decline', declineInvite)
+router.post('/invite/accept', acceptInvite)
+router.post('/invite/decline', declineInvite)
 
 router.post('/generate/:id', protect, verifyAdmin, validateObjectId("id"), generateMatches)
 router.post('/remove-courts/:matchId/:courtNumber', protect, verifyAdmin, removeMatchCourts)

@@ -13,8 +13,8 @@ export const updateStatus = async(id, status) =>{
     return data;
 }
 
-export const joinMatch = async(id, backup) =>{
-    const {data} = await axiosInstance.post(`/match/join/${id}`, {asBackup: backup});
+export const joinMatch = async(id, backup, paymentMethod) =>{
+    const {data} = await axiosInstance.post(`/match/join/${id}`, {asBackup: backup, paymentMethod});
 
     return data;
 }

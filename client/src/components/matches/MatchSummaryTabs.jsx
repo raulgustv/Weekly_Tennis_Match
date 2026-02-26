@@ -17,15 +17,16 @@ import dayjs from "dayjs";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import colors from "../../themes/colors";
-import { useMemo, useState } from "react";
-import { toast } from "react-toastify";
+import { useMemo } from "react";
 
 const MatchSummaryTabs = ({
     matchSummary,
     showJoinButton = false,
+    onRequestJoin,   // 🔵 NUEVO
     onJoin,
     onLeave
 }) => {
+
     const { Text, Title, Link } = Typography;
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -40,19 +41,13 @@ const MatchSummaryTabs = ({
         maxPlayers,
         players = [],
         backUps = [],
-        paymentMethods = [],
         _id
     } = matchSummary || {};
 
-    const [openPaymentModal, setOpenPaymentModal] = useState(false);
-    const [selectedPayment, setSelectedPayment] = useState(null);
-
-
     /* --------------------------
        🔢 CALCULATE AVERAGE NTRP
-       (HOOKS ALWAYS ON TOP)
+       (NO TOCADO)
     -------------------------- */
-
 
     const averageNTRP = useMemo(() => {
         if (!players.length) return 0;
@@ -88,28 +83,6 @@ const MatchSummaryTabs = ({
     const isJoined = isJoinedPlayer || isJoinedBackup;
 
     if (!user?._id) return null;
-
-    /* ================================
-     PAYMENT MODAL HANDLERS
-  ================================= */
-
-  const handlePaymentModal = () =>{
-    if(!paymentMethods.length){
-        toast.error("No payment methods available");
-        return;
-    }
-        setOpenPaymentModal(true)
-  }
-
-  const handleConfirmPayment = () =>{
-    if(!selectedPayment){
-        toast.error("Please select a payment method")
-        return;
-    }
-    setOpenPaymentModal(false)
-    onJoin(_id, false, selectedPayment)
-  }
-
 
     return (
         <Space orientation="vertical" size="middle" style={{ width: "100%" }}>
@@ -188,7 +161,7 @@ const MatchSummaryTabs = ({
                                     description={`Your NTRP level ${userLevel} is lower than the match average (${averageNTRP.toFixed(
                                         2
                                     )}). Are you sure you want to join?`}
-                                    onConfirm={() => onJoin(_id, false)}
+                                    onConfirm={() => onRequestJoin(matchSummary)} // 🔴 CAMBIADO
                                     okText="Yes, join"
                                     cancelText="Cancel"
                                 >
@@ -206,7 +179,7 @@ const MatchSummaryTabs = ({
                                     type="primary"
                                     block
                                     disabled={players.length >= maxPlayers}
-                                    onClick={() => onJoin(_id, false)}
+                                    onClick={() => onRequestJoin(matchSummary)} // 🔴 CAMBIADO
                                     style={{ marginBottom: 10 }}
                                 >
                                     Join Match
@@ -237,10 +210,6 @@ const MatchSummaryTabs = ({
                 </div>
             )}
         </Space>
-
-
-
-
     );
 };
 

@@ -33,7 +33,7 @@ const MatchDeclineInvite = () => {
 
         const declineInvite = async() =>{
             try {
-                await axiosInstance.get(`/match/invite/decline?token=${token}`)
+                await axiosInstance.post(`/match/invite/decline?token=${token}`)
 
 
                 

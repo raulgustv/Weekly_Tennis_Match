@@ -98,8 +98,8 @@ const matchSchema = new mongoose.Schema({
             },
             status: {
                 type: String,
-                enum: ['pending', 'paid'],
-                default: 'pending'
+                enum: ['unpaid', 'paid', 'booker'],
+                default: 'unpaid'
             },
             confirmedAt: Date,
             confirmedBy: {

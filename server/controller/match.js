@@ -897,8 +897,14 @@ export const leaveMatch = async (req, res) => {
             message: 'Can only leave open or full matches'
         });
 
-        const isPlayer = match.players.some(p => p.user.toString() === userId)
-        const isBackup = match.backUps.some(b => b.user._id.toString() === userId)
+        const isPlayer = match.players.some(p => {
+            const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
+            return playerId === userId
+        })
+
+        const isBackup = match.backUps.some(b => 
+            b.user._id.toString() === userId
+        )
 
         if (!isPlayer && !isBackup) return res.status(400).json({
             ok: false,
@@ -922,9 +928,10 @@ export const leaveMatch = async (req, res) => {
         /* -------------------- */
         /* Leaving as player    */
         /* -------------------- */
-        match.players = match.players.filter(
-            p => p.user.toString() !== userId
-        )
+        match.players = match.players.filter(p => {
+            const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
+            return playerId !== userId
+        })
 
         //reopen for free spots
         if (match.players.length < match.maxPlayers) {
@@ -958,6 +965,7 @@ export const leaveMatch = async (req, res) => {
 export const acceptInvite = async (req, res) => {
   try {
     const { token } = req.query;
+    const {paymentMethod} = req.body;
 
     if (!token) {
       return res.status(400).json({
@@ -965,6 +973,15 @@ export const acceptInvite = async (req, res) => {
         message: "Invitation token not provided"
       });
     }
+
+     if (!paymentMethod) {
+      return res.status(400).json({
+        ok: false,
+        message: "Please select a payment method"
+      });
+    }
+
+
 
     // 🔐 Verify token
     const { matchId, userId, type } = jwt.verify(
@@ -991,7 +1008,11 @@ export const acceptInvite = async (req, res) => {
         $push: {
           players: {
             user: userId,
-            joinedAt: new Date()
+            joinedAt: new Date(),
+            payment: {
+                method: paymentMethod,
+                status: "unpaid"
+            }
           }
         },
         $pull: {
@@ -1009,6 +1030,12 @@ export const acceptInvite = async (req, res) => {
         ok: false,
         message: "Invitation invalid, expired, or match full"
       });
+    }
+
+    //if match is now full
+     if (updatedMatch.players.length === updatedMatch.maxPlayers) {
+      updatedMatch.status = "Full";
+      await updatedMatch.save();
     }
 
     return res.status(200).json({
