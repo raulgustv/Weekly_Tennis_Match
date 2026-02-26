@@ -244,3 +244,55 @@ export const toggleAdminRole = async(req, res) =>{
 
     
 }
+
+export const togglePaymentStatus = async(req, res) =>{
+    const {matchId, userId} = req.params;
+
+    try {
+
+        if(!matchId || !userId){
+            return res.status(500).json({
+                ok: false,
+                message: 'Match or user not provided'
+            })
+        }
+
+        const match = await Match.findOne(
+            {_id: matchId, "players.user": userId},
+            {'players.$': 1}
+        );
+
+        if(!match || !match.players.length){
+             return res.status(500).json({
+                ok: false,
+                message: 'Player not found for this match'
+            })
+        }
+
+        const currentStatus = match.players[0].payment.status;
+
+        const newStatus = currentStatus === "paid" ? "unpaid" : "paid"
+
+        //update atómico
+        const updatedMatch = await Match.findOneAndUpdate(
+            {_id: matchId, "players.user": userId},
+            {
+                $set:{
+                    "players.$.payment.status": newStatus
+                }
+            }, {new: true}
+        )
+
+        return res.status(200).json({
+            message: "Payment status updated",
+            updatedMatch
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal error updating user role'
+        })
+    }
+}

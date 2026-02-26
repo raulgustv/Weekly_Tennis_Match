@@ -23,10 +23,10 @@ export const registerValidator = [
     .isLength({
         min: 6,
         max: 80
-    }).withMessage("Password length must be between 6 and 80 characters")
-    .matches(/[A-Z]/).withMessage("Password must contain at least one uppercase letter")
-    .matches(/[a-z]/).withMessage("Password must contain at least one lowercase letter")
-    .matches(/[0-9]/).withMessage("Password must contain at least one number"),
+    }).withMessage("Password length must be between 6 and 80 characters"),
+    //.matches(/[A-Z]/).withMessage("Password must contain at least one uppercase letter")
+    //.matches(/[a-z]/).withMessage("Password must contain at least one lowercase letter")
+    //.matches(/[0-9]/).withMessage("Password must contain at least one number"),
 
 
     body("phone")

@@ -24,3 +24,9 @@ export const toggleUserRole = async(id) =>{
 
     return data;
 }
+
+export const togglePayment = async(matchId, userId) =>{
+    const {data} = await axiosInstance.put(`/admin/payment/${matchId}/${userId}`);
+
+    return data;
+}

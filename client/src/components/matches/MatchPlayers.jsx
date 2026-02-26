@@ -13,48 +13,70 @@ import {
   Avatar,
   Empty,
   Tag,
+  Switch,
 } from "antd";
 import {
   UserOutlined,
   ArrowLeftOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import MatchDetails from "./MatchDetails";
+import { useAuth } from "../../context/AuthContext";
+import { togglePayment } from "../../actions/admin";
 
 const { Title, Text } = Typography;
+
 
 const MatchPlayers = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const { user } = useAuth();
+
+
   const [match, setMatch] = useState();
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false)
 
-  console.log(match)
+  //console.log(match)
 
   useEffect(() => {
     const fetchMatch = async () => {
       try {
-        setLoading(true);
+        setPageLoading(true);
         const data = await getMatch(id);
         setMatch(data);
       } catch (error) {
         console.log(error);
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     };
 
     fetchMatch();
   }, [id]);
 
-  if (loading || !match) return <LoadingSpinner />;
+  const handleTogglePayment = async(userId) =>{
+    try {
+      setLoading(true)
+      await togglePayment(match._id, userId)      
+      const updated = await getMatch(id)
+      setMatch(updated)
+      
+    } catch (error) {
+      console.log(error)
+      setLoading(false)
+    }finally{setLoading(false)}
+  }
+
+  if (pageLoading || !match) return <LoadingSpinner />;
 
   const isReady = match.status === "Ready";
 
   return (
     <div style={{ padding: 20 }}>
-      
+
       {/* HEADER SIMPLE (SIN CARD) */}
       <Row
         justify="space-between"
@@ -95,7 +117,7 @@ const MatchPlayers = () => {
         </Row>
       ) : (
         <Row gutter={[24, 24]}>
-          
+
           {/* PLAYERS */}
           <Col xs={24} lg={12}>
             <Card title="Players" variant="outlined">
@@ -109,18 +131,40 @@ const MatchPlayers = () => {
                       size="small"
                       style={{ borderLeft: "4px solid #52c41a" }}
                     >
-                      <Flex align="center" gap={12}>
-                        <Avatar
-                          size={40}
-                          icon={<UserOutlined />}
-                          style={{ backgroundColor: "#52c41a" }}
-                        />
-                        <div>
-                          <Text strong>{p?.user?.name} {p?.user?.lastname?.[0]} <small>({p?.user?.ntrplvl})</small></Text>
-                          <br />
-                          <Tag color="green">Confirmed</Tag>
-                        </div>
+                      <Flex align="center" justify="space-between">
+                        <Flex align="center" gap={12}>
+                          <Avatar
+                            size={40}
+                            icon={<UserOutlined />}
+                            style={{ backgroundColor: "#52c41a" }}
+                          />
+                          <div>
+                            <Text strong>{p?.user?.name} {p?.user?.lastname?.[0]} <small>({p?.user?.ntrplvl})</small></Text>
+                            <br />
+                            <Tag color="green">Confirmed</Tag>
+                          </div>
+
+                        </Flex>
+                        {
+                          user?.role === 'admin' && (
+                            <Flex align="center">
+                              <Tag color={p?.payment?.status === 'unpaid' ? 'warning' : 'success'} icon={<ExclamationCircleOutlined />}>
+                                <strong>{p?.payment?.method}</strong>
+                              </Tag>
+                              <Switch 
+                                style={{marginLeft: 5}}
+                                checked={p?.payment?.status === "paid"}
+                                checkedChildren="paid"
+                                unCheckedChildren="unpaid"
+                                onChange={() => handleTogglePayment(p?.user?._id)}
+                                loading={loading}
+                              />
+                            </Flex>
+                          )
+                        }
                       </Flex>
+
+
                     </Card>
                   ))}
                 </Flex>
