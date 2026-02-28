@@ -38,6 +38,12 @@ export const generateMatch = async(id) =>{
     return data;
 }
 
+export const updateGeneratedMatch = async(matchId, generatedMatches) =>{
+    const {data} = await axiosInstance.put(`/match/update-generate/${matchId}`, generatedMatches);
+
+    return data;
+}
+
 export const removeMatchCourt = async(matchId, courtNumber) =>{
     const {data} = await axiosInstance.post(`match/remove-courts/${matchId}/${courtNumber}`);
 

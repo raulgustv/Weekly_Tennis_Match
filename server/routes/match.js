@@ -4,6 +4,7 @@ import { acceptInvite, addMatchCourts,
 declineInvite, generateMatches, getAllMatches,
 getMatch, getOpenMatch, joinMatch, 
 leaveMatch, newMatch, removeMatchCourts,
+updateGeneratedMatches,
 updateMatch, updateMatchStatus } from '../controller/match.js';
 import { createMatchValidator } from '../validator/matchCreateValidator.js';
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
@@ -24,6 +25,7 @@ router.post('/invite/accept', acceptInvite)
 router.post('/invite/decline', declineInvite)
 
 router.post('/generate/:id', protect, verifyAdmin, validateObjectId("id"), generateMatches)
+router.put('/update-generate/:matchId', protect, verifyAdmin, validateObjectId("matchId"), updateGeneratedMatches)
 router.post('/remove-courts/:matchId/:courtNumber', protect, verifyAdmin, removeMatchCourts)
 router.post('/add-courts/:matchId', protect, verifyAdmin, validateObjectId("id"),  addMatchCourts)
 

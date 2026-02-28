@@ -19,11 +19,13 @@ import {
   UserOutlined,
   ArrowLeftOutlined,
   ExclamationCircleOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import MatchDetails from "./MatchDetails";
 import { useAuth } from "../../context/AuthContext";
 import { togglePayment } from "../../actions/admin";
+import colors from "../../themes/colors";
 
 const { Title, Text } = Typography;
 
@@ -57,17 +59,17 @@ const MatchPlayers = () => {
     fetchMatch();
   }, [id]);
 
-  const handleTogglePayment = async(userId) =>{
+  const handleTogglePayment = async (userId) => {
     try {
       setLoading(true)
-      await togglePayment(match._id, userId)      
+      await togglePayment(match._id, userId)
       const updated = await getMatch(id)
       setMatch(updated)
-      
+
     } catch (error) {
       console.log(error)
       setLoading(false)
-    }finally{setLoading(false)}
+    } finally { setLoading(false) }
   }
 
   if (pageLoading || !match) return <LoadingSpinner />;
@@ -82,6 +84,7 @@ const MatchPlayers = () => {
         justify="space-between"
         align="middle"
         style={{ marginBottom: 32 }}
+        gutter={[16, 16]}
       >
         <Col xs={24} md={18}>
           <Title level={3} style={{ marginBottom: 4 }}>
@@ -95,7 +98,20 @@ const MatchPlayers = () => {
           </Text>
         </Col>
 
-        <Col xs={24} md={6} style={{ textAlign: "right", marginTop: 12 }}>
+          {(user?.role === 'admin' && match.generatedMatches.length) && (
+          <Col xs={24} md={3} style={{ textAlign: "right", marginTop: 12 }}>
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/admin/match/edit/${match._id}`)}
+              block
+              style={{background: colors.warning}}
+            >
+              Edit pairs
+            </Button>
+          </Col>
+        )}
+
+        <Col xs={24} md={user?.role === 'admin' ? 3 : 6} style={{ textAlign: "right", marginTop: 12 }}>
           <Button
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate("/games")}
@@ -104,6 +120,8 @@ const MatchPlayers = () => {
             Back
           </Button>
         </Col>
+      
+
       </Row>
 
       {/* READY STATE */}
@@ -151,8 +169,8 @@ const MatchPlayers = () => {
                               <Tag color={p?.payment?.status === 'unpaid' ? 'warning' : 'success'} icon={<ExclamationCircleOutlined />}>
                                 <strong>{p?.payment?.method}</strong>
                               </Tag>
-                              <Switch 
-                                style={{marginLeft: 5}}
+                              <Switch
+                                style={{ marginLeft: 5 }}
                                 checked={p?.payment?.status === "paid"}
                                 checkedChildren="paid"
                                 unCheckedChildren="unpaid"

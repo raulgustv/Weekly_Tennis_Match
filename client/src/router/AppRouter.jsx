@@ -15,6 +15,7 @@ import MatchInviteAccept from '../components/matches/MatchInviteAccept'
 import MatchDeclineInvite from '../components/matches/MatchDeclineInvite'
 import ResetPassword from '../pages/auth/ResetPassword'
 import MatchVote from '../pages/matches/MatchVote'
+import EditMatch from '../pages/matches/EditMatch'
 
 const AppRouter = () => {
   return (
@@ -40,11 +41,12 @@ const AppRouter = () => {
 
               {/* admin routes */}
               <Route path='admin' element={<AdminRoute />}>
-                  <Route index path='dashboard' element={<AdminDashboard />} />
-                  <Route path='add-court' element={<AddCourt />} />
-                  <Route path='matches' element={<Matches />} />
-                  <Route path='view-matches' element={<MatchesTable />} />
-                   <Route path='players' element={<Players />} />
+                <Route index path='dashboard' element={<AdminDashboard />} />
+                <Route path='add-court' element={<AddCourt />} />
+                <Route path='matches' element={<Matches />} />
+                <Route path='view-matches' element={<MatchesTable />} />
+                <Route path='players' element={<Players />} />
+                 <Route path='match/edit/:id' element={<EditMatch />} />
               </Route>
             </Route>
           </Route>

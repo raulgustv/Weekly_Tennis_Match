@@ -2,8 +2,10 @@ import Match from '../models/Match.js';
 import Location from '../models/Location.js';
 import {
     averageNTRP,
-    createPairsSmart,
-    rotatePlayers
+    generateBalancedMatches,
+    generateCompetitivePairs,
+    //rotatePlayers,
+    shuffleArray
 } from '../utils/createPairs.js';
 import {
     isLessThan24h
@@ -536,99 +538,232 @@ export const joinMatch = async (req, res) => {
   }
 };
 
+
+
 export const generateMatches = async (req, res) => {
+
     try {
 
-        const {
-            id
-        } = req.params;
+        const { id } = req.params;
 
         const match = await Match.findById(id)
             .populate('location', 'name')
             .populate('players.user', 'name lastname ntrplvl')
-            .populate('backUps.user', 'name lastname')
-
+            .populate('backUps.user', 'name lastname');
 
         if (!match) {
             return res.status(400).json({
                 ok: false,
                 message: 'Match not found'
-            })
+            });
         }
 
         if (match.generatedMatches.length > 0) {
             return res.status(400).json({
                 ok: false,
-                message: 'Cannot generate new match as the matchup was already generated'
-            })
+                message: 'Matches already generated'
+            });
         }
 
-        match.generatedMatches = [];
-
-        let players = [...match.players].sort(
-            (a, b) => b.user.ntrplvl - a.user.ntrplvl
-        );
+        let players = [...match.players];
 
         const courts = Math.floor(players.length / 4);
 
+        match.generatedMatches = [];
+
+        let previousRoundMatches = [];
+
         for (let round = 1; round <= 2; round++) {
-            let roundPlayers = [...players];
+
+            let roundPlayers = shuffleArray(players);
+
             let byePlayer = null;
 
             if (roundPlayers.length % 4 !== 0) {
-                byePlayer = roundPlayers[roundPlayers.length - 1]
+                byePlayer = roundPlayers.pop();
             }
 
-            //parejas cercanas
-            const pairs = createPairsSmart(roundPlayers);
+            const pairs = generateCompetitivePairs(
+                roundPlayers,
+                previousRoundMatches
+            );
 
-            pairs.sort((a, b) => {
-                return averageNTRP(b) - averageNTRP(a);
-            });
+            const roundMatches = generateBalancedMatches(
+                pairs,
+                courts
+            );
 
-            for (let c = 0; c < courts; c++) {
+            roundMatches.forEach((m, index) => {
 
-
-
-                const pairA = pairs[c * 2];
-                const pairB = pairs[c * 2 + 1];
-
-                if (!pairA || !pairB) continue;
-
-                match.generatedMatches.push({
+                const matchData = {
                     round,
-                    court: match.courtNumbers[c],
+                    court: match.courtNumbers[index],
                     teamA: {
-                        player1: pairA[0].user._id,
-                        player2: pairA[1].user._id
+                        player1: m.pairA[0].user._id,
+                        player2: m.pairA[1].user._id
                     },
                     teamB: {
-                        player1: pairB[0].user._id,
-                        player2: pairB[1].user._id
+                        player1: m.pairB[0].user._id,
+                        player2: m.pairB[1].user._id
                     },
-                    averageNTRPA: averageNTRP(pairA),
-                    averageNTRPB: averageNTRP(pairB),
+                    averageNTRPA: averageNTRP(m.pairA),
+                    averageNTRPB: averageNTRP(m.pairB),
                     hasBye: !!byePlayer,
                     byePlayer: byePlayer ? byePlayer.user : null
-                })
-            }
-            players = rotatePlayers(players)
+                };
+
+                match.generatedMatches.push(matchData);
+                previousRoundMatches.push(matchData);
+            });
         }
 
-        match.status = 'Ready'
+        match.status = 'Ready';
 
         await match.save();
 
-        return res.status(200).json(match.generatedMatches)
+        return res.status(200).json(match.generatedMatches);
 
     } catch (error) {
+
         console.error(error);
+
         return res.status(500).json({
             ok: false,
-            message: 'Internal error generating match'
+            message: 'Internal error generating matches'
         });
     }
-}
+};
+
+export const updateGeneratedMatches = async (req, res) => {
+  try {
+
+    const { matchId } = req.params;
+
+    const generatedMatches = req.body;
+
+    if (!Array.isArray(generatedMatches)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Body must be an array"
+      });
+    }
+
+    const match = await Match.findById(matchId)
+      .populate("players.user", "ntrplvl");
+
+    if (!match) {
+      return res.status(404).json({
+        ok: false,
+        message: "Match not found"
+      });
+    }
+
+    if (match.status !== "Ready") {
+      return res.status(400).json({
+        ok: false,
+        message: "Match must be Ready to update"
+      });
+    }
+
+    const validPlayerIds = match.players.map(p =>
+      p.user._id.toString()
+    );
+
+    const roundMap = {};
+    const cleanedMatches = [];
+
+    for (const m of generatedMatches) {
+
+      if (!m.round || !m.court || !m.teamA || !m.teamB) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid match structure"
+        });
+      }
+
+      const players = [
+        m.teamA.player1,
+        m.teamA.player2,
+        m.teamB.player1,
+        m.teamB.player2
+      ];
+
+      if (players.includes(undefined) || players.length !== 4) {
+        return res.status(400).json({
+          ok: false,
+          message: "Each match must contain exactly 4 players"
+        });
+      }
+
+      if (new Set(players.map(p => p.toString())).size !== 4) {
+        return res.status(400).json({
+          ok: false,
+          message: "Duplicate player inside same match"
+        });
+      }
+
+      for (const pid of players) {
+        if (!validPlayerIds.includes(pid.toString())) {
+          return res.status(400).json({
+            ok: false,
+            message: "Invalid player detected"
+          });
+        }
+      }
+
+      if (!roundMap[m.round]) {
+        roundMap[m.round] = new Set();
+      }
+
+      for (const pid of players) {
+        if (roundMap[m.round].has(pid.toString())) {
+          return res.status(400).json({
+            ok: false,
+            message: `Player repeated in round ${m.round}`
+          });
+        }
+        roundMap[m.round].add(pid.toString());
+      }
+
+      // 🔥 Recalcular averages automáticamente
+      const pA1 = match.players.find(p => p.user._id.toString() === m.teamA.player1);
+      const pA2 = match.players.find(p => p.user._id.toString() === m.teamA.player2);
+      const pB1 = match.players.find(p => p.user._id.toString() === m.teamB.player1);
+      const pB2 = match.players.find(p => p.user._id.toString() === m.teamB.player2);
+
+      const avgA = Number(((pA1.user.ntrplvl + pA2.user.ntrplvl) / 2).toFixed(2));
+      const avgB = Number(((pB1.user.ntrplvl + pB2.user.ntrplvl) / 2).toFixed(2));
+
+      cleanedMatches.push({
+        round: m.round,
+        court: m.court,
+        teamA: m.teamA,
+        teamB: m.teamB,
+        averageNTRPA: avgA,
+        averageNTRPB: avgB,
+        hasBye: false,
+        byePlayer: null
+      });
+    }
+
+    match.generatedMatches = cleanedMatches;
+
+    await match.save();
+
+    return res.status(200).json({
+      ok: true,
+      message: "Matches updated successfully",
+      generatedMatches: match.generatedMatches
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      ok: false,
+      message: "Internal error updating match"
+    });
+  }
+};
 
 export const updateMatchStatus = async (req, res) => {
     try {
