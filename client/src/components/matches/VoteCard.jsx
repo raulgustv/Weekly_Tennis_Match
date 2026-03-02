@@ -104,7 +104,7 @@ const VoteCard = ({ match, loadMatches, userId }) => {
 
           <Flex vertical>
             <Text strong>
-              {player?.name} {player?.lastname}
+              {player?.name} {player?.lastname} <small>({player?.ntrplvl})</small>
             </Text>
           </Flex>
         </Flex>

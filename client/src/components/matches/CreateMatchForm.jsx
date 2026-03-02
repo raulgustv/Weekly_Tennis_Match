@@ -19,6 +19,7 @@ import { useCourts } from "../../hooks/useCourts";
 import {
   MinusCircleOutlined,
   PlusOutlined,
+  StarFilled,
   TrophyFilled,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -26,6 +27,7 @@ import { useState } from "react";
 import { createNewMatch } from "../../actions/matches";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../utils/LoadingSpinner";
+import colors from "../../themes/colors";
 
 const CreateMatchForm = ({ refreshMatches }) => {
   const { Meta } = Card;
@@ -33,7 +35,9 @@ const CreateMatchForm = ({ refreshMatches }) => {
   const { courts } = useCourts();
   const [loading, setLoading] = useState(false);
 
-  const availableCourts = courts.filter((c) => c.active);
+  const availableCourts = courts
+                          .filter((c) => c.active)
+                          .sort((a,b) => Number(b.favorite) - (Number(a.favorite)))
   const selectedLocation = Form.useWatch("location", form);
   const selectedCourts = availableCourts.find(
     (c) => c?.slug === selectedLocation
@@ -116,7 +120,7 @@ const CreateMatchForm = ({ refreshMatches }) => {
                   value={c.slug}
                   style={{ flex: "1 1 auto", textAlign: "center" }}
                 >
-                  {c.name}
+                  {c.name} {c.favorite && (<StarFilled style={{color: colors.yellow}} />)}
                 </Radio.Button>
               ))}
             </Flex>

@@ -47,9 +47,9 @@ const MainLayout = () => {
           label: "Vote matches",
         },
         {
-          key: "/admin-panel",
+          key: "/manage-courts",
           icon: <CompassFilled style={{ color: "#46AF50" }} />,
-          label: "Admin Panel",
+          label: "Manage courts",
           children: [
             {
               key: "/admin/add-court",

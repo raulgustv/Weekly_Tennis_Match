@@ -98,13 +98,13 @@ const MatchPlayers = () => {
           </Text>
         </Col>
 
-          {(user?.role === 'admin' && match.generatedMatches.length) && (
+        {(user?.role === 'admin' && match.generatedMatches.length > 0) && (
           <Col xs={24} md={3} style={{ textAlign: "right", marginTop: 12 }}>
             <Button
               icon={<EditOutlined />}
               onClick={() => navigate(`/admin/match/edit/${match._id}`)}
               block
-              style={{background: colors.warning}}
+              style={{ background: colors.warning }}
             >
               Edit pairs
             </Button>
@@ -120,7 +120,7 @@ const MatchPlayers = () => {
             Back
           </Button>
         </Col>
-      
+
 
       </Row>
 
@@ -149,7 +149,7 @@ const MatchPlayers = () => {
                       size="small"
                       style={{ borderLeft: "4px solid #52c41a" }}
                     >
-                      <Flex align="center" justify="space-between">
+                      <Flex align="center" justify="space-between" wrap gap={12}>
                         <Flex align="center" gap={12}>
                           <Avatar
                             size={40}
@@ -163,23 +163,31 @@ const MatchPlayers = () => {
                           </div>
 
                         </Flex>
-                        {
-                          user?.role === 'admin' && (
-                            <Flex align="center">
-                              <Tag color={p?.payment?.status === 'unpaid' ? 'warning' : 'success'} icon={<ExclamationCircleOutlined />}>
-                                <strong>{p?.payment?.method}</strong>
-                              </Tag>
-                              <Switch
-                                style={{ marginLeft: 5 }}
-                                checked={p?.payment?.status === "paid"}
-                                checkedChildren="paid"
-                                unCheckedChildren="unpaid"
-                                onChange={() => handleTogglePayment(p?.user?._id)}
-                                loading={loading}
-                              />
-                            </Flex>
-                          )
-                        }
+                        {user?.role === 'admin' && (
+                          <Flex
+                            align="center"
+                            gap={8}
+                            style={{
+                              marginTop: 8,
+                              marginLeft: "auto",
+                            }}
+                          >
+                            <Tag
+                              color={p?.payment?.status === 'unpaid' ? 'warning' : 'success'}
+                              icon={<ExclamationCircleOutlined />}
+                            >
+                              <strong>{p?.payment?.method}</strong>
+                            </Tag>
+
+                            <Switch
+                              checked={p?.payment?.status === "paid"}
+                              checkedChildren="paid"
+                              unCheckedChildren="unpaid"
+                              onChange={() => handleTogglePayment(p?.user?._id)}
+                              loading={loading}
+                            />
+                          </Flex>
+                        )}
                       </Flex>
 
 
