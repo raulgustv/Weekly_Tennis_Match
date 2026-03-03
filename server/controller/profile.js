@@ -4,7 +4,8 @@ import {
 } from "../config/resend.js";
 import User from "../models/user.js";
 import crypto from 'crypto'
-
+import {fileTypeFromBuffer} from 'file-type'
+import sharp from 'sharp';
 
 export const viewProfile = async (req, res) => {
     try {
@@ -191,40 +192,68 @@ export const uploadProfilePicture = async (req, res) => {
             messge: 'No file uploaded'
         });
 
+        const fileType = await fileTypeFromBuffer(req.file.buffer);
+
+        if(!fileType || !['image/jpeg', 'image/png', 'image/webp'].includes(fileType.mime)){
+            return res.status(400).json({
+                ok: false,
+                messge: 'Only jpeg, png and webp formats allowed'
+            });  
+        }
+
         const user = await User.findById(req.user._id).select('profilePicture')
+
+        if(!user){
+            return res.status(400).json({
+                ok: false,
+                messge: 'User not found'
+            });
+        }
+
+
+        //sanitize image
+        const processedImage = await sharp(req.file.buffer)
+                                .resize(400, 400)
+                                .toFormat("webp")
+                                .webp({quality: 90})
+                                .toBuffer()
+            
         
+    
         if(user.profilePicture?.public_id){
             await cloudinary.uploader.destroy(user.profilePicture.public_id)
         }
 
-    
-        //convertir buffer a base64
-        const b64 = req.file.buffer.toString('base64');
-        const dataURI = `data:${req.file.mimetype};base64,${b64}`
+        // cloduinary upload
+        const result = await cloudinary.uploader.upload_stream(
+            {
+                folder: "weekly_tennis_profiles",
+                resource_type: "image",
+                format: "webp"
+            },
+            async(error, result) =>{
+                if(error){
+                    return res.status(400).json({
+                        ok: false,
+                        messge: 'Upload failed'
+                    });
+                }
 
-        //cloudinary upload 
-        const result = await cloudinary.uploader.upload(dataURI,{
-            folder: "weekly_tennis_profiles",
-            transformation: [
-                {width: 400, height: 400, crop: 'fill'}
-            ]
-        });
+                user.profilePicture = {
+                    url: result.secure_url,
+                    public_id: result.public_id
+                }
 
-        user.profilePicture = {
-            url: result.secure_url,
-            public_id: result.public_id
-        }
+                await user.save();
 
-        user.save();
-        
-        return res.status(200).json({
-            messaage: "Profile picture uploaded",
-            profilePicture: user.profilePicture
-        })
+                return res.status(200).json({
+                    messge: 'Profile picture uploaded',
+                    profilePicture: user.profilePicture
+                });
+            }
+        );
 
-       
-
-
+        result.end(processedImage)   
 
     } catch (error) {
         console.log(error)
