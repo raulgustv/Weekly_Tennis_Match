@@ -163,7 +163,7 @@ const Register = () => {
     try {
       const data = await register(payload);
 
-      setSession(data?.token, data?.user);
+      setSession(data?.token);
 
       toast.success(`Registration complete, welcome ${data?.user?.name}`);
 

@@ -1,4 +1,5 @@
 import { useContext, useState, createContext, useEffect } from 'react'
+import { getUserAuth } from '../actions/auth';
 
 export const AuthContext = createContext();
 
@@ -7,26 +8,55 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        const userData = localStorage.getItem("user")
+        const initAuth = async () => {
 
-        if (token && userData) {
-            setUser({ token, ...JSON.parse(userData) })
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const res = await getUserAuth();
+
+                setUser({
+                    token,
+                    ...res.data
+                });
+
+            } catch (error) {
+                localStorage.removeItem("token");
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initAuth();
+
+    }, []);
+
+    // ✅ NUEVA setSession limpia
+    const setSession = async (token) => {
+        localStorage.setItem("token", token);
+
+        try {
+            const res = await getUserAuth();
+
+            setUser({
+                token,
+                ...res.data
+            });
+        } catch (error) {
+            localStorage.removeItem("token");
+            setUser(null);
         }
-
-        setLoading(false)
-    }, [])
-
-    const setSession = (token, userData) => {
-        localStorage.setItem("token", token)
-        localStorage.setItem("user", JSON.stringify(userData))
-        setUser({ token, ...userData })
-    }
+    };
 
     const logout = () => {
-        localStorage.removeItem("token")
-        localStorage.removeItem("user")
-        setUser(null)
+        localStorage.removeItem("token");
+        setUser(null);
     };
 
     return (
@@ -35,14 +65,13 @@ export const AuthProvider = ({ children }) => {
                 user,
                 isAuthenticated: !!user,
                 loading,
-                setSession,
+                setSession,   // 👈 vuelve a exportarse
                 logout
             }}
         >
             {children}
         </AuthContext.Provider>
-    )
+    );
+};
 
-}
-
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => useContext(AuthContext);

@@ -378,6 +378,20 @@ export const completeOnboarding = async(req, res) =>{
     }
 }
 
+export const getMeAuth = async(req, res) =>{
+    try {
+        const user = req.user;
+
+        return res.status(200).json(user)
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: "Server error obtaining user"
+        })
+    }
+}
+
 
 
 

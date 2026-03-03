@@ -21,6 +21,11 @@ export const register = async(values) =>{
     return data;
 }
 
+export const getUserAuth = async() =>{
+    const data = axiosInstance.get('/user/auth');
+    return data;
+}
+
 export const countriesList = async() =>{
     const {data} = await countriesAPI.get("/all?fields=name,idd,cca2,flags")
     return data; 

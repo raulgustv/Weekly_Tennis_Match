@@ -38,7 +38,7 @@ const Login = () => {
     try {
       const data = await login(values);
 
-      setSession(data?.token, data?.user)
+      await setSession(data?.token)
 
       toast.success(`Welcome ${data?.user?.name}`);
 
