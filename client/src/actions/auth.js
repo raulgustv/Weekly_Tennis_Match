@@ -76,4 +76,14 @@ export const completeGoogleProfile = async(values) =>{
     return data;
 }
 
+export const uploadPicture = async(formaData) =>{
+    const {data} = await axiosInstance.post('/profile/picture', formaData, {
+        headers:{
+            "Content-Type": "multipart/form-data"
+        }
+    });
+
+    return data;
+}
+
 

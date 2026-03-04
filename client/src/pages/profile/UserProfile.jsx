@@ -1,6 +1,6 @@
-import { Avatar, Col, Descriptions, Divider, Image, Row, Space, Tag, Timeline, Typography, Skeleton, Button, Progress } from "antd";
+import { Col, Descriptions, Divider, Image, Row, Space, Tag, Timeline, Typography, Skeleton, Button, Progress } from "antd";
 import { useAuth } from "../../context"
-import colors from "../../themes/colors";
+//import colors from "../../themes/colors";
 import dayjs from "dayjs";
 import {
     ArrowDownOutlined,
@@ -16,6 +16,7 @@ import { resetPasswordEmail } from "../../actions/auth";
 import { toast } from 'react-toastify'
 import useCountdown from "../../hooks/useCountdown";
 import { formatTimeMs } from "../../helpers/time";
+import ProfilePicture from "../../components/uploads/ProfilePicture";
 
 
 
@@ -54,8 +55,6 @@ const UserProfile = () => {
 
 
     if (!user) return null;
-
-    const initials = `${user.name?.[0] || ""}${user.lastname?.[0] || ""}`
 
     const handleSendReset = async (email) => {
         try {
@@ -107,7 +106,7 @@ const UserProfile = () => {
 
             <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} sm={8} md={6} style={{ textAlign: "center" }}>
-                    <Avatar
+                    {/* <Avatar
                         size={96}
                         style={{
                             backgroundColor: colors.green,
@@ -116,7 +115,8 @@ const UserProfile = () => {
                         }}
                     >
                         {initials}
-                    </Avatar>
+                    </Avatar> */}
+                    <ProfilePicture user={user} />
                 </Col>
 
                 <Col xs={24} sm={16} md={18}>
