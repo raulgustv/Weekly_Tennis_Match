@@ -21,7 +21,7 @@ const ProfilePicture = ({ user, profilePicture, size = 125, editable = true }) =
             return Upload.LIST_IGNORE;
         }
 
-        const isValidSize = file.size / 1024 / 1024 < 2;
+        const isValidSize = file.size / 1024 / 1024 < 10;
         if (!isValidSize) {
             message.error("Max size allowed is 2MB");
             return Upload.LIST_IGNORE;
