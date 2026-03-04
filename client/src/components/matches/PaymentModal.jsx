@@ -30,7 +30,7 @@ const PaymentModal = ({
             okButtonProps={{
                 disabled: !selectedPayment
             }}
-            destroyOnClose
+            destroyOnHidden
         >
             <p style={{ marginBottom: 16 }}>
                 Price per player <strong>€{price}</strong>
@@ -41,7 +41,7 @@ const PaymentModal = ({
                 value={selectedPayment}
                 style={{ width: "100%" }}
             >
-                <Space direction="vertical" style={{ width: "100%" }} size="middle">
+                <Space orientation="vertical" style={{ width: "100%" }} size="middle">
                     {paymentMethods.map((pm) => (
                         <Card
                             key={pm.type}

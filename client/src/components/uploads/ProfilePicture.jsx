@@ -1,17 +1,17 @@
 import { Avatar, message, Tooltip, Upload } from "antd";
-import { PlusOutlined, UserOutlined } from "@ant-design/icons";
+import { CameraOutlined } from "@ant-design/icons";
 import { useState } from "react"
 import { uploadPicture } from "../../actions/auth";
 import { toast } from "react-toastify";
 
 
-const ProfilePicture = ({ user, size = 125, editable = true }) => {
+const ProfilePicture = ({ user, profilePicture, size = 125, editable = true }) => {
 
     //console.log(user)
 
     const [loading, setLoading] = useState(false);
     const [hovered, setHovered] = useState(false)
-    const [imageUrl, setImageUrl] = useState(user?.profilePicture?.url || null);
+    const [imageUrl, setImageUrl] = useState(profilePicture || null);
 
     const beforeUpload = (file) => {
         const isValidType = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
@@ -39,15 +39,15 @@ const ProfilePicture = ({ user, size = 125, editable = true }) => {
             const res = await uploadPicture(formData);
             setImageUrl(res?.profilePicture?.url)
             toast.success(res?.message)
+            onSuccess("ok")
         } catch (error) {
             console.log(error)
-
+            toast.error("Upload failed")
+            onError(error)
         } finally {
             setLoading(false)
         }
     }
-
-
     const initials = `${user.name?.[0] || ""}${user.lastname?.[0] || ""}`
 
     return (
@@ -74,8 +74,8 @@ const ProfilePicture = ({ user, size = 125, editable = true }) => {
                     >
                         <Avatar
                             size={size}
-                            src={imageUrl}
-                            icon={!imageUrl && <UserOutlined />}
+                            src={imageUrl || undefined}
+                            //icon={!imageUrl && <UserOutlined />}
                             style={{
                                 backgroundColor: !imageUrl ? "#1F8F4E" : undefined,
                                 fontSize: size / 2.5,
@@ -115,7 +115,7 @@ const ProfilePicture = ({ user, size = 125, editable = true }) => {
                                         transition: "all 0.2s ease",
                                     }}
                                 >
-                                    <PlusOutlined spin={loading} />
+                                    <CameraOutlined spin={loading} />
                                 </div>
                             </div>
                         )}

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { togglePlayerActive, toggleUserRole } from "../../actions/admin";
 import { toast } from "react-toastify";
 import NTRPModal from "../../components/modals/NTRPModal";
+import ProfilePicture from "../../components/uploads/ProfilePicture";
 //import { useAuth } from "../../context/AuthContext";
 
 
@@ -22,7 +23,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
     const countriesMap = useMemo(() => {
         return countries.reduce((acc, country) => {
-            acc[country.name.toLowerCase()] = country;
+            acc[country?.name.toLowerCase()] = country;
             return acc;
         }, {});
     }, [countries]);
@@ -79,20 +80,48 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             title: "Player name",
             key: "name",
             render: ((p) => (
-                `${p?.name} ${p?.lastname}`
+                <Flex align="center" justify="space-between" gap={8}>
+
+                    <Flex
+                        align="center"
+                        style={{
+                            minWidth: 0, // 🔥 MUY IMPORTANTE para que ellipsis funcione
+                            overflow: "hidden"
+                        }}
+                    >
+                        <span
+                            style={{
+                                fontWeight: 500,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis"
+                            }}
+                        >
+                            {p?.name} {p?.lastname}
+                        </span>
+                    </Flex>
+
+                    <ProfilePicture
+                        profilePicture={p?.profilePicture?.url}
+                        user={p}
+                        size={28}
+                        editable={false}
+                    />
+
+                </Flex>
             )),
             filters: players.map((p) => ({
-                text: `${p.name} ${p.lastname}`,
-                value: `${p.name} ${p.lastname}`
+                text: `${p?.name} ${p.lastname}`,
+                value: `${p?.name} ${p.lastname}`
             })),
             filterSearch: true,
             onFilter: (value, record) => {
-                const fullName = `${record.name} ${record.lastname}`.toLowerCase();
+                const fullName = `${record?.name} ${record?.lastname}`.toLowerCase();
                 return fullName.startsWith(value.toLowerCase());
             },
             sorter: (a, b) => {
-                const nameA = `${a.name} ${a.lastname}`.toLowerCase();
-                const nameB = `${b.name} ${b.lastname}`.toLowerCase();
+                const nameA = `${a?.name} ${a?.lastname}`.toLowerCase();
+                const nameB = `${b?.name} ${b?.lastname}`.toLowerCase();
                 return nameA.localeCompare(nameB);
             },
             sortDirections: ["ascend", "descend"], // opcional pero recomendado

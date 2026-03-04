@@ -10,6 +10,7 @@ import {
   Grid,
 } from "antd";
 import colors from "../../themes/colors";
+import ProfilePicture from '../uploads/ProfilePicture'
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -37,6 +38,8 @@ const MatchDetails = ({ match }) => {
             alignItems: "center",
           }}
         >
+          <ProfilePicture user={p} editable={false } profilePicture={p?.profilePicture?.url} size={28} />
+          
           <Text
             style={{
               fontSize: 13,
@@ -45,9 +48,10 @@ const MatchDetails = ({ match }) => {
               overflow: "hidden",
               textOverflow: "ellipsis",
               width: "100%",
+              marginLeft: 2
             }}
           >
-            {p?.name} {p?.lastname}
+            {p?.name} {p?.lastname[0]}
           </Text>
         </div>
       ))}

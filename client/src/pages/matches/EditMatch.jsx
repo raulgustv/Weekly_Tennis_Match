@@ -5,11 +5,13 @@ import {
     Button
 } from "antd";
 
+import { HolderOutlined } from "@ant-design/icons";
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getMatch, updateGeneratedMatch } from "../../actions/matches";
 import LoadingSpinner from "../../components/utils/LoadingSpinner";
-import  {toast} from 'react-toastify'
+import { toast } from "react-toastify";
 
 import {
     DndContext,
@@ -40,10 +42,33 @@ const PlayerCard = ({ player }) => (
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            fontSize: 12
+            fontSize: 12,
+            gap: 6
         }}
     >
-        <Text ellipsis>{player.name}</Text>
+        {/* LEFT SIDE: DRAG HANDLE + NAME */}
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                flex: 1,
+                minWidth: 0
+            }}
+        >
+            <HolderOutlined
+                style={{
+                    fontSize: 14,
+                    color: "#bfbfbf",
+                    cursor: "grab"
+                }}
+            />
+
+            <Text ellipsis style={{ flex: 1 }}>
+                {player.name}
+            </Text>
+        </div>
+
         <Tag color="geekblue" style={{ margin: 0 }}>
             {player.ntrplvl}
         </Tag>
@@ -91,7 +116,6 @@ const EditMatch = () => {
         })
     );
 
-
     /* ================= FETCH ================= */
 
     useEffect(() => {
@@ -119,8 +143,6 @@ const EditMatch = () => {
 
     /* ================= SWAP LOGIC ================= */
 
-
-
     const handleDragEnd = (event) => {
         const { active, over } = event;
 
@@ -132,7 +154,6 @@ const EditMatch = () => {
         const [toRound, toMatch, toIndex] =
             over.id.split("-").map(Number);
 
-        // 🚫 BLOQUEO ENTRE ROUNDS
         if (fromRound !== toRound) return;
 
         setGeneratedMatches(prev => {
@@ -157,7 +178,7 @@ const EditMatch = () => {
         generatedMatches.map(m => m.round)
     )];
 
-    const handleSave = async() => {
+    const handleSave = async () => {
         const payload = generatedMatches.map(match => ({
             round: match.round,
             court: match.court,
@@ -173,15 +194,12 @@ const EditMatch = () => {
 
         try {
             const res = await updateGeneratedMatch(id, payload);
-            toast.success(res?.message)
+            toast.success(res?.message);
         } catch (error) {
-            console.log({error})
-            toast.error(error?.response?.data?.message)
-            
+            console.log({ error });
+            toast.error(error?.response?.data?.message);
         }
-
-        
-    }
+    };
 
     return (
         <>
@@ -235,7 +253,7 @@ const EditMatch = () => {
                                                 key={m.matchIndex}
                                                 size="small"
                                                 style={{ borderRadius: 16 }}
-                                                styles={{ body: { padding: 12 } }} // ✅ antd v6
+                                                styles={{ body: { padding: 12 } }}
                                                 title={
                                                     <div style={{
                                                         display: "flex",

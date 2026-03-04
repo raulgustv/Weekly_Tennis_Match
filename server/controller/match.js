@@ -88,13 +88,13 @@ export const getAllMatches = async (req, res) => {
     try {
         const matches = await Match.find()
             .populate('location', 'name address')
-            .populate('players.user', 'name lastname ntrplvl')
-            .populate('backUps.user', 'name lastname ntrplvl')
+            .populate('players.user', 'name lastname ntrplvl profilePicture')
+            .populate('backUps.user', 'name lastname ntrplvl profilePicture')
             .populate('createdBy', 'name lastname')
-            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl')
-            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl')
-            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl')
-            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl');
+            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl profilePicture');
 
 
 
@@ -116,13 +116,13 @@ export const getMatch = async (req, res) => {
 
         const match = await Match.findById(id)
             .populate('location', 'name')
-            .populate('players.user', 'name lastname ntrplvl')
-            .populate('backUps.user', 'name lastname ntrplvl')
+            .populate('players.user', 'name lastname ntrplvl profilePicture')
+            .populate('backUps.user', 'name lastname ntrplvl profilePicture')
             .populate('createdBy', 'name lastname')
-            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl')
-            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl')
-            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl')
-            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl');
+            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl profilePicture');
 
 
         if (!match) return res.status(400).json({

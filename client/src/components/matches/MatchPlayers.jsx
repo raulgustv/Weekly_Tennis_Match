@@ -10,13 +10,11 @@ import {
   Flex,
   Row,
   Typography,
-  Avatar,
   Empty,
   Tag,
   Switch,
 } from "antd";
 import {
-  UserOutlined,
   ArrowLeftOutlined,
   ExclamationCircleOutlined,
   EditOutlined,
@@ -26,6 +24,7 @@ import MatchDetails from "./MatchDetails";
 import { useAuth } from "../../context/AuthContext";
 import { togglePayment } from "../../actions/admin";
 import colors from "../../themes/colors";
+import ProfilePicture from "../uploads/ProfilePicture";
 
 const { Title, Text } = Typography;
 
@@ -151,10 +150,16 @@ const MatchPlayers = () => {
                     >
                       <Flex align="center" justify="space-between" wrap gap={12}>
                         <Flex align="center" gap={12}>
-                          <Avatar
+                          {/* <Avatar
                             size={40}
                             icon={<UserOutlined />}
                             style={{ backgroundColor: "#52c41a" }}
+                          /> */}
+                          <ProfilePicture
+                              user={p}
+                              profilePicture={p?.user?.profilePicture?.url}
+                              size={28}
+                              editable={false}
                           />
                           <div>
                             <Text strong>{p?.user?.name} {p?.user?.lastname?.[0]} <small>({p?.user?.ntrplvl})</small></Text>
@@ -212,11 +217,12 @@ const MatchPlayers = () => {
                       style={{ borderLeft: "4px solid #faad14" }}
                     >
                       <Flex align="center" gap={12}>
-                        <Avatar
-                          size={40}
-                          icon={<UserOutlined />}
-                          style={{ backgroundColor: "#faad14" }}
-                        />
+                        <ProfilePicture
+                              user={b}
+                              profilePicture={b?.user?.profilePicture?.url}
+                              size={28}
+                              editable={false}
+                          />
                         <div>
                           <Text strong>{b?.user?.name}</Text>
                           <br />

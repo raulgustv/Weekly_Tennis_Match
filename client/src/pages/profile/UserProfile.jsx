@@ -116,7 +116,7 @@ const UserProfile = () => {
                     >
                         {initials}
                     </Avatar> */}
-                    <ProfilePicture user={user} />
+                    <ProfilePicture user={user} profilePicture={user?.profilePicture?.url} />
                 </Col>
 
                 <Col xs={24} sm={16} md={18}>

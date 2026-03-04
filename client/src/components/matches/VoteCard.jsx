@@ -4,7 +4,6 @@ import {
   Divider,
   Tag,
   Flex,
-  Avatar,
   Button,
   Popover,
   Space
@@ -17,6 +16,7 @@ import Voting from "./Voting";
 import { toast } from "react-toastify";
 import { voteSkill } from "../../actions/matches";
 import useMatchVotes from "../../hooks/useMatchVotes";
+import ProfilePicture from "../uploads/ProfilePicture";
 
 const { Text, Title } = Typography;
 
@@ -98,9 +98,15 @@ const VoteCard = ({ match, loadMatches, userId }) => {
         }}
       >
         <Flex align="center" gap={14}>
-          <Avatar size={44}>
+          {/* <Avatar size={44}>
             {player?.name?.[0]}
-          </Avatar>
+          </Avatar> */}
+          <ProfilePicture
+            user={player}
+            profilePicture={player?.profilePicture?.url}
+            size={50}
+            editable={false}
+          />
 
           <Flex vertical>
             <Text strong>

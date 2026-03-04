@@ -22,7 +22,7 @@ import { useMemo } from "react";
 const MatchSummaryTabs = ({
     matchSummary,
     showJoinButton = false,
-    onRequestJoin,   // 🔵 NUEVO
+    onRequestJoin,   
     onJoin,
     onLeave
 }) => {
@@ -179,7 +179,7 @@ const MatchSummaryTabs = ({
                                     type="primary"
                                     block
                                     disabled={players.length >= maxPlayers}
-                                    onClick={() => onRequestJoin(matchSummary)} // 🔴 CAMBIADO
+                                    onClick={() => onRequestJoin(matchSummary)} 
                                     style={{ marginBottom: 10 }}
                                 >
                                     Join Match
