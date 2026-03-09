@@ -25,8 +25,7 @@ export const newMatch = async (req, res) => {
             date,
             startTime,
             endTime,
-            courtNumbers,
-            price,
+            courts,
             paymentMethods
         } = req.body;
 
@@ -42,11 +41,12 @@ export const newMatch = async (req, res) => {
             });
         }
 
-        const courtNumbersParsed = courtNumbers.map(Number);
+        const courtNumbersParsed = courts.map(c => Number(c.courtNumber));        
 
         const activeCourts = location.courts
             .filter(c => c.active !== false)
             .map(c => c.number);
+            
 
         const validSelection = courtNumbersParsed.every(c =>
             activeCourts.includes(c)
@@ -59,16 +59,18 @@ export const newMatch = async (req, res) => {
             });
         }
 
+        const totalPrice  = courts.reduce((sum, c) => sum + Number(c.price), 0);
+
         const maxPlayers = courtNumbersParsed.length * 4;
 
         const match = await Match.create({
             createdBy: req.user._id,
             location: location._id,
+            courts,
             date,
             startTime,
             endTime,
-            courtNumbers: courtNumbersParsed,
-            price,
+            price: totalPrice,
             maxPlayers,
             paymentMethods
         });

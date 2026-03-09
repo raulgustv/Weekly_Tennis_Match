@@ -28,12 +28,16 @@ export const createMatchValidator = [
     .notEmpty().withMessage("Location slug required")
     .matches(/^([0-1]\d|2[0-3]):([0-5]\d)$/).withMessage('startTime must be HH:mm'),
 
-    body("courtNumbers")
-    .isArray().withMessage("Court number(s) required")
-    .isInt({min: 1}).withMessage("Court number(s) must be a positive integer number"),
+    body("courts")
+    .isArray({min: 1}).withMessage("At least one court is required"),
+
+    body("courts.*.courtNumber")
+    .isInt({min: 1}).withMessage("Court number must be a positive integer number"),
+
+    body("courts.*.price")
+    .isFloat({min: 0}).withMessage("Price must be a positive integer number"),
 
     body("paymentMethods")
     .isArray().withMessage("Payment methods must be an array")
-    .notEmpty().withMessage("Payment methods required")   
-    
+    .notEmpty().withMessage("Payment methods required")      
 ]

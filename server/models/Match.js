@@ -61,6 +61,17 @@ const generatedMatchSchema = new mongoose.Schema({
     }
 }, {_id: false})
 
+const matchCourtSchema = new mongoose.Schema({
+    courtNumber: {
+        type: Number,
+        required: true
+    },
+    price: {
+        type: Number,
+        required: true
+    }
+}, {_id: false})
+
 const matchSchema = new mongoose.Schema({
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -72,8 +83,8 @@ const matchSchema = new mongoose.Schema({
         ref: 'Location',
         required: true
     },
-    courtNumbers:{
-        type: [Number],
+    courts:{
+        type: [matchCourtSchema],
         required: true
     },
     maxPlayers: {
