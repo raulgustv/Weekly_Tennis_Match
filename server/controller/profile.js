@@ -83,6 +83,7 @@ export const resetPasswordEmail = async (req, res) => {
         });
 
 
+
         if (!user || user.provider !== 'local') return res.status(200).json({
             ok: true,
             message: 'Reset link has been sent to your email'

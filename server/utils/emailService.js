@@ -10,6 +10,8 @@ export  const sendResetPasswordEmail = async(to, resetUrl) =>{
 
     const resend = new Resend(process.env.RESEND_API_KEY)
 
+    console.log(to)
+
     await resend.emails.send({
         from: process.env.FROM_EMAIL,
         to,
@@ -30,7 +32,6 @@ export  const sendResetPasswordEmail = async(to, resetUrl) =>{
 export const sendMatchInviteEmail = async(to, matchId, userId) =>{
 
     try {
-
  
 
     const resend  = new Resend(process.env.RESEND_API_KEY)

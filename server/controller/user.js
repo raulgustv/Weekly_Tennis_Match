@@ -242,6 +242,8 @@ export const resetPasswordEmail = async(req, res) =>{
 
         const user = await User.findOne(email);
 
+        console.log(user)
+
         if(!user || user.provider !== 'local'){
             return res.status(400).json({
                 ok: false,
