@@ -89,18 +89,37 @@ export const newMatch = async (req, res) => {
 export const getAllMatches = async (req, res) => {
     try {
         const matches = await Match.find()
-            .populate('location', 'name address')
+            .populate('location', 'name address courts')
             .populate('players.user', 'name lastname ntrplvl profilePicture')
             .populate('backUps.user', 'name lastname ntrplvl profilePicture')
             .populate('createdBy', 'name lastname')
             .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl profilePicture')
-            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl profilePicture');
+            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl profilePicture')
+            .lean();
 
+           const matchesWithSurface = matches.map(match => {
 
+            const courts = match.courts.map(court => {
 
-        return res.status(200).json(matches)
+                const locationCourt = match.location.courts.find(
+                    lc => lc.number === court.courtNumber
+                );
+
+                return {
+                    ...court,
+                    surface: locationCourt?.surface || null
+                };
+            });
+
+            return {
+                ...match,
+                courts
+            };
+        });
+
+        return res.status(200).json(matchesWithSurface);
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -112,35 +131,50 @@ export const getAllMatches = async (req, res) => {
 
 export const getMatch = async (req, res) => {
     try {
-        const {
-            id
-        } = req.params
+        const { id } = req.params;
 
         const match = await Match.findById(id)
-            .populate('location', 'name')
+            .populate('location', 'name address courts')
             .populate('players.user', 'name lastname ntrplvl profilePicture')
             .populate('backUps.user', 'name lastname ntrplvl profilePicture')
             .populate('createdBy', 'name lastname')
             .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl profilePicture')
-            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl profilePicture');
+            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl profilePicture')
+            .lean();
 
+        if (!match) {
+            return res.status(400).json({
+                ok: false,
+                message: "Match not found"
+            });
+        }
 
-        if (!match) return res.status(400).json({
-            ok: false,
-            message: "Match not found"
+        const courts = match.courts.map(court => {
+
+            const locationCourt = match.location.courts.find(
+                lc => lc.number === court.courtNumber
+            );
+
+            return {
+                ...court,
+                surface: locationCourt?.surface || null
+            };
         });
 
-        res.status(200).json(match)
+        match.courts = courts;
+
+        return res.status(200).json(match);
+
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.status(500).json({
-            ok: 'false',
+            ok: false,
             message: 'Internal error obtaining match'
-        })
+        });
     }
-}
+};
 
 export const getOpenMatch = async (req, res) => {
     try {
@@ -844,15 +878,19 @@ export const removeMatchCourts = async (req, res) => {
 
         const courtToRemove = Number(courtNumber);
 
-        if (!match.courtNumbers.includes(courtToRemove)) {
+        const courtExists = match.courts.some(
+          c => c.courtNumber === courtToRemove
+        );
+
+        if(!courtExists){
             return res.status(400).json({
                 ok: false,
                 message: 'Court not found in this match'
             });
         }
 
-        const remainingCourts = match.courtNumbers.filter(
-            c => c !== courtToRemove
+        const remainingCourts = match.courts.filter(
+            c => c.courtNumber !== courtToRemove
         );
 
         if (remainingCourts.length === 0) {
@@ -911,9 +949,14 @@ export const removeMatchCourts = async (req, res) => {
             );
         }
 
-        match.courtNumbers = remainingCourts;
+        const newPrice = remainingCourts.reduce(
+          (sum, c) => sum + Number(c.price), 0
+        )
+
+        match.courts = remainingCourts;
         match.maxPlayers = newMaxPlayers;
         match.players = updatedPlayers;
+        match.price = newPrice;
 
         await match.save();
 
@@ -933,84 +976,100 @@ export const removeMatchCourts = async (req, res) => {
 };
 
 export const addMatchCourts = async (req, res) => {
-    try {
-        const {
-            matchId
-        } = req.params;
-        const {
-            courts
-        } = req.body;
+  try {
 
+    const { matchId } = req.params;
+    const { courts } = req.body;
 
-        if (!Array.isArray(courts) || courts.length === 0) return res.status(400).json({
-            ok: false,
-            message: 'Courts array is required'
-        })
-
-        const match = await Match.findById(matchId).populate('location', 'courts')
-
-        if (!match) return res.status(400).json({
-            ok: false,
-            message: 'Match not found'
-        })
-
-        if (match.status !== 'Open' && match.status !== "Full") return res.status(400).json({
-            ok: false,
-            message: 'Can only add locations to open matches'
-        });
-
-        const availableCourts = match.location.courts.map(
-            c => c.number
-        )
-
-        const invalidCourts = courts.filter(
-            c => !availableCourts.includes(c)
-        )
-
-        //console.log(invalidCourts)
-
-        if (invalidCourts.length > 0) return res.status(400).json({
-            ok: false,
-            message: 'Courts not available in selected location',
-            invalidCourts
-        });
-
-        //courts ya añadidos al match 
-        const duplicateCourts = courts.filter(
-            c => match.courtNumbers.includes(c)
-        )
-
-        if (duplicateCourts.length > 0) return res.status(400).json({
-            ok: false,
-            message: 'Duplicate courts',
-            duplicateCourts
-        });
-
-
-        const updatedCourts = [
-            ...match.courtNumbers,
-            ...courts
-        ].sort((a, b) => a - b);
-
-        match.courtNumbers = updatedCourts;
-        match.maxPlayers = updatedCourts.length * 4;
-        match.status = "Open"
-
-        await match.save()
-
-        return res.status(200).json({
-            message: 'Court added successfully',
-            match
-        })
-
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({
-            ok: false,
-            message: 'Internal error adding matches'
-        })
+    if (!Array.isArray(courts) || courts.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "Courts array is required"
+      });
     }
-}
+
+    const match = await Match
+      .findById(matchId)
+      .populate("location", "courts");
+
+    if (!match) {
+      return res.status(404).json({
+        ok: false,
+        message: "Match not found"
+      });
+    }
+
+    if (match.status !== "Open" && match.status !== "Full") {
+      return res.status(400).json({
+        ok: false,
+        message: "Only open matches can be updated"
+      });
+    }
+
+    const availableCourts = match.location.courts
+      .filter(c => c.active !== false)
+      .map(c => c.number);
+
+    const requestedCourtNumbers = courts.map(c => Number(c.courtNumber));
+
+    const invalidCourts = requestedCourtNumbers.filter(
+      c => !availableCourts.includes(c)
+    );
+
+    if (invalidCourts.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid courts",
+        invalidCourts
+      });
+    }
+
+    const existingCourtNumbers = match.courts.map(c => c.courtNumber);
+
+    const duplicateCourts = requestedCourtNumbers.filter(
+      c => existingCourtNumbers.includes(c)
+    );
+
+    if (duplicateCourts.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "Duplicate courts",
+        duplicateCourts
+      });
+    }
+
+    const updatedCourts = [
+      ...match.courts,
+      ...courts
+    ].sort((a, b) => a.courtNumber - b.courtNumber);
+
+    const newPrice = updatedCourts.reduce(
+      (sum, c) => sum + Number(c.price),
+      0
+    );
+
+    match.courts = updatedCourts;
+    match.price = newPrice;
+    match.maxPlayers = updatedCourts.length * 4;
+
+    await match.save();
+
+    return res.status(200).json({
+      message: "Courts added",
+      match
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      ok: false,
+      message: "Internal error adding courts"
+    });
+
+  }
+};
 
 
 export const leaveMatch = async (req, res) => {

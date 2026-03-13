@@ -4,6 +4,11 @@ const courtSchema = new mongoose.Schema({
     number: {
         type: Number,
         required: true
+    }, 
+    surface: {
+        type: String,
+        enum: ['Quick', 'Hard', 'Clay', 'Grass'],
+        default: "Quick"
     }
 }, {_id: false});
 

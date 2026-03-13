@@ -27,6 +27,6 @@ router.post('/invite/decline', declineInvite)
 router.post('/generate/:id', protect, verifyAdmin, validateObjectId("id"), generateMatches)
 router.put('/update-generate/:matchId', protect, verifyAdmin, validateObjectId("matchId"), updateGeneratedMatches)
 router.post('/remove-courts/:matchId/:courtNumber', protect, verifyAdmin, removeMatchCourts)
-router.post('/add-courts/:matchId', protect, verifyAdmin, validateObjectId("id"),  addMatchCourts)
+router.post('/add-courts/:matchId', protect, verifyAdmin, validateObjectId("matchId"),  addMatchCourts)
 
 export default router;

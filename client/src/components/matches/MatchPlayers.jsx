@@ -25,6 +25,7 @@ import { useAuth } from "../../context/AuthContext";
 import { togglePayment } from "../../actions/admin";
 import colors from "../../themes/colors";
 import ProfilePicture from "../uploads/ProfilePicture";
+import CourtDetail from "./CourtDetail";
 
 const { Title, Text } = Typography;
 
@@ -34,9 +35,10 @@ const MatchPlayers = () => {
   const navigate = useNavigate();
 
   const { user } = useAuth();
-
-
   const [match, setMatch] = useState();
+
+
+
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(false)
 
@@ -85,7 +87,7 @@ const MatchPlayers = () => {
         style={{ marginBottom: 32 }}
         gutter={[16, 16]}
       >
-        <Col xs={24} md={18}>
+        <Col xs={24} md={10}>
           <Title level={3} style={{ marginBottom: 4 }}>
             🎾 {match?.location?.name}
           </Title>
@@ -97,8 +99,10 @@ const MatchPlayers = () => {
           </Text>
         </Col>
 
+
+
         {(user?.role === 'admin' && match.generatedMatches.length > 0) && (
-          <Col xs={24} md={3} style={{ textAlign: "right", marginTop: 12 }}>
+          <Col xs={24} md={4} style={{ textAlign: "right", marginTop: 12 }}>
             <Button
               icon={<EditOutlined />}
               onClick={() => navigate(`/admin/match/edit/${match._id}`)}
@@ -119,8 +123,12 @@ const MatchPlayers = () => {
             Back
           </Button>
         </Col>
+      </Row>
 
-
+      <Row style={{ marginBottom: 32 }}>
+        <Col md={12} sm={24} >
+          <CourtDetail courts={match.courts} />
+        </Col>
       </Row>
 
       {/* READY STATE */}
@@ -156,10 +164,10 @@ const MatchPlayers = () => {
                             style={{ backgroundColor: "#52c41a" }}
                           /> */}
                           <ProfilePicture
-                              user={p}
-                              profilePicture={p?.user?.profilePicture?.url}
-                              size={28}
-                              editable={false}
+                            user={p}
+                            profilePicture={p?.user?.profilePicture?.url}
+                            size={28}
+                            editable={false}
                           />
                           <div>
                             <Text strong>{p?.user?.name} {p?.user?.lastname?.[0]} <small>({p?.user?.ntrplvl})</small></Text>
@@ -194,8 +202,6 @@ const MatchPlayers = () => {
                           </Flex>
                         )}
                       </Flex>
-
-
                     </Card>
                   ))}
                 </Flex>
@@ -218,11 +224,11 @@ const MatchPlayers = () => {
                     >
                       <Flex align="center" gap={12}>
                         <ProfilePicture
-                              user={b}
-                              profilePicture={b?.user?.profilePicture?.url}
-                              size={28}
-                              editable={false}
-                          />
+                          user={b}
+                          profilePicture={b?.user?.profilePicture?.url}
+                          size={28}
+                          editable={false}
+                        />
                         <div>
                           <Text strong>{b?.user?.name}</Text>
                           <br />

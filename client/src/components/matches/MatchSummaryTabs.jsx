@@ -103,7 +103,7 @@ const MatchSummaryTabs = ({
 
             <Flex justify="space-between">
                 <Tag color="green">{status}</Tag>
-                <Tag color="default">€{pricePerPerson} per player</Tag>
+                <Tag color="default">€{pricePerPerson} per player <small>(approx)</small></Tag>
             </Flex>
 
             <div>
@@ -161,7 +161,7 @@ const MatchSummaryTabs = ({
                                     description={`Your NTRP level ${userLevel} is lower than the match average (${averageNTRP.toFixed(
                                         2
                                     )}). Are you sure you want to join?`}
-                                    onConfirm={() => onRequestJoin(matchSummary)} // 🔴 CAMBIADO
+                                    onConfirm={() => onRequestJoin(matchSummary)}
                                     okText="Yes, join"
                                     cancelText="Cancel"
                                 >

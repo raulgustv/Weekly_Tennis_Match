@@ -45,23 +45,21 @@ export const updateGeneratedMatch = async(matchId, generatedMatches) =>{
 }
 
 export const removeMatchCourt = async(matchId, courtNumber) =>{
-    const {data} = await axiosInstance.post(`match/remove-courts/${matchId}/${courtNumber}`);
+    const {data} = await axiosInstance.post(`/match/remove-courts/${matchId}/${courtNumber}`);
 
     return data;
 }
 
 
-export const addMatchCourts = async(courts, matchId ) =>{
+export const addMatchCourts = async(courts, matchId ) =>{   
 
-   
-
-    const {data} = await axiosInstance.post(`match/add-courts/${matchId}`, {courts});
+    const {data} = await axiosInstance.post(`/match/add-courts/${matchId}`, {courts});
 
     return data;
 }
 
 export const voteSkill = async(playerId, value, matchId) =>{
-    const {data} = await axiosInstance.post(`vote/match/${matchId}`,{
+    const {data} = await axiosInstance.post(`/vote/match/${matchId}`,{
         votedUserId: playerId,
         value
     });
@@ -70,7 +68,7 @@ export const voteSkill = async(playerId, value, matchId) =>{
 }
 
 export const getUserVotesMatch = async(matchId) =>{
-    const {data} = await axiosInstance.get(`vote/match/${matchId}`);
+    const {data} = await axiosInstance.get(`/vote/match/${matchId}`);
 
     return data;
 }

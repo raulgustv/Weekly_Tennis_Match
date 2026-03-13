@@ -36,8 +36,8 @@ const CreateMatchForm = ({ refreshMatches }) => {
   const [loading, setLoading] = useState(false);
 
   const availableCourts = courts
-                          .filter((c) => c.active)
-                          .sort((a,b) => Number(b.favorite) - (Number(a.favorite)))
+    .filter((c) => c.active)
+    .sort((a, b) => Number(b.favorite) - (Number(a.favorite)))
   const selectedLocation = Form.useWatch("location", form);
   const selectedCourts = availableCourts.find(
     (c) => c?.slug === selectedLocation
@@ -50,11 +50,17 @@ const CreateMatchForm = ({ refreshMatches }) => {
     { value: "paypal", label: "Paypal" },
   ];
 
-  const selectedCourtNumbers = Form.useWatch("courtNumbers", form);
-  const priceValue = Form.useWatch("price", form)
+  const selectedCourtNumbers = Form.useWatch("courtNumber", form);
+  const courtPrices = Form.useWatch("courtPrices", form) || {};
 
   const totalPlayers = selectedCourtNumbers ? selectedCourtNumbers.length * 4 : 0;
-  const pricePlayer = totalPlayers && priceValue ? Number(priceValue / totalPlayers).toFixed(2) : null
+  const totalPrice = selectedCourtNumbers ?
+    selectedCourtNumbers.reduce((sum, cn) => {
+      const p = Number(courtPrices?.[cn] || 0);
+      return sum + p;
+    }, 0) : 0;
+
+  const pricePerPlayer = totalPlayers && totalPrice ? Number(totalPrice / totalPlayers).toFixed(2) : null;
 
   const handleNewMatch = async (values) => {
     const payload = {
@@ -62,8 +68,10 @@ const CreateMatchForm = ({ refreshMatches }) => {
       date: values.date.format("YYYY-MM-DD"),
       startTime: values.startTime.format("HH:mm"),
       endTime: values.endTime.format("HH:mm"),
-      courtNumbers: values.courtNumbers.map(Number),
-      price: values.price,
+      courts: values.courtNumber.map((cn) => ({
+        courtNumber: Number(cn),
+        price: Number(values.courtPrices?.[cn] || 0)
+      })),
       paymentMethods: values.paymentMethods.map((pm) => ({
         type: pm.type,
         value: pm.value,
@@ -120,7 +128,7 @@ const CreateMatchForm = ({ refreshMatches }) => {
                   value={c.slug}
                   style={{ flex: "1 1 auto", textAlign: "center" }}
                 >
-                  {c.name} {c.favorite && (<StarFilled style={{color: colors.yellow}} />)}
+                  {c.name} {c.favorite && (<StarFilled style={{ color: colors.yellow }} />)}
                 </Radio.Button>
               ))}
             </Flex>
@@ -129,24 +137,47 @@ const CreateMatchForm = ({ refreshMatches }) => {
 
         {/* COURTS */}
         {selectedCourts && (
-          <Form.Item
-            name="courtNumbers"
-            label="Select courts"
-            rules={[{ required: true }]}
-          >
-            <Checkbox.Group style={{ width: "100%" }}>
-              <Flex wrap gap="small">
-                {selectedCourts.courts.map((cn) => (
-                  <Checkbox
-                    key={cn.number}
-                    value={cn.number.toString()}
-                  >
-                    {cn.number}
-                  </Checkbox>
+          <>
+            <Form.Item
+              name="courtNumber"
+              label="Select courts"
+              rules={[{ required: true }]}
+            >
+              <Checkbox.Group style={{ width: "100%" }}>
+                <Flex wrap gap="small">
+                  {selectedCourts.courts.map((cn) => (
+                    <Checkbox
+                      key={cn.number}
+                      value={cn.number.toString()}
+                    >
+                      {cn.number}
+                    </Checkbox>
+                  ))}
+                </Flex>
+              </Checkbox.Group>
+            </Form.Item>
+
+            {selectedCourtNumbers && selectedCourtNumbers.length > 0 && (
+              <Row gutter={[16, 16]}>
+                {selectedCourtNumbers.map((cn) => (
+                  <Col md={3}>
+                    <Form.Item
+                      name={["courtPrices", cn]}
+                      label={`Court ${cn} price (€)`}
+                      rules={[{ required: true }]}
+                    >
+                      <InputNumber
+                        min={0}
+                        step={0.1}
+                        prefix="€"
+                        style={{ width: "100%" }}
+                      />
+                    </Form.Item>
+                  </Col>
                 ))}
-              </Flex>
-            </Checkbox.Group>
-          </Form.Item>
+              </Row>
+            )}
+          </>
         )}
 
         {/* DATE & TIME */}
@@ -190,21 +221,20 @@ const CreateMatchForm = ({ refreshMatches }) => {
             <Form.Item
               name="price"
               label={
-                <Tooltip title="Total price of all selected courts">
-                  Total price (€)
+                <Tooltip title="Estimation of total price per player. The cost will depend on courts assigned during match">
+                  <small>Approx total price (€)</small>
                 </Tooltip>
               }
-              rules={[{ required: true }]}
             >
               <InputNumber
-                title="Enter courts total price"
+                disabled
                 prefix="€"
                 min={0}
                 style={{ width: "100%" }}
                 suffix={
-                  pricePlayer && (
+                  pricePerPlayer && (
                     <span style={{ fontSize: 12 }}>
-                      {pricePlayer}€ / player
+                      {pricePerPlayer}€ / player
                     </span>
                   )
                 }

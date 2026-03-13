@@ -171,14 +171,14 @@ const MatchesTable = () => {
             title: "Courts",
             render: (_, r) => (
                 <Flex gap="small" align="center" wrap>
-                    {r.courtNumbers.map((cn) => (
+                    {r.courts.map((cn) => (
                         <Tag
-                            key={cn}
+                            key={cn.courtNumber}
                             color="blue"
                             closable={r.status === "Open"}
-                            onClose={() => handleRemoveCourt(r._id, cn)}
+                            onClose={() => handleRemoveCourt(r._id, cn.courtNumber)}
                         >
-                            Court {cn}
+                            Court {cn.courtNumber}
                         </Tag>
                     ))}
 
