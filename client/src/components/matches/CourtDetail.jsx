@@ -30,7 +30,7 @@ const CourtDetail = ({ courts }) => {
                     </Text>
 
                     <Tag color="geekblue">
-                        Quick
+                       {c.surface}
                     </Tag>
                 </Flex>
 
