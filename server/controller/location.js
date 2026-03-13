@@ -124,7 +124,6 @@ export const favoriteLocation = async(req, res) =>{
     }
 }
 
-
 export const toggleActivation = async(req, res) =>{
     try {
         const location = await Location.findOne({
@@ -152,6 +151,49 @@ export const toggleActivation = async(req, res) =>{
             message: 'Internal error toggling court status'
         });
 
+    }
+}
+
+export const updateCourtSuface = async(req, res) =>{
+    try {
+        const {id} = req.params;
+        const {courtNumber, surface} = req.body;
+
+        const allowedSurfaces = ['Quick', 'Hard', 'Clay', 'Grass'];
+
+        if(!allowedSurfaces.includes(surface)){
+             return res.status(400).json({
+                ok: false,
+                message: `${surface} is not a valid selection`
+            });
+        }
+
+        const location = await Location.findOneAndUpdate(
+            {
+                _id: id,
+                "courts.number": courtNumber
+            },{
+                $set: {
+                    "courts.$.surface": surface
+                }
+            }, {new: true}
+        );
+
+        if(!location){
+            return res.status(400).json({
+                ok: false,
+                message: 'Location or court not found'
+            });
+        }
+
+        return res.status(200).json(location)
+        
+    } catch (error) {
+         console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal error updating court surface'
+        });
     }
 }
 

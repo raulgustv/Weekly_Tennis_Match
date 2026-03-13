@@ -24,4 +24,10 @@ export const newLocationValidator = [
     .optional()
     .isBoolean().withMessage("Active must be boolean value"),    
 
+];
+
+export const updateSurfaceValidator = [
+    body("courtNumber")
+    .isInt().withMessage("Court must be an integer")
+    .notEmpty().withMessage("Court number required")
 ]
