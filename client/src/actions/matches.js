@@ -45,7 +45,7 @@ export const updateGeneratedMatch = async(matchId, generatedMatches) =>{
 }
 
 export const removeMatchCourt = async(matchId, courtNumber) =>{
-    const {data} = await axiosInstance.post(`match/remove-courts/${matchId}/${courtNumber}`);
+    const {data} = await axiosInstance.post(`/match/remove-courts/${matchId}/${courtNumber}`);
 
     return data;
 }
@@ -55,7 +55,7 @@ export const addMatchCourts = async(courts, matchId ) =>{
 
    
 
-    const {data} = await axiosInstance.post(`match/add-courts/${matchId}`, {courts});
+    const {data} = await axiosInstance.post(`/match/add-courts/${matchId}`, {courts});
 
     return data;
 }

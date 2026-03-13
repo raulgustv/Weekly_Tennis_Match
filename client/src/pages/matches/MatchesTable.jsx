@@ -46,6 +46,19 @@ const MatchesTable = () => {
         Cancelled: "magenta",
     };
 
+    const getMatchCourts = (match) => {
+        if (Array.isArray(match?.courts)) return match.courts;
+
+        if (Array.isArray(match?.courtNumbers)) {
+            return match.courtNumbers.map((courtNumber) => ({
+                courtNumber: Number(courtNumber),
+                price: null,
+            }));
+        }
+
+        return [];
+    };
+
     const handleStatusChange = async (id, status) => {
         try {
             const res = await updateStatus(id, status);
@@ -96,13 +109,12 @@ const MatchesTable = () => {
         setIsModalOpen(true);
     };
 
-    const handleAddCourts = async (courts) => {
+    const handleAddCourts = async (courtsPayload) => {
         try {
+            const { message } = await addMatchCourts(courtsPayload, selectedMatch?._id);
 
-            const {message} = await addMatchCourts(courts, selectedMatch?._id)
+            toast.success(message);
 
-            toast.success(message)
-            
             setIsModalOpen(false);
             setSelectedMatch(null);
             fetchMatches();
@@ -169,32 +181,37 @@ const MatchesTable = () => {
         },
         {
             title: "Courts",
-            render: (_, r) => (
-                <Flex gap="small" align="center" wrap>
-                    {r.courtNumbers.map((cn) => (
-                        <Tag
-                            key={cn}
-                            color="blue"
-                            closable={r.status === "Open"}
-                            onClose={() => handleRemoveCourt(r._id, cn)}
-                        >
-                            Court {cn}
-                        </Tag>
-                    ))}
+            render: (_, r) => {
+                const matchCourts = getMatchCourts(r);
 
-                    {(r.status === "Open" || r.status === "Full") && (
-                        <Tooltip title="Add courts">
+                return (
+                    <Flex gap="small" align="center" wrap>
+                        {matchCourts.map((court) => (
                             <Tag
-                                color="cyan"
-                                style={{ cursor: "pointer", borderStyle: "dashed" }}
-                                onClick={() => openAddCourts(r)} // ✅ AQUÍ
+                                key={court.courtNumber}
+                                color="blue"
+                                closable={r.status === "Open"}
+                                onClose={() => handleRemoveCourt(r._id, court.courtNumber)}
                             >
-                                + Add Courts
+                                Court {court.courtNumber}
+                                {typeof court.price === "number" ? ` (€${court.price.toFixed(2)})` : ""}
                             </Tag>
-                        </Tooltip>
-                    )}
-                </Flex>
-            ),
+                        ))}
+
+                        {(r.status === "Open" || r.status === "Full") && (
+                            <Tooltip title="Add courts">
+                                <Tag
+                                    color="cyan"
+                                    style={{ cursor: "pointer", borderStyle: "dashed" }}
+                                    onClick={() => openAddCourts(r)}
+                                >
+                                    + Add Courts
+                                </Tag>
+                            </Tooltip>
+                        )}
+                    </Flex>
+                );
+            },
         },
         {
             title: "Players",
