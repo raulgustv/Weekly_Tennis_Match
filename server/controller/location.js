@@ -156,7 +156,7 @@ export const toggleActivation = async(req, res) =>{
 
 export const updateCourtSuface = async(req, res) =>{
     try {
-        const {id} = req.params;
+        const {slug} = req.params;
         const {courtNumber, surface} = req.body;
 
         const allowedSurfaces = ['Quick', 'Hard', 'Clay', 'Grass'];
@@ -167,10 +167,11 @@ export const updateCourtSuface = async(req, res) =>{
                 message: `${surface} is not a valid selection`
             });
         }
+        
 
         const location = await Location.findOneAndUpdate(
             {
-                _id: id,
+                slug: slug,
                 "courts.number": courtNumber
             },{
                 $set: {
@@ -178,6 +179,13 @@ export const updateCourtSuface = async(req, res) =>{
                 }
             }, {new: true}
         );
+
+        if(!location.active){
+            return res.status(400).json({
+                ok: false,
+                message: `Location is currently inactive`
+            });
+        }
 
         if(!location){
             return res.status(400).json({

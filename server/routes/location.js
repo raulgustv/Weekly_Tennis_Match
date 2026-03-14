@@ -11,6 +11,6 @@ router.post('/favorite/:slug', protect, verifyAdmin, favoriteLocation)
 router.post('/status/:slug', protect, verifyAdmin, toggleActivation)
 router.get('/view-all', protect,verifyAdmin, getAllLocations)
 router.get('/view/:slug', protect,verifyAdmin, getLocation)
-router.put('/:id', protect,verifyAdmin, updateSurfaceValidator, validateFields, updateCourtSuface)
+router.put('/:slug', protect,verifyAdmin, updateSurfaceValidator, validateFields, updateCourtSuface)
 
 export default router

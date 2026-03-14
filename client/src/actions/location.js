@@ -18,3 +18,13 @@ export const activateLocations = async(slug) =>{
 
     return data;
 }
+
+export const getLocation = async(slug) =>{
+    const {data} = await axiosInstance.get(`/location/view/${slug}`);
+    return data;
+}
+
+export const updateSurface = async(slug, courtNumber, surface ) =>{
+    const {data} = await axiosInstance.put(`/location/${slug}`, {courtNumber, surface})
+    return data;
+}

@@ -18,12 +18,18 @@ import {
 import { activateLocations, favoriteLocation } from "../../actions";
 import { toast } from "react-toastify";
 import StatsCard from "../common/StatsCard";
+import { useState } from "react";
+import CourtModalSurface from "../modals/CourtModalSurface";
+import { getLocation, updateSurface } from "../../actions/location";
 
 const CourtTable = ({ courts, loadCourts, onRefresh }) => {
     const maxCourtNumber = (courts = []) => {
         if (!courts.length) return 0;
         return Math.max(...courts.map((c) => c.number));
     };
+
+    const [openModal, setOpenModal] = useState(false);
+    const [court, setCourt] = useState(null)
 
     const totalCourts = courts.reduce(
         (acc, loc) => acc + maxCourtNumber(loc.courts),
@@ -56,6 +62,34 @@ const CourtTable = ({ courts, loadCourts, onRefresh }) => {
             toast.error(error?.response?.data?.message);
         }
     };
+
+    const getCourt = async(slug) => {
+        try {
+            
+            setOpenModal(true)
+
+            const res = await getLocation(slug)
+            setCourt(res);            
+            
+        } catch (error) {
+            console.log(error)
+            setOpenModal(false)
+        }
+    }
+
+    const handleSurfaceUpdate = async(slug, surface, courtNumber) => {
+        try {
+    
+            const res = await updateSurface(slug, courtNumber, surface);
+            
+            toast.success(`Court updated successfully for ${res?.name}`);
+            setOpenModal(false)
+            
+        } catch (error) {
+            console.log(error)
+            toast.error(error?.response?.data?.message || 'Error updating court surface')
+        }
+    }
 
     const columns = [
         {
@@ -135,31 +169,53 @@ const CourtTable = ({ courts, loadCourts, onRefresh }) => {
     ];
 
     return (
-        <Card title="Locations" style={{ width: "100%" }}>
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                <Col xs={24} sm={12}>
-                    <StatsCard icon={<EnvironmentOutlined />}>
-                        <Statistic title="Locations" value={courts.length} />
-                    </StatsCard>
-                </Col>
+        <>
+            <Card title="Locations" style={{ width: "100%" }}>
+                <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                    <Col xs={24} sm={12}>
+                        <StatsCard icon={<EnvironmentOutlined />}>
+                            <Statistic title="Locations" value={courts.length} />
+                        </StatsCard>
+                    </Col>
 
-                <Col xs={24} sm={12}>
-                    <StatsCard icon={<PlaySquareOutlined />}>
-                        <Statistic title="Total Courts" value={totalCourts} />
-                    </StatsCard>
-                </Col>
-            </Row>
+                    <Col xs={24} sm={12}>
+                        <StatsCard icon={<PlaySquareOutlined />}>
+                            <Statistic title="Total Courts" value={totalCourts} />
+                        </StatsCard>
+                    </Col>
+                </Row>
 
-            <Table
-                dataSource={courts}
-                columns={columns}
-                pagination={{ pageSize: 6 }}
-                rowKey="_id"
-                size="small"
-                loading={loadCourts}
-                scroll={{ x: "max-content" }}  // 👈 CLAVE MOBILE
+                <Table
+                    dataSource={courts}
+                    columns={columns}
+                    pagination={{ pageSize: 6 }}
+                    rowKey="_id"
+                    size="small"
+                    loading={loadCourts}
+                    scroll={{ x: "max-content" }}  // 👈 CLAVE MOBILE
+                    onRow={(record) => ({
+                        onDoubleClick: () => {
+                            if(!record.active){
+                                toast.warning('Location must be active to edit court surface');
+                                return;
+                            }
+                            getCourt(record.slug) 
+                        },
+                        style:{
+                            cursor: record.active ? "pointer" : "not-allowed",
+                            opacity: record.active ? 1 : 0.5
+                        }
+                    })}
+                />
+            </Card>
+
+            <CourtModalSurface 
+                open={openModal}
+                court={court}
+                onClose={() => setOpenModal(false)}
+                updateSurface={handleSurfaceUpdate}
             />
-        </Card>
+        </>
     );
 };
 
