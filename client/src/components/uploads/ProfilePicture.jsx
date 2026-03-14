@@ -48,7 +48,7 @@ const ProfilePicture = ({ user, profilePicture, size = 125, editable = true }) =
             setLoading(false)
         }
     }
-    const initials = `${user.name?.[0] || ""}${user.lastname?.[0] || ""}`
+    const initials = `${user?.name?.[0] || ""}${user?.lastname?.[0] || ""}`
 
     return (
         <>

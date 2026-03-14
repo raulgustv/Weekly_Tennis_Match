@@ -39,7 +39,7 @@ const UserProfile = () => {
 
     const { Text, Title } = Typography;
 
-    const ntrpHistory = useNTRPAdjustment(user.adjustmentHistory);
+    const ntrpHistory = useNTRPAdjustment(user?.adjustmentHistory);
 
     const isLoading = !user || !countries || !ntrpHistory
 

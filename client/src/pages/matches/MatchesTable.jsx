@@ -21,6 +21,7 @@ import colors from "../../themes/colors";
 import { adminRemovePlayer } from "../../actions/admin";
 import { useState } from "react";
 import AddNewCourtsModal from "../../components/matches/AddNewCourtsModal";
+import { surfaceColors } from "../../themes/surfaceColors";
 
 const MatchesTable = () => {
     const { matches, fetchMatches, loadMatches } = useMatches();
@@ -171,14 +172,14 @@ const MatchesTable = () => {
             title: "Courts",
             render: (_, r) => (
                 <Flex gap="small" align="center" wrap>
-                    {r.courtNumbers.map((cn) => (
+                    {r.courts.map((cn) => (
                         <Tag
-                            key={cn}
-                            color="blue"
+                            key={cn.courtNumber}
+                            color={surfaceColors[cn?.surface]}
                             closable={r.status === "Open"}
-                            onClose={() => handleRemoveCourt(r._id, cn)}
+                            onClose={() => handleRemoveCourt(r._id, cn.courtNumber)}
                         >
-                            Court {cn}
+                            Court {cn.courtNumber}
                         </Tag>
                     ))}
 

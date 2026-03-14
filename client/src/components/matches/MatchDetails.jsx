@@ -18,6 +18,8 @@ const { useBreakpoint } = Grid;
 const MatchDetails = ({ match }) => {
   const screens = useBreakpoint();
 
+
+
   const renderPlayers = (team, accentColor) => (
     <Space
       orientation="vertical"

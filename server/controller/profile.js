@@ -222,7 +222,7 @@ export const uploadProfilePicture = async (req, res) => {
         
     
         if(user.profilePicture?.public_id){
-            await cloudinary.uploader.destroy(user.profilePicture.public_id)
+            await cloudinary.uploader.destroy(user?.profilePicture.public_id)
         }
 
         // cloduinary upload
@@ -249,7 +249,7 @@ export const uploadProfilePicture = async (req, res) => {
 
                 return res.status(200).json({
                     messge: 'Profile picture uploaded',
-                    profilePicture: user.profilePicture
+                    profilePicture: user?.profilePicture
                 });
             }
         );
