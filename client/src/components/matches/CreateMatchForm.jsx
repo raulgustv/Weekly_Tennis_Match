@@ -14,6 +14,7 @@ import {
   Input,
   InputNumber,
   Tooltip,
+  Tag,
 } from "antd";
 import { useCourts } from "../../hooks/useCourts";
 import {
@@ -28,6 +29,7 @@ import { createNewMatch } from "../../actions/matches";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../utils/LoadingSpinner";
 import colors from "../../themes/colors";
+import { surfaceColors } from "../../themes/surfaceColors";
 
 const CreateMatchForm = ({ refreshMatches }) => {
   const { Meta } = Card;
@@ -150,7 +152,7 @@ const CreateMatchForm = ({ refreshMatches }) => {
                       key={cn.number}
                       value={cn.number.toString()}
                     >
-                      {cn.number}
+                      {cn.number} <Tag color={surfaceColors[cn?.surface]}>{cn?.surface}</Tag>
                     </Checkbox>
                   ))}
                 </Flex>

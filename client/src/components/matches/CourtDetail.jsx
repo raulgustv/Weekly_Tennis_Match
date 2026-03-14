@@ -1,6 +1,7 @@
 import { Card, Typography, Tag, Flex } from "antd";
 import { useState } from "react";
 import { BgColorsOutlined, DollarOutlined } from "@ant-design/icons";
+import { surfaceColors } from "../../themes/surfaceColors";
 
 const { Text } = Typography;
 
@@ -29,7 +30,7 @@ const CourtDetail = ({ courts }) => {
                         <BgColorsOutlined /> Surface
                     </Text>
 
-                    <Tag color="geekblue">
+                    <Tag color={surfaceColors[c.surface]}>
                        {c.surface}
                     </Tag>
                 </Flex>

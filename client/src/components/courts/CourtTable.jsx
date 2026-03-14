@@ -88,6 +88,7 @@ const CourtTable = ({ courts, loadCourts, onRefresh }) => {
         } catch (error) {
             console.log(error)
             toast.error(error?.response?.data?.message || 'Error updating court surface')
+            setOpenModal(false)
         }
     }
 

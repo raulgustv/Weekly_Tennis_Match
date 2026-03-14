@@ -629,11 +629,14 @@ export const generateMatches = async (req, res) => {
                 courts
             );
 
+
             roundMatches.forEach((m, index) => {
+
+              const courtData = match.courts?.[index];
 
                 const matchData = {
                     round,
-                    court: match.courtNumbers[index],
+                    court: courtData?.courtNumber || null,
                     teamA: {
                         player1: m.pairA[0].user._id,
                         player2: m.pairA[1].user._id

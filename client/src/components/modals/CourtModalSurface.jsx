@@ -1,5 +1,6 @@
 import { Flex, Modal, Select, Tag } from 'antd'
 import { useState } from 'react'
+import { surfaceColors } from '../../themes/surfaceColors';
 
 
 const CourtModalSurface = ({ open, onClose, court, updateSurface, }) => {
@@ -9,12 +10,7 @@ const CourtModalSurface = ({ open, onClose, court, updateSurface, }) => {
 
     const surfaces = ['Quick', 'Hard', 'Clay', 'Grass'];
 
-    const colors = {
-        Quick: 'blue',
-        Hard: 'geekblue',
-        Clay: 'volcano',
-        Grass: 'green',
-    }
+   
 
     const handleChange = (cn, val) => {
         setSurface(val)
@@ -42,7 +38,7 @@ const CourtModalSurface = ({ open, onClose, court, updateSurface, }) => {
                         align='center'
                         gap={12}
                     >
-                        <Tag color={colors[surface && courtToUpdate === cn?.number ? surface : cn?.surface]}>
+                        <Tag color={surfaceColors[surface && courtToUpdate === cn?.number ? surface : cn?.surface]}>
                             Court: {cn?.number}
                         </Tag>
 
