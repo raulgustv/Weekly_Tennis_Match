@@ -1085,12 +1085,7 @@ export const leaveMatch = async (req, res) => {
 
         const match = await Match.findById(matchId).populate('backUps.user', 'email')
 
-        const less24 = isLessThan24h(match.date, match.startTime);
-
-        if(less24) return res.status(200).json({
-          ok: 'false',
-          message: 'Cannot leave match if starting in less than 24 hours'
-        })
+        const less24 = isLessThan24h(match.date, match.startTime);     
 
         if (!match) return res.status(400).json({
             ok: false,
@@ -1106,6 +1101,7 @@ export const leaveMatch = async (req, res) => {
             const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
             return playerId === userId
         })
+        
 
         const isBackup = match.backUps.some(b => 
             b.user._id.toString() === userId
@@ -1115,6 +1111,11 @@ export const leaveMatch = async (req, res) => {
             ok: false,
             message: 'Player not registered to this match'
         });
+
+           if(less24 && isPlayer) return res.status(200).json({
+          ok: 'false',
+          message: 'Cannot leave match if starting in less than 24 hours'
+        })
 
         /* -------------------- */
         /* Leaving as BACKUP    */

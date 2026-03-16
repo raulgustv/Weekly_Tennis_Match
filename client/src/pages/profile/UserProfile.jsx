@@ -24,7 +24,7 @@ const UserProfile = () => {
 
     const { user } = useAuth();
 
-    console.log(user)
+    //console.log(user)
 
     const { countries } = useCountries();
 
