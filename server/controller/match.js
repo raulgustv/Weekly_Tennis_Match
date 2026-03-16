@@ -1085,6 +1085,12 @@ export const leaveMatch = async (req, res) => {
 
         const match = await Match.findById(matchId).populate('backUps.user', 'email')
 
+        const less24 = isLessThan24h(match.date, match.startTime);
+
+        if(less24) return res.status(200).json({
+          ok: 'false',
+          message: 'Cannot leave match if starting in less than 24 hours'
+        })
 
         if (!match) return res.status(400).json({
             ok: false,
@@ -1145,10 +1151,6 @@ export const leaveMatch = async (req, res) => {
             message: 'User removed from match',
             match
         })
-
-
-
-
 
     } catch (error) {
         console.log(error)

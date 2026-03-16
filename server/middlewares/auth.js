@@ -12,8 +12,8 @@ export const protect = async(req, res, next) =>{
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        req.user = await User.findById(decoded.id).select("name lastname email role isActive ntrplvl adjustmentHistory profilePicture")
-
+        req.user = await User.findById(decoded.id)
+                                .select("name lastname email role isActive ntrplvl adjustmentHistory profilePicture country")
         if(!req.user) return res.status(401).json({
             ok: false,
             message: "User no longer exists"
