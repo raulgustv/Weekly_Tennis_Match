@@ -1,10 +1,15 @@
 import { Layout, Typography } from "antd";
+import TermsAndConditions from "../pages/auth/TermsAndConditions";
+import { useState } from "react";
 
 const { Footer } = Layout;
 const { Link, Text } = Typography;
 
 
 const AppFooter = () => {
+
+  const [openModal, setOpenModal] = useState(false)
+
   return (
     <Footer
       style={{
@@ -18,10 +23,11 @@ const AppFooter = () => {
         © 2026 MTC Weekly Tennis App · All rights reserved
       </Text>
 
-      <div style={{marginTop: 8}}>
-        <Link href="/terms-and-conditions" style={{color: "#60A5FA"}}>
-          Terms and conditions
+      <div style={{marginTop: 4}}>
+        <Link onClick={() => setOpenModal(true)} style={{color: "#60A5FA"}}>
+          Terms and Conditions 
         </Link>
+        <TermsAndConditions open={openModal} setOpenModal={setOpenModal} readButton={false} closable={true} />
       </div>
     </Footer>
   )

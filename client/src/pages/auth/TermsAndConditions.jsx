@@ -1,4 +1,4 @@
-import { Typography, Card, Divider, Tabs } from "antd";
+import { Typography, Card, Divider, Tabs, Modal } from "antd";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -19,8 +19,24 @@ const Section = ({ title, children }) => (
   </Card>
 );
 
-const TermsAndConditions = () => {
+const TermsAndConditions = ({open, readButton, setOpenModal, setDisabledCheck, closable=false}) => {
   return (
+    <Modal
+      open={open}
+      width={800}
+      okText={readButton ? 'I confirm I have read the terms and conditions' : ''}
+      //okButtonProps={{style: {display: readButton && 'none'}}}
+      footer={readButton ? undefined : null}
+      cancelButtonProps={{style: {display: 'none'}}}
+      onOk={() => {
+        setDisabledCheck(false)
+        setOpenModal(false)
+      }}
+      closable={closable}
+      destroyOnHidden
+      onCancel={() => setOpenModal(false)}
+      
+    >
     <div
       style={{
         maxWidth: 900,
@@ -158,6 +174,7 @@ const TermsAndConditions = () => {
         ]}
       />
     </div>
+    </Modal>
   );
 };
 
