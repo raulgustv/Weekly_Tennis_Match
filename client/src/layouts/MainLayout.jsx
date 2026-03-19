@@ -13,13 +13,14 @@ import {
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context";
 import { useState } from "react";
+import '../styles/menu.css'
+import AppFooter from "./AppFooter";
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
-  //console.log(user)
   const navigate = useNavigate();
   const location = useLocation();
   const screens = useBreakpoint();
@@ -32,86 +33,86 @@ const MainLayout = () => {
   const menuItems =
     user?.role === "admin"
       ? [
-        {
-          key: "/admin/dashboard",
-          icon: <HomeOutlined />,
-          label: "Admin dashboard",
-        },
-        {
-          key: "/games",
-          icon: <DribbbleOutlined />,
-          label: "Games",
-        },
-        {
-          key: "/vote",
-          icon: <FlagOutlined style={{ color: "#0660c7" }} />,
-          label: "Vote matches",
-        },
-        {
-          key: "/manage-courts",
-          icon: <CompassFilled style={{ color: "#46AF50" }} />,
-          label: "Manage courts",
-          children: [
-            {
-              key: "/admin/add-court",
-              label: "Add courts",
-            },
-          ],
-        },
-        {
-          key: "/admin-matches",
-          icon: <TrophyFilled style={{ color: "#deeb2c" }} />,
-          label: "Match administration",
-          children: [
-            {
-              key: "/admin/matches",
-              label: "New match",
-            },
-            {
-              key: "/admin/view-matches",
-              label: "View matches",
-            },
-          ],
-        },
-        {
-          key: "/admin-players",
-          icon: <ContactsOutlined style={{ color: "#E74C3C" }} />,
-          label: "User administration",
-          children: [
-            {
-              key: "/admin/players",
-              label: "Players",
-            },
-            {
-              key: "/profile",
-              label: "View admin profile",
-            },
-          ],
-        },
-      ]
+          {
+            key: "/admin/dashboard",
+            icon: <HomeOutlined style={{ color: "#4DA3FF" }} />,
+            label: "Admin dashboard",
+          },
+          {
+            key: "/games",
+            icon: <DribbbleOutlined style={{ color: "#52C41A" }} />,
+            label: "Games",
+          },
+          {
+            key: "/vote",
+            icon: <FlagOutlined style={{ color: "#1677FF" }} />,
+            label: "Vote matches",
+          },
+          {
+            key: "/manage-courts",
+            icon: <CompassFilled style={{ color: "#13C2C2" }} />,
+            label: "Manage courts",
+            children: [
+              {
+                key: "/admin/add-court",
+                label: "Add courts",
+              },
+            ],
+          },
+          {
+            key: "/admin-matches",
+            icon: <TrophyFilled style={{ color: "#FADB14" }} />,
+            label: "Match administration",
+            children: [
+              {
+                key: "/admin/matches",
+                label: "New match",
+              },
+              {
+                key: "/admin/view-matches",
+                label: "View matches",
+              },
+            ],
+          },
+          {
+            key: "/admin-players",
+            icon: <ContactsOutlined style={{ color: "#FF7875" }} />,
+            label: "User administration",
+            children: [
+              {
+                key: "/admin/players",
+                label: "Players",
+              },
+              {
+                key: "/profile",
+                label: "View admin profile",
+              },
+            ],
+          },
+        ]
       : [
-        {
-          key: "/games",
-          icon: <DribbbleOutlined />,
-          label: "Games",
-        },
-        {
-          key: "/vote",
-          icon: <FlagOutlined />,
-          label: "Vote matches",
-        },
-        {
-          key: "/profile",
-          icon: <UserOutlined />,
-          label: "User Profile",
-        },
-      ];
+          {
+            key: "/games",
+            icon: <DribbbleOutlined style={{ color: "#52C41A" }} />,
+            label: "Games",
+          },
+          {
+            key: "/vote",
+            icon: <FlagOutlined style={{ color: "#1677FF" }} />,
+            label: "Vote matches",
+          },
+          {
+            key: "/profile",
+            icon: <UserOutlined style={{ color: "#9254DE" }} />,
+            label: "User Profile",
+          },
+        ];
 
   const userMenu = {
     items: [
       {
         key: "logout",
-        icon: <LogoutOutlined />,
+        icon: <LogoutOutlined style={{ color: "#FF4D4F" }} />,
         label: "Logout",
         onClick: () => {
           logout();
@@ -215,7 +216,7 @@ const MainLayout = () => {
           {isMobile && (
             <Button
               type="text"
-              icon={<MenuOutlined />}
+              icon={<MenuOutlined style={{ color: "#fff" }} />}
               style={{ color: "#fff" }}
               onClick={() => setMobileOpen(true)}
             />
@@ -236,7 +237,7 @@ const MainLayout = () => {
                 gap: 8,
               }}
             >
-              <UserOutlined />
+              <UserOutlined style={{ color: "#fff" }} />
               {user?.name} {user?.lastname?.[0]}
             </Button>
           </Dropdown>
@@ -253,6 +254,7 @@ const MainLayout = () => {
         >
           <Outlet />
         </Content>
+        <AppFooter />
       </Layout>
     </Layout>
   );

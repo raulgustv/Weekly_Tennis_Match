@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Checkbox, Form, Input, Select, Space, Steps } from "antd";
+import { Button, Checkbox, Form, Input, Select, Space, Steps, Typography } from "antd";
 import { CheckOutlined, CloseOutlined, LoadingOutlined } from "@ant-design/icons";
 import NTRPLevel from "../../components/utils/NTRPLevel";
 import { register, checkEmailValidity } from "../../actions/auth";
@@ -16,6 +16,8 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { countries, loadCountries } = useCountries();
   const [emailStatus, setEmailStatus] = useState("idle");
+
+  const {Link} = Typography;
   
   const navigate = useNavigate();
 
@@ -313,7 +315,7 @@ const Register = () => {
             ]}
           >
             <Checkbox>
-              I have read and accept the terms and conditions
+              I have read and accept the <Link href="/terms-and-conditions" target="_blank">Terms and Conditions</Link>
             </Checkbox>
           </Form.Item>
         </div>

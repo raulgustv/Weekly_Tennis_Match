@@ -1,62 +1,65 @@
-import { useContext, useState, createContext, useEffect } from 'react'
-import { getUserAuth } from '../actions/auth';
+import { useContext, useState, createContext, useEffect } from "react";
+import { getUserAuth } from "../actions/auth";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const initAuth = async () => {
-
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const res = await getUserAuth();
-
-                setUser({
-                    token,
-                    ...res.data
-                });
-
-            } catch (error) {
-                localStorage.removeItem("token");
-                setUser(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        initAuth();
-
-    }, []);
-
-    // ✅ NUEVA setSession limpia
-    const setSession = async (token) => {
-        localStorage.setItem("token", token);
+    const loadUser = async (token) => {
 
         try {
+
             const res = await getUserAuth();
 
             setUser({
                 token,
                 ...res.data
             });
+
         } catch (error) {
+
             localStorage.removeItem("token");
             setUser(null);
+
+        } finally {
+
+            setLoading(false);
+
         }
     };
 
+    useEffect(() => {
+
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+
+        loadUser(token);
+
+    }, []);
+
+    // login / refresh session
+    const setSession = async (token) => {
+
+        localStorage.setItem("token", token);
+
+        setLoading(true);
+
+        await loadUser(token);
+
+    };
+
     const logout = () => {
+
         localStorage.removeItem("token");
         setUser(null);
+
     };
 
     return (
@@ -65,7 +68,7 @@ export const AuthProvider = ({ children }) => {
                 user,
                 isAuthenticated: !!user,
                 loading,
-                setSession,   // 👈 vuelve a exportarse
+                setSession,
                 logout
             }}
         >

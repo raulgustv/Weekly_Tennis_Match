@@ -18,7 +18,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [paymentModal, setPaymentModal] = useState(false);
 
-  // 🔴 SOLO AÑADIDO paymentMethod (no se toca nada más)
+
   const handleJoin = async (id, backup = false, paymentMethod = null) => {
     try {
       const data = await joinMatch(id, backup, paymentMethod);
