@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useCountries } from "../../hooks/useCountries";
 import LoadingSpinner from "../../components/utils/LoadingSpinner";
 import TermsAndConditions from "./TermsAndConditions";
+import PasswordField from "../../components/utils/PasswordField";
 
 const Register = () => {
   const [current, setCurrent] = useState(0);
@@ -42,6 +43,7 @@ const Register = () => {
   //     });
   //   }
   // }, [countries, form]);
+
 
   const renderEmailIcon = () => {
     switch (emailStatus) {
@@ -215,16 +217,7 @@ const Register = () => {
             <Input placeholder="johndoe@john.com" suffix={renderEmailIcon()} />
           </Form.Item>
 
-          <Form.Item
-            label="Password"
-            name="password"
-            rules={[
-              { required: true, message: "Password is required" },
-              { min: 6, message: "Password must be 6 characters long" }
-            ]}
-          >
-            <Input.Password />
-          </Form.Item>
+        <PasswordField />
 
           <Form.Item
             label="Confirm password"
