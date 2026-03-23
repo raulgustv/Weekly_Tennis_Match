@@ -24,6 +24,8 @@ const UserProfile = () => {
 
     const { user } = useAuth();
 
+    //console.log(user)
+
     const { countries } = useCountries();
 
     const total_cooldown = 120000

@@ -14,7 +14,7 @@ import {
     generateMatch,
     removeMatchCourt,
     updateStatus,
-    addMatchCourts, // ← cuando conectes backend
+    addMatchCourts, 
 } from "../../actions/matches";
 import { toast } from "react-toastify";
 import colors from "../../themes/colors";
@@ -22,15 +22,16 @@ import { adminRemovePlayer } from "../../actions/admin";
 import { useState } from "react";
 import AddNewCourtsModal from "../../components/matches/AddNewCourtsModal";
 import { surfaceColors } from "../../themes/surfaceColors";
+import WhatsappMessage from "../../components/modals/WhatsappMessage";
+
 
 const MatchesTable = () => {
     const { matches, fetchMatches, loadMatches } = useMatches();
     const { Timer } = Statistic;
 
-
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMatch, setSelectedMatch] = useState(null);
+    const [openMessageModal, setOpenMessageModal] = useState(false)
 
     const statusOptions = [
         { value: "Open", label: "Open" },
@@ -227,6 +228,22 @@ const MatchesTable = () => {
                     </Button>
                 ),
         },
+        {
+            title: "Generate whatsapp message",
+            render: (r) =>
+                (r.status === "Open" || r.status === "Full") &&
+                (
+                    <Button
+                        style={{ backgroundColor: colors.blue }}
+                        onClick={() => {
+                            setOpenMessageModal(true)
+                            setSelectedMatch(r)
+                        }}
+                    >
+                        Generate message
+                    </Button>
+                ),
+        },
     ];
 
     const { Title, Text } = Typography;
@@ -253,6 +270,12 @@ const MatchesTable = () => {
                 }}
                 match={selectedMatch}
                 onConfirm={handleAddCourts}
+            />
+
+            <WhatsappMessage 
+                open={openMessageModal}
+                match={selectedMatch}
+                setOpenMessage={setOpenMessageModal}
             />
         </>
     );

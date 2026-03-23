@@ -6,7 +6,8 @@ import {
     Progress,
     Button,
     Popconfirm,
-    Flex
+    Flex,
+    Tooltip
 } from "antd";
 import {
     ClockCircleOutlined,
@@ -22,7 +23,7 @@ import { useMemo } from "react";
 const MatchSummaryTabs = ({
     matchSummary,
     showJoinButton = false,
-    onRequestJoin,   
+    onRequestJoin,
     onJoin,
     onLeave
 }) => {
@@ -46,7 +47,6 @@ const MatchSummaryTabs = ({
 
     /* --------------------------
        🔢 CALCULATE AVERAGE NTRP
-       (NO TOCADO)
     -------------------------- */
 
     const averageNTRP = useMemo(() => {
@@ -58,6 +58,27 @@ const MatchSummaryTabs = ({
 
         return total / players.length;
     }, [players]);
+
+    /* --------------------------
+      Less than 24h
+   -------------------------- */
+
+  const isLess24h = useMemo(() => {
+    if (!date || !startTime) return false;
+
+    const [hour, minute] = startTime.split(":");
+
+    const matchDateTime = dayjs(date)
+        .hour(Number(hour))
+        .minute(Number(minute))
+        .second(0)
+        .millisecond(0);
+
+    const now = dayjs();
+
+    return matchDateTime.diff(now) < 24 * 60 * 60 * 1000;
+
+}, [date, startTime]);
 
     const pricePerPerson = Number(price / maxPlayers).toFixed(2);
 
@@ -81,6 +102,8 @@ const MatchSummaryTabs = ({
     );
 
     const isJoined = isJoinedPlayer || isJoinedBackup;
+
+    const disabledLeave = isJoinedPlayer && isLess24h;
 
     if (!user?._id) return null;
 
@@ -179,7 +202,7 @@ const MatchSummaryTabs = ({
                                     type="primary"
                                     block
                                     disabled={players.length >= maxPlayers}
-                                    onClick={() => onRequestJoin(matchSummary)} 
+                                    onClick={() => onRequestJoin(matchSummary)}
                                     style={{ marginBottom: 10 }}
                                 >
                                     Join Match
@@ -202,9 +225,18 @@ const MatchSummaryTabs = ({
                             description="Are you sure you want to leave this match?"
                             onConfirm={() => onLeave(_id)}
                         >
-                            <Button danger block>
-                                Leave match
-                            </Button>
+                            <Tooltip
+                                color="red"
+                                title={
+                                    disabledLeave ? "You cannot leave a match 24 hours before it starts" : ""
+                                }
+                            >
+                                <Button danger block disabled={disabledLeave}>
+                                    Leave match
+                                </Button>
+                            </Tooltip>
+
+
                         </Popconfirm>
                     )}
                 </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Checkbox, Form, Input, Select, Space, Steps } from "antd";
+import { Button, Checkbox, Form, Input, Select, Space, Steps, Typography } from "antd";
 import { CheckOutlined, CloseOutlined, LoadingOutlined } from "@ant-design/icons";
 import NTRPLevel from "../../components/utils/NTRPLevel";
 import { register, checkEmailValidity } from "../../actions/auth";
@@ -8,6 +8,8 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useCountries } from "../../hooks/useCountries";
 import LoadingSpinner from "../../components/utils/LoadingSpinner";
+import TermsAndConditions from "./TermsAndConditions";
+import PasswordField from "../../components/utils/PasswordField";
 
 const Register = () => {
   const [current, setCurrent] = useState(0);
@@ -16,7 +18,12 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { countries, loadCountries } = useCountries();
   const [emailStatus, setEmailStatus] = useState("idle");
-  
+  const [openModal, setOpenModal] = useState(false)
+  const [disabledCheck, setDisabledCheck] = useState(true)
+
+
+  const { Link } = Typography;
+
   const navigate = useNavigate();
 
   /* -----------------------------
@@ -36,6 +43,7 @@ const Register = () => {
   //     });
   //   }
   // }, [countries, form]);
+
 
   const renderEmailIcon = () => {
     switch (emailStatus) {
@@ -82,7 +90,7 @@ const Register = () => {
               c.phoneCodes.map(code => ({
                 key: code,
                 label: `${code}`,
-                 value: `${code}-${c.iso}` 
+                value: `${code}-${c.iso}`
               }))
             )
             .sort((a, b) => a.label.localeCompare(b.label))
@@ -209,16 +217,7 @@ const Register = () => {
             <Input placeholder="johndoe@john.com" suffix={renderEmailIcon()} />
           </Form.Item>
 
-          <Form.Item
-            label="Password"
-            name="password"
-            rules={[
-              { required: true, message: "Password is required" },
-              { min: 6, message: "Password must be 6 characters long" }
-            ]}
-          >
-            <Input.Password />
-          </Form.Item>
+        <PasswordField />
 
           <Form.Item
             label="Confirm password"
@@ -244,11 +243,17 @@ const Register = () => {
 
         {/* STEP 2 */}
         <div style={{ display: current === 1 ? "block" : "none" }}>
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label="Name" rules={[
+            { required: true, message: "Lastname is required" },
+            { min: 2, message: "Name must be longer than 1 character" }
+          ]}>
             <Input />
           </Form.Item>
 
-          <Form.Item name="lastname" label="Lastname" rules={[{ required: true }]}>
+          <Form.Item name="lastname" label="Lastname" rules={[
+            { required: true, message: "Lastname is required" },
+            { min: 2, message: "Lastname must be longer than 1 character" }
+          ]}>
             <Input />
           </Form.Item>
 
@@ -312,8 +317,9 @@ const Register = () => {
               },
             ]}
           >
-            <Checkbox>
-              I have read and accept the terms and conditions
+            <Checkbox disabled={disabledCheck}>
+              I have read and accept the <Link onClick={() => setOpenModal(true)}>Terms and Conditions</Link>
+              <TermsAndConditions open={openModal} readButton={true} setOpenModal={setOpenModal} setDisabledCheck={setDisabledCheck} closable={false} />
             </Checkbox>
           </Form.Item>
         </div>

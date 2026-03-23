@@ -18,7 +18,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [paymentModal, setPaymentModal] = useState(false);
 
-  // 🔴 SOLO AÑADIDO paymentMethod (no se toca nada más)
+
   const handleJoin = async (id, backup = false, paymentMethod = null) => {
     try {
       const data = await joinMatch(id, backup, paymentMethod);
@@ -78,7 +78,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
           const matchStart =
             startTime && startTime > Date.now() ? startTime : null;
 
-          const vertical = !screens.lg; // 🔴 NO TOCADO
+          const vertical = !screens.lg; 
 
           return (
             <Col key={match._id} xs={24} sm={12} lg={8}>
@@ -143,7 +143,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
                 <MatchSummaryTabs
                   matchSummary={match}
                   showJoinButton
-                  onRequestJoin={handleRequestJoin} // 🔵 AÑADIDO
+                  onRequestJoin={handleRequestJoin} 
                   onJoin={handleJoin}
                   onLeave={handleLeave}
                 />
@@ -153,7 +153,6 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
         })}
       </Row>
 
-      {/* 🔵 SOLO AÑADIMOS ESTO, NO SE TOCA NADA MÁS */}
       {selectedMatch && (
         <PaymentModal
           open={paymentModal}
