@@ -17,6 +17,9 @@ import ResetPassword from '../pages/auth/ResetPassword'
 import MatchVote from '../pages/matches/MatchVote'
 import EditMatch from '../pages/matches/EditMatch'
 import TermsAndConditions from '../pages/auth/TermsAndConditions'
+import About from '../pages/information/About'
+import PublicLayout from '../layouts/PublicLayout'
+import Contact from '../pages/auth/Contact'
 
 const AppRouter = () => {
   return (
@@ -24,18 +27,23 @@ const AppRouter = () => {
       <BrowserRouter>
         <Routes>
           {/* Public */}
-          <Route path="/auth" element={<Auth />} />
-          <Route path='/terms-and-conditions' element={<TermsAndConditions />} />
+          <Route element={<PublicLayout />}>
 
-          <Route path='/match/details/:matchId/accept' element={<MatchInviteAccept />} />
-          <Route path='/match/details/:matchId/decline' element={<MatchDeclineInvite />} />
-          <Route path='/auth/reset-password/:token' element={<ResetPassword />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path='/terms-and-conditions' element={<TermsAndConditions />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+
+            <Route path='/match/details/:matchId/accept' element={<MatchInviteAccept />} />
+            <Route path='/match/details/:matchId/decline' element={<MatchDeclineInvite />} />
+            <Route path='/auth/reset-password/:token' element={<ResetPassword />} />
+          </Route>
 
           <Route element={<ProtectedRoute />}>
 
             <Route element={<MainLayout />}>
 
-            <Route path='/' element={<Navigate to="/games" />} />
+              <Route path='/' element={<Navigate to="/games" />} />
 
               {/* user routes */}
               <Route path='games' element={<UserDashboard />} />
@@ -51,7 +59,7 @@ const AppRouter = () => {
                 <Route path='matches' element={<Matches />} />
                 <Route path='view-matches' element={<MatchesTable />} />
                 <Route path='players' element={<Players />} />
-                 <Route path='match/edit/:id' element={<EditMatch />} />
+                <Route path='match/edit/:id' element={<EditMatch />} />
               </Route>
             </Route>
           </Route>

@@ -13,7 +13,7 @@ import {
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context";
 import { useState } from "react";
-import '../styles/menu.css'
+import "../styles/menu.css";
 import AppFooter from "./AppFooter";
 
 const { Header, Sider, Content } = Layout;
@@ -52,26 +52,15 @@ const MainLayout = () => {
             key: "/manage-courts",
             icon: <CompassFilled style={{ color: "#13C2C2" }} />,
             label: "Manage courts",
-            children: [
-              {
-                key: "/admin/add-court",
-                label: "Add courts",
-              },
-            ],
+            children: [{ key: "/admin/add-court", label: "Add courts" }],
           },
           {
             key: "/admin-matches",
             icon: <TrophyFilled style={{ color: "#FADB14" }} />,
             label: "Match administration",
             children: [
-              {
-                key: "/admin/matches",
-                label: "New match",
-              },
-              {
-                key: "/admin/view-matches",
-                label: "View matches",
-              },
+              { key: "/admin/matches", label: "New match" },
+              { key: "/admin/view-matches", label: "View matches" },
             ],
           },
           {
@@ -79,14 +68,8 @@ const MainLayout = () => {
             icon: <ContactsOutlined style={{ color: "#FF7875" }} />,
             label: "User administration",
             children: [
-              {
-                key: "/admin/players",
-                label: "Players",
-              },
-              {
-                key: "/profile",
-                label: "View admin profile",
-              },
+              { key: "/admin/players", label: "Players" },
+              { key: "/profile", label: "View admin profile" },
             ],
           },
         ]
@@ -129,7 +112,7 @@ const MainLayout = () => {
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#F5F7FA" }}>
-      {/* ===== DESKTOP SIDER ===== */}
+      {/* ===== SIDEBAR ===== */}
       {!isMobile && (
         <Sider
           collapsible
@@ -146,7 +129,6 @@ const MainLayout = () => {
               fontWeight: "bold",
               textAlign: "center",
               fontSize: 16,
-              letterSpacing: 1,
             }}
           >
             🎾 MTC
@@ -170,10 +152,7 @@ const MainLayout = () => {
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
           styles={{
-            body: {
-              padding: 0,
-              background: "#0B2C3D",
-            },
+            body: { padding: 0, background: "#0B2C3D" },
           }}
         >
           <div
@@ -201,7 +180,8 @@ const MainLayout = () => {
       )}
 
       {/* ===== MAIN ===== */}
-      <Layout>
+      <Layout style={{ display: "flex", flexDirection: "column" }}>
+        {/* HEADER */}
         <Header
           style={{
             padding: "0 16px",
@@ -217,43 +197,36 @@ const MainLayout = () => {
             <Button
               type="text"
               icon={<MenuOutlined style={{ color: "#fff" }} />}
-              style={{ color: "#fff" }}
               onClick={() => setMobileOpen(true)}
             />
           )}
 
-          <div style={{ fontWeight: "bold", letterSpacing: 1 }}>
+          <div style={{ fontWeight: "bold" }}>
             Madrid Tennis Community
           </div>
 
           <Dropdown menu={userMenu} placement="bottomRight" trigger={["click"]}>
-            <Button
-              type="text"
-              style={{
-                color: "#fff",
-                fontWeight: 500,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <UserOutlined style={{ color: "#fff" }} />
-              {user?.name} {user?.lastname?.[0]}
+            <Button type="text" style={{ color: "#fff" }}>
+              <UserOutlined /> {user?.name} {user?.lastname?.[0]}
             </Button>
           </Dropdown>
         </Header>
 
+        {/* CONTENT (CLAVE 🔥) */}
         <Content
           style={{
+            flex: 1, // 🔥 ocupa todo el espacio disponible
             margin: 16,
-            padding: 24,
+            padding: 16, // 🔥 reducido
             background: "#fff",
             borderRadius: 8,
-            minHeight: 280,
+            overflow: "auto", // 🔥 scroll SOLO aquí si hace falta
           }}
         >
           <Outlet />
         </Content>
+
+        {/* FOOTER */}
         <AppFooter />
       </Layout>
     </Layout>
