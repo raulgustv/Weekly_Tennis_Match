@@ -38,6 +38,6 @@ export const createMatchValidator = [
     .isFloat({min: 0}).withMessage("Price must be a positive integer number"),
 
     body("paymentMethods")
-    .isArray().withMessage("Payment methods must be an array")
+    .isArray({min: 1}).withMessage("Payment methods must be an array")
     .notEmpty().withMessage("Payment methods required")      
 ]

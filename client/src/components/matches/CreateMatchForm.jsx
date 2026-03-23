@@ -246,55 +246,76 @@ const CreateMatchForm = ({ refreshMatches }) => {
         </Row>
 
         {/* PAYMENT METHODS */}
-        <Form.List name="paymentMethods">
-          {(fields, { add, remove }) => (
-            <>
-              <Button
-                type="dashed"
-                onClick={() => add()}
-                icon={<PlusOutlined />}
-                block
-                style={{ marginBottom: 16 }}
-              >
-                Add payment method
-              </Button>
-
-              {fields.map(({ key, name, ...restField }) => (
-                <Space
-                  key={key}
-                  orientation="vertical"
-                  style={{ width: "100%", marginBottom: 16 }}
+        <Form.Item label="Payment Methods" required>
+          <Form.List
+            name="paymentMethods"
+            rules={[
+              {
+                validator: async (_, value) => {
+                  if (!value || value.length < 1) {
+                    return Promise.reject(
+                      new Error("At least one payment method is required")
+                    );
+                  }
+                },
+              },
+            ]}
+          >
+            {(fields, { add, remove }, { errors }) => (
+              <>
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  icon={<PlusOutlined />}
+                  block
+                  style={{ marginBottom: 16 }}
                 >
-                  <Form.Item
-                    {...restField}
-                    name={[name, "type"]}
-                    rules={[{ required: true }]}
+                  Add payment method
+                </Button>
+
+                {/* 🔴 ERROR EN ROJO (sin romper nada) */}
+                <Form.ErrorList errors={errors} />
+
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space
+                    key={key}
+                    direction="vertical"
+                    style={{ width: "100%", marginBottom: 16 }}
                   >
-                    <Select
-                      placeholder="Type"
-                      options={paymentMethodOptions}
-                      style={{ width: "100%" }}
+                    <Form.Item
+                      {...restField}
+                      name={[name, "type"]}
+                      rules={[
+                        { required: true, message: "Select a payment type" },
+                      ]}
+                    >
+                      <Select
+                        placeholder="Type"
+                        options={paymentMethodOptions}
+                        style={{ width: "100%" }}
+                      />
+                    </Form.Item>
+
+                    <Form.Item
+                      {...restField}
+                      name={[name, "value"]}
+                      rules={[
+                        { required: true, message: "Enter payment info" },
+                      ]}
+                    >
+                      <Input placeholder="Phone / user / info" />
+                    </Form.Item>
+
+                    <MinusCircleOutlined
+                      onClick={() => remove(name)}
+                      style={{ color: "red", alignSelf: "flex-end" }}
                     />
-                  </Form.Item>
-
-                  <Form.Item
-                    {...restField}
-                    name={[name, "value"]}
-                    rules={[{ required: true }]}
-                  >
-                    <Input placeholder="Phone / user / info" />
-                  </Form.Item>
-
-                  <MinusCircleOutlined
-                    onClick={() => remove(name)}
-                    style={{ color: "red", alignSelf: "flex-end" }}
-                  />
-                </Space>
-              ))}
-            </>
-          )}
-        </Form.List>
-
+                  </Space>
+                ))}
+              </>
+            )}
+          </Form.List>
+        </Form.Item>
         <Form.Item style={{ marginTop: 32 }}>
           <Button
             style={{

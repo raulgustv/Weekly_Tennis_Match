@@ -18,6 +18,9 @@ export const calculateStrength = (value) => {
     if (hasUpper && hasLower && hasNumber) score += 10;
     if (hasSymbol) score += 10;
 
+    if (length > 12) score += 5;
+    if (length > 16) score += 5;
+
     if (/(.)\1{2,}/.test(value)) score -= 10;
     if (/123|abc|qwe/i.test(value)) score -= 10;
     if (/^[a-zA-Z]+$/.test(value) || /^[0-9]+$/.test(value)) score -= 10;
@@ -26,11 +29,23 @@ export const calculateStrength = (value) => {
 
 }
 
-export const getStrengthLevel = (score) =>{
-    if(score < 30) return {label: "Weak", color: "FF4D4F"}
-    if(score < 60) return {label: "Fair", color: "FAAD14"}
-    if(score < 80) return {label: "Good", color: "1890FF"}
+export const getStrengthLevel = (score) => {
+    if (score < 30) return {
+        label: "Weak",
+        color: "FF4D4F"
+    }
+    if (score < 60) return {
+        label: "Fair",
+        color: "FAAD14"
+    }
+    if (score < 80) return {
+        label: "Good",
+        color: "1890FF"
+    }
 
-    return {label: "Strong", color: "52C41A"}
+    return {
+        label: "Strong",
+        color: "52C41A"
+    }
 
 }
