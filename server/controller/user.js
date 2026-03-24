@@ -394,6 +394,46 @@ export const getMeAuth = async(req, res) =>{
     }
 }
 
+export const adminNote = async(req, res) =>{
+    const {id} = req.params;
+    const {note} = req.body;
+    const {role} = req.user;
+
+    try {
+
+        if(role !== 'admin') return res.satus(404).json({
+            oK: false,
+            message: 'You are not authorized to access this resource'
+        });
+
+        const user = await User.findById(id);
+
+        if(!user) return res.status(400).json({
+            ok: false,
+            message: 'User not found'
+        })
+
+        user.notesHistory.push({
+            note,
+            createdBy: req.user._id
+        });
+
+        await user.save();
+
+        res.status(200).json({
+            message: "Note added successfully",
+            notesHistory: user.notesHistory
+        })
+
+        
+    } catch (error) {
+        return res.satus(404).json({
+            oK: false,
+            message: 'You are not authorized to access this resource'
+        })
+    }
+}
+
 
 
 

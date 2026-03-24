@@ -24,6 +24,21 @@ const adjustmentHistorySchema = new mongoose.Schema({
     }
 }, {_id: false})
 
+const noteHistorySchema = new mongoose.Schema({
+    note: {
+        type: String,
+        trim: true
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    },
+    at: {
+        type: Date,
+        default: Date.now
+    }
+}, {_id: true})
+
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -120,6 +135,10 @@ const userSchema = new mongoose.Schema({
     lockUntil:{
         type: Date,
         default: null,
+    },
+    notesHistory: {
+        type: [noteHistorySchema],
+        default: []
     }
 }, {
     timestamps: true
