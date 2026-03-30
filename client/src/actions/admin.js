@@ -30,3 +30,9 @@ export const togglePayment = async(matchId, userId) =>{
 
     return data;
 }
+
+export const viewPlayer = async(id) =>{
+    const {data} = await axiosInstance.get(`/user/${id}`);
+
+    return data;
+}

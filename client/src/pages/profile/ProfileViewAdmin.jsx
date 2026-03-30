@@ -1,62 +1,46 @@
 import { Col, Divider, Row, Skeleton } from "antd";
 import { useAuth } from "../../context"
 //import colors from "../../themes/colors";
-import { useCountries } from "../../hooks/useCountries";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNTRPAdjustment } from "../../hooks/useNTRPAdjustment";
-import { resetPasswordEmail } from "../../actions/auth";
-import { toast } from 'react-toastify'
-import useCountdown from "../../hooks/useCountdown";
 import PersonalInfo from "../../components/profile/PersonalInfo";
 import NTRPHistory from "../../components/profile/NTRPHistory";
+import { useParams } from "react-router-dom";
+import { viewPlayer } from "../../actions/admin";
 import ProfileHeader from "../../components/profile/ProfileHeader";
+import { toast } from "react-toastify";
 
 
 
-const UserProfile = () => {
+const ProfileViewAdmin = () => {
+
+    const { id } = useParams();
 
     const { user } = useAuth();
 
-    const { countries } = useCountries();
+    const [player, setPlayer] = useState(null)
 
-    const total_cooldown = 120000
+    useEffect(() => {
+        const getPlayer = async () => {
+            try {
+                const res = await viewPlayer(id)
 
-    const resetCooldown = useCountdown({
-        duration: total_cooldown
-    })
+                setPlayer(res)
+            } catch (error) {
+                toast.error(error?.response?.data?.message || 'Error obtaining player data')
+            }
+        }
+
+        getPlayer()
+    }, [id])
 
 
-    const ntrpHistory = useNTRPAdjustment(user?.adjustmentHistory);
+    const ntrpHistory = useNTRPAdjustment(player?.adjustmentHistory);
 
-    const isLoading = !user || !countries || !ntrpHistory
-
-    const countryFlag = useMemo(() => {
-        if (!user?.country || !countries?.length) return null;
-
-        return (
-            countries.find(
-                c => c.name?.toLowerCase() === user.country.toLowerCase()
-            )?.flag || null
-        );
-    }, [user?.country, countries]);
+    const isLoading = !user || !ntrpHistory
 
 
     if (!user) return null;
-
-    const handleSendReset = async (email) => {
-        try {
-
-            await resetPasswordEmail(email)
-
-            toast.success(`Email sent to ${email}`)
-
-            resetCooldown.start();
-
-        } catch (error) {
-            console.log(error)
-            toast.error(error?.response?.data?.message)
-        }
-    }
 
     if (isLoading) {
         return (
@@ -91,23 +75,23 @@ const UserProfile = () => {
         <>
             {/* ================= HEADER ================= */}
 
-            <ProfileHeader user={user} editable={true} />
+            <ProfileHeader user={player} editable={false} />
 
             <Divider />
 
             {/* ================= PERSONAL INFO ================= */}
 
-            <PersonalInfo user={user} countryFlag={countryFlag} handleSendReset={handleSendReset} passwordChange={true} />
+            <PersonalInfo user={player} passwordChange={false}  />
 
             {/* ================= NTRP HISTORY ================= */}
 
             <Divider />
-            
-            <NTRPHistory ntrpHistory={ntrpHistory} />
+
+            <NTRPHistory ntrpHistory={ntrpHistory}  />
 
         </>
     );
 
 }
 
-export default UserProfile
+export default ProfileViewAdmin

@@ -1,6 +1,6 @@
 import {Router} from 'express';
 import {  login, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote } from '../controller/user.js';
-import { googleValidator, loginValidator, registerValidator } from '../validator/userValidator.js';
+import { googleValidator, loginValidator, noteValidator, registerValidator } from '../validator/userValidator.js';
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 import { protect, verifyAdmin } from '../middlewares/auth.js';
 import { authLimiter, registerLimiter } from '../config/expressLimit.js';
@@ -21,9 +21,7 @@ router.put("/onboarding-complete", protect, completeOnboarding)
 
 router.get("/all-users", protect, verifyAdmin, viewAllUsers)
 router.get("/:id", protect, verifyAdmin, validateObjectId("id"), viewUser)
-router.post('/:id', protect, verifyAdmin, validateObjectId("id"), adminNote)
-
-
+router.post('/:id', protect, verifyAdmin,  validateObjectId("id"), noteValidator, validateFields,  adminNote)
 
 
 export default router;

@@ -5,6 +5,7 @@ import { togglePlayerActive, toggleUserRole } from "../../actions/admin";
 import { toast } from "react-toastify";
 import NTRPModal from "../../components/modals/NTRPModal";
 import ProfilePicture from "../../components/uploads/ProfilePicture";
+import { useNavigate } from "react-router-dom";
 //import { useAuth } from "../../context/AuthContext";
 
 
@@ -18,8 +19,8 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
     const [selectedPlayer, setSelectedPlayer] = useState(null)
 
     const { Text } = Typography;
-
-
+    
+    const navigate = useNavigate();
 
     const countriesMap = useMemo(() => {
         return countries.reduce((acc, country) => {
@@ -213,6 +214,11 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                 loading={loading}
                 rowKey="_id"
                 scroll={{ x: "max-content" }}
+                onRow={({_id}) => ({
+                    onDoubleClick: () =>{
+                        navigate(`/admin/player/${_id}`)
+                    }
+                })}
             />
 
 

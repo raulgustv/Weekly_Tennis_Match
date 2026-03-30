@@ -20,6 +20,7 @@ import TermsAndConditions from '../pages/auth/TermsAndConditions'
 import About from '../pages/information/About'
 import PublicLayout from '../layouts/PublicLayout'
 import Contact from '../pages/auth/Contact'
+import ProfileViewAdmin from '../pages/profile/ProfileViewAdmin'
 
 const AppRouter = () => {
   return (
@@ -60,6 +61,7 @@ const AppRouter = () => {
                 <Route path='view-matches' element={<MatchesTable />} />
                 <Route path='players' element={<Players />} />
                 <Route path='match/edit/:id' element={<EditMatch />} />
+                <Route path='player/:id' element={<ProfileViewAdmin />} />
               </Route>
             </Route>
           </Route>
