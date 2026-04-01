@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { protect, verifyAdmin } from '../middlewares/auth.js';
+import { protect, verifyAdmin, verifyBookerOrAdmin } from '../middlewares/auth.js';
 import { acceptInvite, addMatchCourts, 
 declineInvite, generateMatches, getAllMatches,
 getMatch, getOpenMatch, joinMatch, 
@@ -11,9 +11,9 @@ import { validateFields, validateObjectId } from '../middlewares/validateFields.
 
 const router = Router();
 
-router.post('/new', protect,verifyAdmin, createMatchValidator, validateFields, newMatch)
-router.put('/update/:id', protect,verifyAdmin, validateObjectId("id"), updateMatch)
-router.post('/update-status/:id', protect,verifyAdmin, validateObjectId("id"), updateMatchStatus)
+router.post('/new', protect,verifyBookerOrAdmin, createMatchValidator, validateFields, newMatch)
+router.put('/update/:id', protect,verifyBookerOrAdmin, validateObjectId("id"), updateMatch)
+router.post('/update-status/:id', protect,verifyBookerOrAdmin, validateObjectId("id"), updateMatchStatus)
 router.get('/view-open-match', protect, getOpenMatch)
 router.get('/view-all', protect, getAllMatches)
 router.get('/view-match/:id', protect, validateObjectId("id"), getMatch)
@@ -25,8 +25,8 @@ router.post('/invite/accept', acceptInvite)
 router.post('/invite/decline', declineInvite)
 
 router.post('/generate/:id', protect, verifyAdmin, validateObjectId("id"), generateMatches)
-router.put('/update-generate/:matchId', protect, verifyAdmin, validateObjectId("matchId"), updateGeneratedMatches)
-router.post('/remove-courts/:matchId/:courtNumber', protect, verifyAdmin, removeMatchCourts)
-router.post('/add-courts/:matchId', protect, verifyAdmin, validateObjectId("matchId"),  addMatchCourts)
+router.put('/update-generate/:matchId', protect, verifyBookerOrAdmin, validateObjectId("matchId"), updateGeneratedMatches)
+router.post('/remove-courts/:matchId/:courtNumber', protect, verifyBookerOrAdmin, removeMatchCourts)
+router.post('/add-courts/:matchId', protect, verifyBookerOrAdmin, validateObjectId("matchId"),  addMatchCourts)
 
 export default router;

@@ -12,6 +12,7 @@ import matchRoutes from './routes/match.js';
 import profileRoutes from './routes/profile.js';
 import skillRoutes from './routes/skill.js';
 import adminRoutes from './routes/admin.js';
+import walletRoutes from './routes/wallet.js';
 import './jobs/matchStatus.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
@@ -41,6 +42,7 @@ app.use('/api/location', locationRoutes)
 app.use('/api/match', matchRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/vote', skillRoutes)
+app.use('/api/wallet', walletRoutes)
 
 //Conexión
 const PORT = process.env.PORT || 7000;

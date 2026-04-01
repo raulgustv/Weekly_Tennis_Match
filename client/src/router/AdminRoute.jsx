@@ -8,8 +8,8 @@ const AdminRoute = () => {
     if(loading) return null //add spinner
 
     //in this condition do soemthing, redirect to not auth
-    if(!user || user.role !== 'admin'){
-        return <Navigate to='/login' replace />
+     if (!user || (user.role !== "admin" && user.role !== "booker")) {
+        return <Navigate to="/login" replace />;
     }
 
     return <Outlet />

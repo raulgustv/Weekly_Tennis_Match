@@ -77,7 +77,7 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         required: true,
-        enum: ["admin", "user"],
+        enum: ["admin", "user", "booker"],
         default: "user"
     },
     ntrplvl: {
@@ -139,6 +139,14 @@ const userSchema = new mongoose.Schema({
     notesHistory: {
         type: [noteHistorySchema],
         default: []
+    },
+    receivesPayment: {
+        type: Boolean,
+        default: false
+    },
+    walletBalance:{
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true
