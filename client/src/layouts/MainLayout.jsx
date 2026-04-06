@@ -9,6 +9,7 @@ import {
   ContactsOutlined,
   HomeOutlined,
   DribbbleOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context";
@@ -75,6 +76,15 @@ const MainLayout = () => {
               { key: "/profile", label: "View admin profile" },
             ],
           },
+          {
+            key: "/admin-wallet",
+            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
+            label: "Wallet administration",
+            children: [
+              { key: "/admin/transactions", label: "Transaction admin" },
+              { key: "/wallet", label: "View wallet" },
+            ],
+          },
         ]
       : isBooker
       ? [
@@ -102,6 +112,11 @@ const MainLayout = () => {
             icon: <UserOutlined style={{ color: "#9254DE" }} />,
             label: "User Profile",
           },
+            {
+            key: "/wallet",
+            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
+            label: "Wallet administration",
+            }
         ]
       : [
           {
@@ -119,6 +134,11 @@ const MainLayout = () => {
             icon: <UserOutlined style={{ color: "#9254DE" }} />,
             label: "User Profile",
           },
+          {
+            key: "/wallet",
+            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
+            label: "Wallet administration",
+            }
         ];
 
   const userMenu = {

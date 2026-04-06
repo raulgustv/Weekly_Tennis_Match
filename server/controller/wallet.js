@@ -250,6 +250,7 @@ export const rejectDeposit = async(req, res) =>{
             html: `
                 <h2>Hello ${user.name},</h2>
                 <p>Your request to add ${transaction.amount}€ to your wallet has been rejected</p> 
+                <p>Reason: ${transaction.note}</p>
                 <p>Please contact administrator to review your transaction</p>
                 <p>Best regards,</p>                   
             `
@@ -320,7 +321,7 @@ export const userDeposits = async(req, res) =>{
 
         const userId = req.user._id;
 
-        const transaction = await WalletTransaction.findOne({user: userId})
+        const transaction = await WalletTransaction.find({user: userId})
                                     .select('type amount method status createdAt reviewdAt note')
                                     .populate('assignedAdmin', "name lastname")
 

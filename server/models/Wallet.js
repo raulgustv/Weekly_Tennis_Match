@@ -26,7 +26,7 @@ const walletTransactionSchema = new mongoose.Schema({
     },
     method: {
         type: String,
-        enum: ["bizum", "revolut", "cash"],
+        enum: ["bizum", "revolut", 'paypal', "cash"],
         required: function (){
             return this.type === "deposit"
         }
@@ -47,7 +47,7 @@ const walletTransactionSchema = new mongoose.Schema({
     },
     note: {
         type: String,
-        trim: true
+        trim: true,
     }
 }, {timestamps: true});
 
