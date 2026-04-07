@@ -49,7 +49,7 @@ const Login = () => {
       }
 
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       setLoading(false)
       return toast.error(error?.response?.data?.message)
     } finally {

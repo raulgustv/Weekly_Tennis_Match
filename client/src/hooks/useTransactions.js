@@ -81,8 +81,8 @@ export const useAllTransactions = () =>{
 
             setTransactions(data)
             
-        } catch (error) {
-            console.log(error)
+        } catch ({response}) {
+            console.log(response)
         }finally{
             setLoadTransactions(false)
         }

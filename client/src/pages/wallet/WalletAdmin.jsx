@@ -15,7 +15,7 @@ const WalletAdmin = () => {
     const screens = useBreakpoint();
 
     const { pendingTransactions, fetchPendingTransactions, loadPendingTransactions, setLoadPendingTransactions } = usePendingTransactions();
-    const { transactions, loadTransactions } = useAllTransactions();
+    const { transactions, loadTransactions, fetchAllTransactions } = useAllTransactions();
 
 
 
@@ -99,6 +99,7 @@ const WalletAdmin = () => {
                         isMobile={!screens.md}
                         loading={loadTransactions}
                         isAdmin={true}
+                        refresh={fetchAllTransactions}
                     />
                 </Col>
             </Row>

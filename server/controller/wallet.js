@@ -42,6 +42,8 @@ export const addFunds= async(req, res) =>{
             assignedAdmin: admin._id
         })
 
+        const refUrlAdmin = `${process.env.FRONTEND_URL}/admin/transactions`
+
         const resend = getResend();
 
         await resend.emails.send({
@@ -51,7 +53,7 @@ export const addFunds= async(req, res) =>{
             html: `
                 <h2>${user.name} has requested to add funds</h2>
                 <p>${user.email} has requested to add ${amount}€ to his wallet funds</p>   
-                <a href='hola.com'>To confirm or decline the request please click here</a> 
+                <a href='${refUrlAdmin}'>To confirm or decline the request please click here</a> 
             `
         });
 
@@ -151,6 +153,9 @@ export const confirmDeposit = async(req, res) =>{
 
         const resend = getResend();
 
+        const refUrl = `${process.env.FRONTEND_URL}/wallet`
+        
+
         await resend.emails.send({
             from: process.env.FROM_EMAIL,
             to: user.email,
@@ -158,7 +163,7 @@ export const confirmDeposit = async(req, res) =>{
             html: `
                 <h2>Hello ${user.name},</h2>
                 <p>${transaction.amount}€ has been added to your wallet</p> 
-                <p><a href="hello.com">Click here to check your account</a></p>
+                <p><a href="${refUrl}">Click here to check your account</a></p>
                 <p>Best regards,</p>  
                  
             `
@@ -243,6 +248,7 @@ export const rejectDeposit = async(req, res) =>{
 
         const resend = getResend();
 
+
         await resend.emails.send({
             from: process.env.FROM_EMAIL,
             to: user.email,
@@ -299,10 +305,7 @@ export const allDeposits = async(req, res) =>{
 
         const adminId = req.user._id;
 
-        const transactions = await WalletTransaction.find({
-            type: 'deposit',
-            assignedAdmin: adminId
-        }).populate("user", "name lastname email phone")
+        const transactions = await WalletTransaction.find().populate("user", "name lastname email phone")
         .sort({createdAt: -1})
 
         return res.status(200).json(transactions)

@@ -1,5 +1,7 @@
 import Match from '../models/Match.js';
 import Location from '../models/Location.js';
+import User from "../models/user.js";
+import WalletTransaction from "../models/Wallet.js";
 import {
     averageNTRP,
     generateBalancedMatches,
@@ -63,6 +65,20 @@ export const newMatch = async (req, res) => {
 
         const maxPlayers = courtNumbersParsed.length * 4;
 
+        /* Wallet siempre presente*/
+        const finalPaymentMethods = paymentMethods?.length
+          ? [...paymentMethods]
+          : [];
+
+        const hasWallet = finalPaymentMethods.some(pm => pm.type === "wallet");
+
+        if (!hasWallet) {
+          finalPaymentMethods.push({
+            type: "wallet",
+            value: "NA"
+          });
+        }
+
         const match = await Match.create({
             createdBy: req.user._id,
             location: location._id,
@@ -72,7 +88,7 @@ export const newMatch = async (req, res) => {
             endTime,
             price: totalPrice,
             maxPlayers,
-            paymentMethods
+            paymentMethods: finalPaymentMethods
         });
 
         return res.status(201).json(match);
@@ -411,20 +427,20 @@ export const updateMatch = async (req, res) => {
 // };
 
 export const joinMatch = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
     const userId = req.user._id;
     const { asBackup = false, paymentMethod } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        ok: false,
-        message: "Invalid match ID"
-      });
+      throw new Error("Invalid match ID");
     }
 
     /* ===================================================== */
-    /* VOLUNTARY BACKUP JOIN (ATOMIC)                       */
+    /* BACKUP JOIN (NO WALLET IMPACT)                       */
     /* ===================================================== */
 
     if (asBackup === true) {
@@ -445,15 +461,14 @@ export const joinMatch = async (req, res) => {
             }
           }
         },
-        { new: true }
+        { new: true, session }
       );
 
       if (!updatedBackup) {
-        return res.status(400).json({
-          ok: false,
-          message: "Backup list is full or already registered"
-        });
+        throw new Error("Backup list is full or already registered");
       }
+
+      await session.commitTransaction();
 
       return res.status(200).json({
         role: "backup",
@@ -462,36 +477,106 @@ export const joinMatch = async (req, res) => {
     }
 
     /* ===================================================== */
-    /* NORMAL PLAYER JOIN (ATOMIC - NO OVERBOOKING)         */
+    /* NORMAL PLAYER JOIN                                   */
     /* ===================================================== */
 
-    if(!paymentMethod){
-        return res.status(400).json({
-            ok: false,
-            message: "Payment method required"
-        })
+    if (!paymentMethod) {
+      throw new Error("Payment method required");
     }
 
-    //match validation
-    const matchForValidation = await Match.findById(id).select("paymentMethods");
+    const match = await Match.findById(id).session(session);
 
-    if(!matchForValidation) {
-        return res.status(400).json({
-            ok: false,
-            message: "Match does not exist"
-        })
+    if (!match) {
+      throw new Error("Match does not exist");
     }
 
-    const validPaymentMethod =matchForValidation.paymentMethods.find(
-        pm => pm.type === paymentMethod
-    )
+    const validPaymentMethod = match.paymentMethods.find(
+      pm => pm.type === paymentMethod
+    );
 
-    if(!validPaymentMethod){
-        return res.status(400).json({
-            ok: false,
-            message: "Please select a valid payment method"
-        })
+    if (!validPaymentMethod) {
+      throw new Error("Please select a valid payment method");
     }
+
+    /* ===================================================== */
+    /* WALLET PAYMENT FLOW                                  */
+    /* ===================================================== */
+
+    if (paymentMethod === "wallet") {
+
+      const user = await User.findById(userId).session(session);
+
+      if (!user) throw new Error("User not found");
+
+      // 💰 precio estimado por jugador
+      const estimatedPrice = match.price / match.maxPlayers;
+
+      if (user.walletBalance < estimatedPrice) {
+        throw new Error("Insufficient balance");
+      }
+
+      // 1️⃣ JOIN MATCH
+      const updatedMatch = await Match.findOneAndUpdate(
+        {
+          _id: id,
+          status: { $in: ["Open", "Full"] },
+          players: { $not: { $elemMatch: { user: userId } } },
+          backUps: { $not: { $elemMatch: { user: userId } } },
+          $expr: { $lt: [{ $size: "$players" }, "$maxPlayers"] }
+        },
+        {
+          $push: {
+            players: {
+              user: userId,
+              joinedAt: new Date(),
+              payment: {
+                method: "wallet",
+                status: "paid",
+                amount: estimatedPrice
+              }
+            }
+          }
+        },
+        { new: true, session }
+      );
+
+      if (!updatedMatch) {
+        throw new Error("Match is full");
+      }
+
+      // 2️⃣ UPDATE WALLET
+      user.walletBalance -= estimatedPrice;
+      await user.save({ session });
+
+      // 3️⃣ CREATE WALLET TRANSACTION
+
+      const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
+
+      await WalletTransaction.create([{
+        user: userId,
+        amount: -estimatedPrice,
+        type: "match_payment",
+        status: "confirmed",
+        note: `Match join ${formattedDate}`
+      }], { session });
+
+      // 4️⃣ UPDATE MATCH STATUS
+      if (updatedMatch.players.length === updatedMatch.maxPlayers) {
+        updatedMatch.status = "Full";
+        await updatedMatch.save({ session });
+      }
+
+      await session.commitTransaction();
+
+      return res.status(200).json({
+        role: "player",
+        match: updatedMatch
+      });
+    }
+
+    /* ===================================================== */
+    /* OTHER PAYMENT METHODS (UNPAID)                        */
+    /* ===================================================== */
 
     const updatedMatch = await Match.findOneAndUpdate(
       {
@@ -507,22 +592,23 @@ export const joinMatch = async (req, res) => {
             user: userId,
             joinedAt: new Date(),
             payment: {
-                method: paymentMethod,
-                status: "unpaid"
+              method: paymentMethod,
+              status: "unpaid"
             }
           }
         }
       },
-      { new: true }
+      { new: true, session }
     );
 
     if (updatedMatch) {
 
-      // If match just became full
       if (updatedMatch.players.length === updatedMatch.maxPlayers) {
         updatedMatch.status = "Full";
-        await updatedMatch.save();
+        await updatedMatch.save({ session });
       }
+
+      await session.commitTransaction();
 
       return res.status(200).json({
         role: "player",
@@ -550,31 +636,31 @@ export const joinMatch = async (req, res) => {
           }
         }
       },
-      { new: true }
+      { new: true, session }
     );
 
     if (autoBackup) {
+      await session.commitTransaction();
+
       return res.status(200).json({
         role: "backup",
         match: autoBackup
       });
     }
 
-    return res.status(400).json({
-      ok: false,
-      message: "Match is fully booked"
-    });
+    throw new Error("Match is fully booked");
 
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
+    await session.abortTransaction();
+
+    return res.status(400).json({
       ok: false,
-      message: "Internal error joining match"
+      message: error.message || "Internal error joining match"
     });
+  } finally {
+    session.endSession();
   }
 };
-
-
 
 export const generateMatches = async (req, res) => {
 
@@ -1075,115 +1161,232 @@ export const addMatchCourts = async (req, res) => {
 };
 
 
-export const leaveMatch = async (req, res) => {
+// export const leaveMatch = async (req, res) => {
 
-    try {
-        const {
-            matchId
-        } = req.params;
-        const userId = req.user._id.toString();
+//     try {
+//         const {
+//             matchId
+//         } = req.params;
+//         const userId = req.user._id.toString();
 
-        const match = await Match.findById(matchId).populate('backUps.user', 'email')
+//         const match = await Match.findById(matchId).populate('backUps.user', 'email')
 
-        const less24 = isLessThan24h(match.date, match.startTime);     
+//         const less24 = isLessThan24h(match.date, match.startTime);     
 
-        if (!match) return res.status(400).json({
-            ok: false,
-            message: 'Match not found'
-        });
+//         if (!match) return res.status(400).json({
+//             ok: false,
+//             message: 'Match not found'
+//         });
 
-        if (['Playing', 'Played', 'Cancelled', 'Closed'].includes(match.status)) return res.status(400).json({
-            ok: false,
-            message: 'Can only leave open or full matches'
-        });
+//         if (['Playing', 'Played', 'Cancelled', 'Closed'].includes(match.status)) return res.status(400).json({
+//             ok: false,
+//             message: 'Can only leave open or full matches'
+//         });
 
-        const isPlayer = match.players.some(p => {
-            const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
-            return playerId === userId
-        })
+//         const isPlayer = match.players.some(p => {
+//             const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
+//             return playerId === userId
+//         })
         
 
-        const isBackup = match.backUps.some(b => 
-            b.user._id.toString() === userId
-        )
+//         const isBackup = match.backUps.some(b => 
+//             b.user._id.toString() === userId
+//         )
 
-        if (!isPlayer && !isBackup) return res.status(400).json({
-            ok: false,
-            message: 'Player not registered to this match'
-        });
+//         if (!isPlayer && !isBackup) return res.status(400).json({
+//             ok: false,
+//             message: 'Player not registered to this match'
+//         });
 
-           if(less24 && isPlayer) return res.status(200).json({
-          ok: 'false',
-          message: 'Cannot leave match if starting in less than 24 hours'
-        })
+//            if(less24 && isPlayer) return res.status(200).json({
+//           ok: 'false',
+//           message: 'Cannot leave match if starting in less than 24 hours'
+//         })
 
-        /* -------------------- */
-        /* Leaving as BACKUP    */
-        /* -------------------- */
-        if (isBackup) {
-            match.backUps = match.backUps.filter(
-                b => b.user._id.toString() !== userId
-            )
+//         /* -------------------- */
+//         /* Leaving as BACKUP    */
+//         /* -------------------- */
+//         if (isBackup) {
+//             match.backUps = match.backUps.filter(
+//                 b => b.user._id.toString() !== userId
+//             )
 
-            await match.save();
+//             await match.save();
 
-            return res.status(200).json(match)
-        }
+//             return res.status(200).json(match)
+//         }
 
 
-        /* -------------------- */
-        /* Leaving as player    */
-        /* -------------------- */
-        match.players = match.players.filter(p => {
-            const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
-            return playerId !== userId
-        })
+//         /* -------------------- */
+//         /* Leaving as player    */
+//         /* -------------------- */
+//         match.players = match.players.filter(p => {
+//             const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
+//             return playerId !== userId
+//         })
 
-        //reopen for free spots
-        if (match.players.length < match.maxPlayers) {
-            match.status = 'Open'
-        }
+//         //reopen for free spots
+//         if (match.players.length < match.maxPlayers) {
+//             match.status = 'Open'
+//         }
 
-        await match.save();
+//         await match.save();
 
-        await inviteNextBackup(match)
+//         await inviteNextBackup(match)
 
-        res.status(200).json({
-            message: 'User removed from match',
-            match
-        })
+//         res.status(200).json({
+//             message: 'User removed from match',
+//             match
+//         })
 
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            ok: false,
-            message: 'Error leaving match'
-        });
-    }
+//     } catch (error) {
+//         console.log(error)
+//         res.status(500).json({
+//             ok: false,
+//             message: 'Error leaving match'
+//         });
+//     }
 
-}
+// }
 
 //accept invite
+
+export const leaveMatch = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { matchId } = req.params;
+    const userId = req.user._id.toString();
+
+    const match = await Match.findById(matchId)
+      .populate("backUps.user", "email")
+      .session(session);
+
+    if (!match) throw new Error("Match not found");
+
+    const less24 = isLessThan24h(match.date, match.startTime);
+
+    if (["Playing", "Played", "Cancelled", "Closed"].includes(match.status)) {
+      throw new Error("Can only leave open or full matches");
+    }
+
+    const playerObj = match.players.find((p) => {
+      const playerId = p.user._id
+        ? p.user._id.toString()
+        : p.user.toString();
+      return playerId === userId;
+    });
+
+    const isBackup = match.backUps.some(
+      (b) => b.user._id.toString() === userId
+    );
+
+    if (!playerObj && !isBackup) {
+      throw new Error("Player not registered to this match");
+    }
+
+    if (less24 && playerObj) {
+      throw new Error("Cannot leave match if starting in less than 24 hours");
+    }
+
+    /* -------------------- */
+    /* BACKUP → NO WALLET   */
+    /* -------------------- */
+    if (isBackup) {
+      match.backUps = match.backUps.filter(
+        (b) => b.user._id.toString() !== userId
+      );
+
+      await match.save({ session });
+      await session.commitTransaction();
+
+      return res.status(200).json(match);
+    }
+
+    /* -------------------- */
+    /* PLAYER LEAVE         */
+    /* -------------------- */
+
+    const paymentMethod = playerObj?.payment?.method;
+
+    // 💰 CALCULO DINÁMICO (LO QUE QUIERES)
+    const paidAmount = match.price / match.maxPlayers;
+
+    // 1️⃣ REMOVE PLAYER
+    match.players = match.players.filter((p) => {
+      const playerId = p.user._id
+        ? p.user._id.toString()
+        : p.user.toString();
+      return playerId !== userId;
+    });
+
+    // 2️⃣ REOPEN MATCH
+    if (match.players.length < match.maxPlayers) {
+      match.status = "Open";
+    }
+
+    await match.save({ session });
+
+    // 3️⃣ WALLET REFUND (SOLO SI WALLET)
+    if (paymentMethod === "wallet") {
+
+      await User.findByIdAndUpdate(
+        userId,
+        { $inc: { walletBalance: paidAmount } },
+        { session }
+      );
+
+      const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
+
+      await WalletTransaction.create(
+        [{
+          user: userId,
+          amount: paidAmount,
+          type: "adjustment",
+          status: "confirmed",
+          note: `Refund leave match ${formattedDate}`
+        }],
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+
+    await inviteNextBackup(match);
+
+    return res.status(200).json({
+      message: "User removed from match",
+      match,
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+
+    return res.status(400).json({
+      ok: false,
+      message: error.message || "Error leaving match",
+    });
+  } finally {
+    session.endSession();
+  }
+};
+
 export const acceptInvite = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { token } = req.query;
-    const {paymentMethod} = req.body;
+    const { paymentMethod } = req.body;
 
     if (!token) {
-      return res.status(400).json({
-        ok: false,
-        message: "Invitation token not provided"
-      });
+      throw new Error("Invitation token not provided");
     }
 
-     if (!paymentMethod) {
-      return res.status(400).json({
-        ok: false,
-        message: "Please select a payment method"
-      });
+    if (!paymentMethod) {
+      throw new Error("Please select a payment method");
     }
-
-
 
     // 🔐 Verify token
     const { matchId, userId, type } = jwt.verify(
@@ -1192,13 +1395,103 @@ export const acceptInvite = async (req, res) => {
     );
 
     if (type !== "MATCH_INVITE") {
-      return res.status(400).json({
-        ok: false,
-        message: "Invalid invitation token"
+      throw new Error("Invalid invitation token");
+    }
+
+    const match = await Match.findById(matchId).session(session);
+
+    if (!match) throw new Error("Match not found");
+
+    // 💰 precio dinámico
+    const estimatedPrice = match.price / match.maxPlayers;
+
+    /* ===================================================== */
+    /* WALLET FLOW                                           */
+    /* ===================================================== */
+
+    if (paymentMethod === "wallet") {
+
+      const user = await User.findById(userId).session(session);
+
+      if (!user) throw new Error("User not found");
+
+      if (user.walletBalance < estimatedPrice) {
+        throw new Error("Insufficient balance");
+      }
+
+      // 1️⃣ PROMOTE BACKUP → PLAYER
+      const updatedMatch = await Match.findOneAndUpdate(
+        {
+          _id: matchId,
+          "backUps.user": userId,
+          "backUps.status": "invited",
+          $expr: { $lt: [{ $size: "$players" }, "$maxPlayers"] }
+        },
+        {
+          $push: {
+            players: {
+              user: userId,
+              joinedAt: new Date(),
+              payment: {
+                method: "wallet",
+                status: "paid"
+              }
+            }
+          },
+          $pull: {
+            backUps: {
+              user: userId,
+              status: "invited"
+            }
+          }
+        },
+        { new: true, session }
+      );
+
+      if (!updatedMatch) {
+        throw new Error("Invitation invalid, expired, or match full");
+      }
+
+      // 2️⃣ DESCONTAR WALLET
+      await User.findByIdAndUpdate(
+        userId,
+        { $inc: { walletBalance: -estimatedPrice } },
+        { session }
+      );
+
+      // 3️⃣ TRANSACTION
+      const d = new Date(match.date);
+      const formattedDate = `${String(d.getDate()).padStart(2, "0")}/${
+        String(d.getMonth() + 1).padStart(2, "0")
+      }/${d.getFullYear()}`;
+
+      await WalletTransaction.create([{
+        user: userId,
+        amount: -estimatedPrice,
+        type: "match_payment",
+        status: "confirmed",
+        note: `Match invite ${formattedDate}`
+      }], { session });
+
+      // 4️⃣ FULL STATUS
+      if (updatedMatch.players.length === updatedMatch.maxPlayers) {
+        updatedMatch.status = "Full";
+        await updatedMatch.save({ session });
+      }
+
+      await session.commitTransaction();
+
+      return res.status(200).json({
+        ok: true,
+        message: "Joined match successfully",
+        match: updatedMatch
       });
     }
 
-    // Atomic promotion
+    /* ===================================================== */
+    /* OTHER METHODS (UNPAID)                                */
+    /* ===================================================== */
+
     const updatedMatch = await Match.findOneAndUpdate(
       {
         _id: matchId,
@@ -1212,8 +1505,8 @@ export const acceptInvite = async (req, res) => {
             user: userId,
             joinedAt: new Date(),
             payment: {
-                method: paymentMethod,
-                status: "unpaid"
+              method: paymentMethod,
+              status: "unpaid"
             }
           }
         },
@@ -1224,21 +1517,19 @@ export const acceptInvite = async (req, res) => {
           }
         }
       },
-      { new: true }
+      { new: true, session }
     );
 
     if (!updatedMatch) {
-      return res.status(400).json({
-        ok: false,
-        message: "Invitation invalid, expired, or match full"
-      });
+      throw new Error("Invitation invalid, expired, or match full");
     }
 
-    //if match is now full
-     if (updatedMatch.players.length === updatedMatch.maxPlayers) {
+    if (updatedMatch.players.length === updatedMatch.maxPlayers) {
       updatedMatch.status = "Full";
-      await updatedMatch.save();
+      await updatedMatch.save({ session });
     }
+
+    await session.commitTransaction();
 
     return res.status(200).json({
       ok: true,
@@ -1247,10 +1538,14 @@ export const acceptInvite = async (req, res) => {
     });
 
   } catch (error) {
+    await session.abortTransaction();
+
     return res.status(401).json({
       ok: false,
-      message: "Invalid or expired invitation token"
+      message: error.message || "Invalid or expired invitation token"
     });
+  } finally {
+    session.endSession();
   }
 };
 

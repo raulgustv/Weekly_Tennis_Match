@@ -10,11 +10,10 @@ const walletTransactionSchema = new mongoose.Schema({
     amount: {
         type: Number,
         required: true,
-        min: 0
     },
     type:{
         type: String,
-        enum: ['deposit', 'refund', 'adjustment'],
+        enum: ['deposit', 'refund', 'adjustment', 'match_payment'],
         required: true,
         default: 'deposit'
     },

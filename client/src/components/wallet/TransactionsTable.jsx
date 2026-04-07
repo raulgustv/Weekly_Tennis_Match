@@ -17,6 +17,7 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin}) => {
         deposit: "blue",
         refund: "green",
         adjustment: "lime",
+        match_payment: 'gold'
     };
 
     const columns = [

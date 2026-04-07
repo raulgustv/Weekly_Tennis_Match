@@ -36,6 +36,7 @@ const Wallet = () => {
                             isMobile={!screens.md}
                             loading={loadWallet}
                             isAdmin={false}
+                            refresh={fetchTransactions}
                         />
                     </Card>
                 </Col>
