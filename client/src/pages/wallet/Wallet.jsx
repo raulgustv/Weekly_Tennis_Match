@@ -13,6 +13,8 @@ const Wallet = () => {
 
     const { user } = useAuth();
 
+    //console.log(user)
+
     const { transactions, fetchTransactions, loadWallet, setLoadWallet } = useTransactions();
 
     return (
@@ -33,7 +35,7 @@ const Wallet = () => {
                             transactions={transactions}
                             isMobile={!screens.md}
                             loading={loadWallet}
-                            title=""
+                            isAdmin={false}
                         />
                     </Card>
                 </Col>

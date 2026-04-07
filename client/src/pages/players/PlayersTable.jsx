@@ -112,8 +112,8 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                 </Flex>
             )),
             filters: players.map((p) => ({
-                text: `${p?.name} ${p.lastname}`,
-                value: `${p?.name} ${p.lastname}`
+                text: `${p?.name} ${p?.lastname}`,
+                value: `${p?.name} ${p?.lastname}`
             })),
             filterSearch: true,
             onFilter: (value, record) => {

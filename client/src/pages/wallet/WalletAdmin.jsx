@@ -74,6 +74,8 @@ const WalletAdmin = () => {
                 Manage transactions
             </Title>
 
+            
+
             <Divider />
 
             <Row gutter={[16, 16]}>
@@ -96,7 +98,7 @@ const WalletAdmin = () => {
                         transactions={transactions}
                         isMobile={!screens.md}
                         loading={loadTransactions}
-                        title="All user transactions"
+                        isAdmin={true}
                     />
                 </Col>
             </Row>
