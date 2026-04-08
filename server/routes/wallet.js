@@ -13,4 +13,5 @@ router.get('/pending', protect, verifyAdmin, pendingDeposits)
 router.get('/', protect, verifyAdmin, allDeposits)
 router.get('/user/funds', protect, userDeposits)
 
+
 export default router;

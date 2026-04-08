@@ -3,7 +3,7 @@ import dayjs from "dayjs"
 
 const TransactionsTable = ({ transactions, isMobile, loading, isAdmin}) => {
 
-    console.log(transactions)
+    //console.log(transactions)
 
     const { Text, Title } = Typography;
 

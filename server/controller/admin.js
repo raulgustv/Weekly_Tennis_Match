@@ -296,3 +296,27 @@ export const togglePaymentStatus = async(req, res) =>{
         })
     }
 }
+
+export const getAdmins = async(req, res) =>{
+    try {
+
+        const user = await User.find({
+            role: 'admin', isActive: true
+        }).select('name lastname email phone role country receivesPayment')
+
+        if(!user) return res.status(200).json({
+            ok: false,
+            message: 'Admins not found'
+        })
+
+        return res.status(200).json(user)
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal error obtaining admin data'
+        })
+    }
+}
+

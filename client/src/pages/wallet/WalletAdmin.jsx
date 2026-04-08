@@ -1,15 +1,16 @@
 
-import { Col, Divider, Row, Typography , Grid} from 'antd';
+import { Col, Divider, Row, Typography, Select, Grid } from 'antd';
 import { useAllTransactions, usePendingTransactions } from '../../hooks/useTransactions';
 import PendingTransactions from '../../components/wallet/PendingTransactions';
 import { acceptTransaction, rejectTransaction } from '../../actions/wallet';
 import { toast } from 'react-toastify'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import TransactionsTable from '../../components/wallet/TransactionsTable';
+import axiosInstance from '../../API/axios';
 
 const WalletAdmin = () => {
 
-    const { Title } = Typography
+    const { Title, Text } = Typography
 
     const { useBreakpoint } = Grid;
     const screens = useBreakpoint();
@@ -21,8 +22,10 @@ const WalletAdmin = () => {
 
     const [openInputId, setOpenInputId] = useState(null)
     const [note, setNote] = useState("")
+    const [admin, setAdmin] = useState([])
 
-    console.log(transactions)
+
+    //console.log(transactions)
 
 
     //console.log(pendingTransactions)
@@ -68,13 +71,52 @@ const WalletAdmin = () => {
         }
     }
 
+    const obtainAdmins = async () => {
+        try {
+
+            const { data } = await axiosInstance.get('/admin/get-admin')
+
+            setAdmin(data)
+
+        } catch (error) {
+            console.log(error?.response?.data?.message)
+        }
+    }
+
+    useEffect(() => {
+        obtainAdmins()
+    }, []);
+
+    //console.log(admin)
+
+
+
+
+
+
     return (
         <>
             <Title level={3}>
                 Manage transactions
             </Title>
 
-            
+            <div>
+                <Text>Payment admin: </Text>
+                {admin.length > 0 && (
+                    <Select
+                        defaultValue={`${admin.find(a => a.receivesPayment)?.name} ${admin.find(a => a.receivesPayment)?.lastname}`}
+                        options={admin.map((ad) => ({
+                            value: `${ad.name} ${ad.lastname}`,
+                            label: `${ad.name} ${ad.lastname}`
+                        }))}
+                        style={{ width: 200 }}
+                    />
+                )}
+            </div>
+
+
+
+
 
             <Divider />
 

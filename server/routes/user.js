@@ -4,6 +4,7 @@ import { googleValidator, loginValidator, noteValidator, registerValidator } fro
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 import { protect, verifyAdmin } from '../middlewares/auth.js';
 import { authLimiter, registerLimiter } from '../config/expressLimit.js';
+import { verify } from 'crypto';
 
 
 const router = Router();
@@ -22,6 +23,8 @@ router.put("/onboarding-complete", protect, completeOnboarding)
 router.get("/all-users", protect, verifyAdmin, viewAllUsers)
 router.get("/:id", protect, verifyAdmin, validateObjectId("id"), viewUser)
 router.post('/:id', protect, verifyAdmin,  validateObjectId("id"), noteValidator, validateFields,  adminNote)
+
+
 
 
 export default router;
