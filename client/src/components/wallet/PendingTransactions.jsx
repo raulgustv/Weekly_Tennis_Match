@@ -1,21 +1,69 @@
 import { Button, Card, Flex, Tag, Typography, Grid, Input, Empty } from "antd";
 import dayjs from "dayjs";
 import colors from "../../themes/colors";
+import { acceptTransaction, rejectTransaction } from "../../actions/wallet";
+import {toast} from 'react-toastify'
+import { useState } from "react";
 
-const PendingTransactions = ({ transactions = [], 
-    handleApprove, 
-    handleReject, 
-    openInputId, 
-    handleOpenNote, 
-    note, 
-    setNote, 
-    handleCancel,
-    loading
+const PendingTransactions = ({ transactions = [],
+    loading,
+    setLoading,
+    fetchTransactions
 }) => {
     const { Text } = Typography;
     const { Meta } = Card;
     const { useBreakpoint } = Grid;
     const screens = useBreakpoint();
+
+    const [note, setNote] = useState("")
+    const [openInputId, setOpenInputId] = useState(null)
+
+
+
+    const handleApprove = async (id) => {
+        try {
+            setLoading(true)
+            const { data } = await acceptTransaction(id);
+
+            toast.success(data?.message)
+
+            fetchTransactions();
+
+        } catch ({ response }) {
+            toast.error(response?.data?.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    
+
+    const handleOpenNote = (id) => {
+        setOpenInputId(id)
+    }
+
+
+
+    const handleReject = async (id) => {
+        try {
+            setLoading(true)
+            await rejectTransaction(id, note)
+
+            fetchTransactions();
+            setNote(null)
+
+            toast.success('Transction rejected')
+        } catch ({ response }) {
+            toast.error(response?.data?.message)
+        } finally {
+            setLoading(true)
+        }
+    }
+
+    const handleCancel = () => {
+        setOpenInputId(null)
+        setNote(null)
+    }
 
     if (!transactions.length) {
         return (

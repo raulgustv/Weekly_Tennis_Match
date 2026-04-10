@@ -26,6 +26,7 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin}) => {
             dataIndex: 'createdAt',
             key: 'createdAt',
             render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+            defaultSortOrder: 'descend',
             sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
         },
         {

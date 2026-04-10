@@ -7,7 +7,7 @@ const ProfileHeader = ({ user, editable }) => {
 
     const {Text, Title} = Typography;
 
-    console.log(user)
+    //console.log(user)
 
 
     return (

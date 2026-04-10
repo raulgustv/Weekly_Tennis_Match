@@ -303,9 +303,11 @@ export const pendingDeposits = async(req, res) =>{
 export const allDeposits = async(req, res) =>{
     try {
 
-        const adminId = req.user._id;
+        //const adminId = req.user._id;
 
-        const transactions = await WalletTransaction.find().populate("user", "name lastname email phone")
+        const transactions = await WalletTransaction
+                .find({createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }})
+                .populate("user", "name lastname email phone")
         .sort({createdAt: -1})
 
         return res.status(200).json(transactions)

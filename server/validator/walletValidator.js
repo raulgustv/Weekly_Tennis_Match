@@ -7,5 +7,5 @@ export const addFundsValidator = [
 
     body('method')
     .notEmpty().withMessage('Method is required')
-    .isIn(["bizum", "revolut", "cash"]).withMessage('Invalid payment method')
+    .isIn(["bizum", "revolut", "paypal"]).withMessage('Invalid payment method')
 ]
