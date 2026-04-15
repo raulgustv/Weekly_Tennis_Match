@@ -9,6 +9,7 @@ import { useParams } from "react-router-dom";
 import { viewPlayer } from "../../actions/admin";
 import ProfileHeader from "../../components/profile/ProfileHeader";
 import { toast } from "react-toastify";
+import UserNotes from "../../components/profile/UserNotes";
 
 
 
@@ -87,7 +88,24 @@ const ProfileViewAdmin = () => {
 
             <Divider />
 
-            <NTRPHistory ntrpHistory={ntrpHistory}  />
+            <Row>
+                <Col xs={24} md={12} lg={12}>
+                    <NTRPHistory ntrpHistory={ntrpHistory}  />
+                </Col>
+
+                <Col xs={24} md={12} lg={12}>
+                    <UserNotes userId={id} />
+                </Col>
+
+
+            </Row>
+
+            
+
+            
+
+
+            
 
         </>
     );

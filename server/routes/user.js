@@ -1,10 +1,10 @@
 import {Router} from 'express';
-import {  login, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote } from '../controller/user.js';
+import {  login, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote, userNotes } from '../controller/user.js';
 import { googleValidator, loginValidator, noteValidator, registerValidator } from '../validator/userValidator.js';
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 import { protect, verifyAdmin } from '../middlewares/auth.js';
 import { authLimiter, registerLimiter } from '../config/expressLimit.js';
-import { verify } from 'crypto';
+//import { verify } from 'crypto';
 
 
 const router = Router();
@@ -22,7 +22,9 @@ router.put("/onboarding-complete", protect, completeOnboarding)
 
 router.get("/all-users", protect, verifyAdmin, viewAllUsers)
 router.get("/:id", protect, verifyAdmin, validateObjectId("id"), viewUser)
+
 router.post('/:id', protect, verifyAdmin,  validateObjectId("id"), noteValidator, validateFields,  adminNote)
+router.get('/notes/:id', protect, verifyAdmin, userNotes)
 
 
 

@@ -8,6 +8,28 @@ cron.schedule('* * * * *', async () => {
 
     /*
       ==========================================
+      OPEN → CLOSED (si nunca empezó)
+      ==========================================
+    */
+    const openMatches = await Match.find({ status: 'Open' });
+
+    for (const match of openMatches) {
+      if (!match.date || !match.startTime) continue;
+
+      const startDate = new Date(match.date);
+      const [h, m] = match.startTime.split(':');
+
+      startDate.setHours(Number(h), Number(m), 0, 0);
+
+      if (now >= startDate) {
+        match.status = 'Closed';
+        await match.save();
+        console.log(`${match._id} → Closed (from Open)`);
+      }
+    }
+
+    /*
+      ==========================================
       READY → PLAYING
       ==========================================
     */
