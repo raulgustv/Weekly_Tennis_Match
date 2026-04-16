@@ -1,11 +1,16 @@
 import { Table, Tag, Typography } from "antd"
 import dayjs from "dayjs"
+import RefundAdjustModal from "../modals/RefundAdjustModal";
+import { useState } from "react";
 
-const TransactionsTable = ({ transactions, isMobile, loading, isAdmin}) => {
+const TransactionsTable = ({ transactions, isMobile, loading, isAdmin }) => {
 
     //console.log(transactions)
 
     const { Text, Title } = Typography;
+
+    const [user, setUser] = useState(null);
+    const [openModal, setOpenModal] = useState(false)
 
     const statusColor = {
         pending: "orange",
@@ -111,19 +116,30 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin}) => {
 
 
     return (
-        <Table
-            rowKey="_id"
-            columns={columns}
-            dataSource={transactions}
-            pagination={{ pageSize: 6 }}
-            loading={loading}
-            title={
-                () => (
-                    <Title level={4}>Transactions: {transactions?.length}</Title>
-                )
-            }
-            scroll={{ x: 1000 }}
-        />
+        <>
+            <Table
+                rowKey="_id"
+                columns={columns}
+                dataSource={transactions}
+                pagination={{ pageSize: 6 }}
+                loading={loading}
+                title={
+                    () => (
+                        <Title level={4}>Transactions: {transactions?.length}</Title>
+                    )
+                }
+                scroll={{ x: 1000 }}
+                onRow={({ user }) => ({
+                    onDoubleClick: () => {
+                        if (!isAdmin) return
+                        setUser(user);
+                        setOpenModal(true)                        
+                    }
+                })}
+            />
+
+            <RefundAdjustModal user={user} open={openModal} setOpen={setOpenModal} />
+        </>
     )
 }
 

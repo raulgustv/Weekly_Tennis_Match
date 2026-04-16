@@ -348,3 +348,122 @@ export const userDeposits = async(req, res) =>{
         })
     }
 }
+
+export const refundAdjustments = async(req, res) =>{
+
+
+    const session = await mongoose.startSession();
+
+    try {
+
+        session.startTransaction();
+
+        const adminId = req.user._id;
+
+        const {userId, amount, type, note} = req.body;
+
+        if(!userId || !amount || !type){
+            await session.abortTransaction();
+            return res.status(400).json({
+                ok: false,
+                message: 'User amount and type are required'
+            })
+        }
+
+        if(!['refund', 'adjustment'].includes(type)){
+            await session.abortTransaction();
+            return res.status(400).json({
+                ok: false,
+                message: 'Please select a valid type (refund or adjustment)'
+            })
+        }
+
+        const user = await User.findById(userId).session(session);
+
+        if(!user){
+            await session.abortTransaction();
+            return res.status(400).json({
+                ok: false,
+                message: 'User not found'
+            })
+        }
+
+         /*
+        ==========================================
+        CREATE TRANSACTION
+        ==========================================
+        */
+
+        const transaction = await WalletTransaction.create([{
+            user: userId,
+            amount,
+            type,
+            status: 'confirmed',
+            reviewedBy: adminId,
+            reviewedAt: new Date(),
+            note
+        }], {session});
+
+        /*
+        ==========================================
+        UPDATE BALANCE
+        ==========================================
+        */
+
+        let balanceUpdate = 0;
+
+        if(type === 'refund'){
+            balanceUpdate = amount;
+        }
+
+        if(type === 'adjustment'){
+            balanceUpdate = amount;
+        }
+
+        await User.findByIdAndUpdate(
+            userId,
+            {$inc: {walletBalance: balanceUpdate}},
+            {session}
+        );
+
+        await session.commitTransaction();
+        
+        session.endSession();
+
+         /*
+        ==========================================
+        EMAIL
+        ==========================================
+        */
+
+        const resend = getResend();
+
+        const refUrl = `${process.env.FRONTEND_URL}/wallet`;
+
+        await resend.emails.send({
+            from: process.env.FROM_EMAIL,
+            to: user.email,
+            subject: `MTC - ${type === 'refund' ? 'Refund processed' : 'Balance adjustment'}`,
+            html: `
+                <h2>Hello ${user.name},</h2>
+                <p>A${type === 'adjustment' && 'n'} ${type} has been applied to your wallet</p>
+                <p>Reason: ${note} || 'No details'</p>
+                <p><a href="${refUrl}">Check your wallet</a></p>
+                <p>Best regards,</p>
+            `
+        });
+
+        return res.status(200).json({
+            message: `${type} has been processed`,
+            transaction: transaction[0]        })        
+
+
+        
+    } catch (error) {
+        console.log(error)
+         return res.status(400).json({
+                ok: false,
+                message: 'Internal error refunding/adjusting user'
+        })
+    }
+}

@@ -18,3 +18,9 @@ export const rejectTransaction = async(id, note) =>{
 
     return data;
 }
+
+export const adminRefundAdjust = async(payload) =>{
+    const data = await axiosInstance.post('/wallet/refund-adjust', payload);
+
+    return data;
+}
