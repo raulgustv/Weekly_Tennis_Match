@@ -1,4 +1,4 @@
-import { Button, Checkbox, Flex, Image, Popconfirm, Table, Typography, Grid } from "antd"
+import { Button, Checkbox, Flex, Image, Popconfirm, Table, Typography, Grid, Tooltip} from "antd"
 import { useCountries } from "../../hooks/useCountries";
 import { useMemo, useState } from "react";
 import { togglePlayerActive, toggleUserRole } from "../../actions/admin";
@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import NTRPModal from "../../components/modals/NTRPModal";
 import ProfilePicture from "../../components/uploads/ProfilePicture";
 import { useNavigate } from "react-router-dom";
-//import { useAuth } from "../../context/AuthContext";
+import {InfoCircleOutlined} from "@ant-design/icons";
 
 
 const PlayersTable = ({ players, loading, fetchPlayers }) => {
@@ -19,7 +19,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
     const [selectedPlayer, setSelectedPlayer] = useState(null)
 
     const { Text } = Typography;
-    
+
     const navigate = useNavigate();
 
     const countriesMap = useMemo(() => {
@@ -113,13 +113,10 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             )),
             filters: players.map((p) => ({
                 text: `${p?.name} ${p?.lastname}`,
-                value: `${p?.name} ${p?.lastname}`
+                value: `${p?._id}`
             })),
             filterSearch: true,
-            onFilter: (value, record) => {
-                const fullName = `${record?.name} ${record?.lastname}`.toLowerCase();
-                return fullName.startsWith(value.toLowerCase());
-            },
+            onFilter: (value, record) => record?._id === value,
             sorter: (a, b) => {
                 const nameA = `${a?.name} ${a?.lastname}`.toLowerCase();
                 const nameB = `${b?.name} ${b?.lastname}`.toLowerCase();
@@ -208,14 +205,25 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
     return (
         <>
+
+            <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
+                <Tooltip title="Double click on a row to view player profile">
+                    <Flex align="center" gap={6} style={{ cursor: "help" }}>
+                        <InfoCircleOutlined />
+                        <span style={{ fontSize: 12, opacity: 0.7 }}>
+                            Row interaction info
+                        </span>
+                    </Flex>
+                </Tooltip>
+            </Flex>
             <Table
                 dataSource={playersWithCountry}
                 columns={columns}
                 loading={loading}
                 rowKey="_id"
                 scroll={{ x: "max-content" }}
-                onRow={({_id}) => ({
-                    onDoubleClick: () =>{
+                onRow={({ _id }) => ({
+                    onDoubleClick: () => {
                         navigate(`/admin/player/${_id}`)
                     }
                 })}

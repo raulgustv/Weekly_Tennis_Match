@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import axiosInstance from "../API/axios"
+import { toast } from "react-toastify"
 
 export  const useTransactions = () =>{
 
@@ -83,14 +84,14 @@ export const useAllTransactions = () =>{
             
         } catch ({response}) {
             console.log(response)
+            toast.error(response?.data?.messsage)
         }finally{
             setLoadTransactions(false)
         }
     }
 
     useEffect(() => {
-        fetchAllTransactions()
-       
+        fetchAllTransactions()       
     }, []);
 
     return {

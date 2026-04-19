@@ -6,9 +6,10 @@ import {
   Flex,
   Button,
   Popover,
-  Space
+  Space,
+  Tooltip
 } from "antd";
-import { AuditOutlined } from "@ant-design/icons";
+import { AuditOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useMemo } from "react";
 import colors from "../../themes/colors";
@@ -69,7 +70,7 @@ const VoteCard = ({ match, loadMatches, userId }) => {
 
       await voteSkill(playerId, value, match._id);
 
-      markAsVoted(playerId); 
+      markAsVoted(playerId);
 
       toast.success("Thanks for voting");
 
@@ -168,9 +169,33 @@ const VoteCard = ({ match, loadMatches, userId }) => {
 
       <Divider />
 
-      <Text strong style={{ fontSize: 16 }}>
-        Evaluate players skill level
-      </Text>
+      <Flex align="center" gap={6}>
+        <Text strong style={{ fontSize: 16 }}>
+          Evaluate players skill level
+        </Text>
+
+        <Tooltip
+          title={
+            <div style={{ maxWidth: 260 }}>
+              <p style={{ marginBottom: 8 }}>
+                You can rate the players you shared the court with in your last match.
+              </p>
+
+              <p style={{ marginBottom: 8 }}>
+                Your feedback is completely anonymous and will not be visible to the player.
+              </p>
+
+              <p style={{ margin: 0 }}>
+                Please vote honestly and respectfully to help improve the experience for everyone.
+              </p>
+            </div>
+          }
+          placement="right"
+          color={'#1677ff'}
+        >
+          <InfoCircleOutlined style={{ color: '#999', cursor: 'pointer' }} />
+        </Tooltip>
+      </Flex>
 
       <Divider />
 

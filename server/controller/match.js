@@ -1343,7 +1343,7 @@ export const leaveMatch = async (req, res) => {
         [{
           user: userId,
           amount: paidAmount,
-          type: "adjustment",
+          type: "refund",
           status: "confirmed",
           note: `Refund leave match ${formattedDate}`
         }],
@@ -1548,7 +1548,6 @@ export const acceptInvite = async (req, res) => {
     session.endSession();
   }
 };
-
 
 export const declineInvite = async (req, res) => {
   try {

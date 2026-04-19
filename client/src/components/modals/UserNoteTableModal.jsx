@@ -6,7 +6,9 @@ const UserNoteTableModal = ({ open, userNotes, setOpen }) => {
 
     const {notesHistory} = userNotes;
 
-    console.log(notesHistory)
+    
+
+    //console.log(notesHistory)
 
     const columns = [
         {

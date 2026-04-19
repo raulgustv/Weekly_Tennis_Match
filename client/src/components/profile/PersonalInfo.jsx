@@ -1,7 +1,8 @@
 import useCountdown from "../../hooks/useCountdown";
-import {  Descriptions,  Image,  Space,   Typography,  Button, Progress } from "antd";
+import { Descriptions, Image, Space, Typography, Button, Progress, Tooltip } from "antd";
 import {
     GlobalOutlined,
+    InfoCircleOutlined,
     LockOutlined,
     MailOutlined,
 } from "@ant-design/icons";
@@ -10,19 +11,19 @@ import { useCountries } from "../../hooks/useCountries";
 import { useMemo } from "react";
 
 
-const PersonalInfo = ({user, handleSendReset=null, passwordChange}) => {
+const PersonalInfo = ({ user, handleSendReset = null, passwordChange }) => {
 
-    const { Text } = Typography;
+    const { Text, Link } = Typography;
 
-    const {countries} = useCountries()
+    const { countries } = useCountries()
 
-     const total_cooldown = 120000
+    const total_cooldown = 120000
 
     const resetCooldown = useCountdown({
         duration: total_cooldown
-    })    
+    })
 
-       const countryFlag = useMemo(() => {
+    const countryFlag = useMemo(() => {
         if (!user?.country || !countries?.length) return null;
 
         return (
@@ -32,7 +33,7 @@ const PersonalInfo = ({user, handleSendReset=null, passwordChange}) => {
         );
     }, [user?.country, countries]);
 
-    
+
     const percent = resetCooldown.active
         ? 100 - Math.round((resetCooldown.remaining / total_cooldown) * 100)
         : 0;
@@ -126,6 +127,29 @@ const PersonalInfo = ({user, handleSendReset=null, passwordChange}) => {
                             <Image src={countryFlag} width={22} preview={false} />
                         )}
                     </Space>
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                    label={
+                        <Space>
+                            💰 Wallet Balance
+
+                            <Tooltip title="Click on the icon to add funds to your wallet">
+                                <Link href="/wallet">
+                                    <InfoCircleOutlined
+                                        style={{
+                                            color: "rgba(22, 119, 255, 0.65)",
+                                            cursor: "pointer"
+                                        }}
+                                    />
+                                </Link>
+                            </Tooltip>
+                        </Space>
+                    }
+                >
+                    <Text strong style={{ fontSize: 16 }}>
+                        {user?.walletBalance.toFixed(2)}€
+                    </Text>
                 </Descriptions.Item>
             </Descriptions>
         </>

@@ -1,13 +1,12 @@
-import { Form, Input, Modal, Select, Typography } from "antd";
-import LoadingSpinner from "../utils/LoadingSpinner";
+import { Form, Input, InputNumber, Modal, Select, Typography } from "antd";
+//import LoadingSpinner from "../utils/LoadingSpinner";
 import { adminRefundAdjust } from "../../actions/wallet";
 import {toast} from 'react-toastify'
 
-const RefundAdjustModal = ({ user, open, setOpen }) => {
+const RefundAdjustModal = ({ user, open, setOpen, refresh }) => {
 
     const [form] = Form.useForm();
     const { Text } = Typography;
-
 
 
     const onFinish = async(values) => {
@@ -21,10 +20,9 @@ const RefundAdjustModal = ({ user, open, setOpen }) => {
             } 
 
             const res = await adminRefundAdjust(payload)
+            refresh()
 
-            toast.success(res.message)
-
- 
+            toast.success(res.message) 
 
             form.resetFields();
             setOpen(false);
@@ -35,7 +33,7 @@ const RefundAdjustModal = ({ user, open, setOpen }) => {
 
     };
 
-    if (!user) return <LoadingSpinner />;
+    //if (!user) return <LoadingSpinner />;
 
     return (
         <Modal
@@ -59,6 +57,9 @@ const RefundAdjustModal = ({ user, open, setOpen }) => {
                 <Form.Item
                     name="type"
                     label="Transaction type"
+                    rules={[
+                        {required: true, message: 'Please select a transaction type'}
+                    ]}
                 >
                     <Select
                         placeholder="Select type"
@@ -72,13 +73,21 @@ const RefundAdjustModal = ({ user, open, setOpen }) => {
                 {/* AMOUNT */}
                 <Form.Item
                     name="amount"
-                    label="Amount (€)"
+                    label={
+                        <>
+                            <Text>Amount</Text><Text type="secondary">(max/min amount 500€)</Text>
+                        </>
+                    }
+                    rules={[
+                        {required: true, message: 'Please add an amount'}
+                    ]}
                 >
-                    <Input
+                    <InputNumber
                         type="number"
                         min={-500}
                         max={500}
                         placeholder="e.g. 5.5 or -3.2"
+                        suffix='€'
                     />
                 </Form.Item>
 
@@ -95,7 +104,7 @@ const RefundAdjustModal = ({ user, open, setOpen }) => {
                         rows={4}
                         showCount
                         maxLength={300}
-                        placeholder="Reason for this action..."
+                        placeholder="Reason for adjustment/refund"
                     />
                 </Form.Item>
 

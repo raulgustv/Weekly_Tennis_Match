@@ -17,7 +17,7 @@ const UserProfile = () => {
 
     const { user } = useAuth();
 
-    console.log(user.role)
+    //console.log(user)
 
     const { countries } = useCountries();
 

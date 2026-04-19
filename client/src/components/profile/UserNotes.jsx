@@ -12,10 +12,12 @@ const UserNotes = ({ userId }) => {
     const [note, setNote] = useState("");
     const [modalOpen, setModalOpen] = useState(false)
     const [noteHistory, setNoteHistory] = useState([])
-    
+
 
 
     useEffect(() => {
+
+        if (!userId) return;
 
         const fetchUserNotes = async () => {
             try {
@@ -29,7 +31,7 @@ const UserNotes = ({ userId }) => {
             }
         }
 
-        if(userId) fetchUserNotes()
+        if (userId) fetchUserNotes()
 
     }, [userId])
 
@@ -38,9 +40,10 @@ const UserNotes = ({ userId }) => {
         try {
             const res = await addUserNote(userId, note)
 
+            const updated = await getUserNoteHistory(userId);
+            setNoteHistory(updated);
+
             toast.success(res.message)
-
-
         } catch ({ response }) {
             console.log(response)
             toast.error(response?.data?.message || 'Error submitting note')
@@ -49,7 +52,7 @@ const UserNotes = ({ userId }) => {
         }
     }
 
-    const handleOpenModal =() =>{
+    const handleOpenModal = () => {
         setModalOpen(true)
     }
 

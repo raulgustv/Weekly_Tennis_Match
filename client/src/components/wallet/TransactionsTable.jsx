@@ -3,7 +3,7 @@ import dayjs from "dayjs"
 import RefundAdjustModal from "../modals/RefundAdjustModal";
 import { useState } from "react";
 
-const TransactionsTable = ({ transactions, isMobile, loading, isAdmin }) => {
+const TransactionsTable = ({ transactions, isMobile, loading, isAdmin, refresh }) => {
 
     //console.log(transactions)
 
@@ -11,6 +11,8 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin }) => {
 
     const [user, setUser] = useState(null);
     const [openModal, setOpenModal] = useState(false)
+
+    //const {fetchAllTransactions} = useAllTransactions()
 
     const statusColor = {
         pending: "orange",
@@ -21,9 +23,21 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin }) => {
     const typeColor = {
         deposit: "blue",
         refund: "green",
-        adjustment: "lime",
+        adjustment: "red",
         match_payment: 'gold'
     };
+
+    const uniquePlayers = Array.from(
+        new Map(
+            transactions.map((t) => [
+                t?.user?._id,
+                {
+                    text: `${t?.user?.name} ${t?.user?.lastname}`,
+                    value: t?.user?._id
+                }
+            ])
+        ).values()
+    );
 
     const columns = [
         {
@@ -99,21 +113,11 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin }) => {
                 <Text type="secondary">{p?.user?.name} {p?.user?.lastname}  </Text>
             )),
             filterSearch: true,
-            filters: transactions.map((p) => ({
-                text: `${p?.user?.name} ${p?.user?.lastname}`,
-                value: `${p?.user?.name} ${p?.user?.lastname}`
-            })),
-            onFilter: (value, record) => {
-                const fullName = `${record?.user?.name} ${record?.user?.lastname}`.toLowerCase();
-                return fullName.startsWith(value.toLowerCase());
-            },
+            filters: uniquePlayers,
+            onFilter: (value, record) => record?.user?._id === value,
             align: 'center'
         }
-
-
-
     ]
-
 
     return (
         <>
@@ -133,12 +137,12 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin }) => {
                     onDoubleClick: () => {
                         if (!isAdmin) return
                         setUser(user);
-                        setOpenModal(true)                        
+                        setOpenModal(true)
                     }
                 })}
             />
 
-            <RefundAdjustModal user={user} open={openModal} setOpen={setOpenModal} />
+            <RefundAdjustModal user={user} open={openModal} setOpen={setOpenModal} refresh={refresh} />
         </>
     )
 }
