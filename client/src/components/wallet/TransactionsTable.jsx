@@ -1,7 +1,8 @@
-import { Table, Tag, Typography } from "antd"
+import { Table, Tag, Typography, Tooltip } from "antd"
 import dayjs from "dayjs"
 import RefundAdjustModal from "../modals/RefundAdjustModal";
 import { useState } from "react";
+import{InfoCircleOutlined} from '@ant-design/icons'
 
 const TransactionsTable = ({ transactions, isMobile, loading, isAdmin, refresh }) => {
 
@@ -127,11 +128,19 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin, refresh }
                 dataSource={transactions}
                 pagination={{ pageSize: 6 }}
                 loading={loading}
-                title={
-                    () => (
-                        <Title level={4}>Transactions: {transactions?.length}</Title>
-                    )
-                }
+                title={() => (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Title level={4} style={{ margin: 0 }}>
+                            Transactions: {transactions?.length}
+                        </Title>
+
+                        {isAdmin && (
+                            <Tooltip title="Double click on a row to create a refund">
+                                <InfoCircleOutlined style={{ cursor: "pointer", opacity: 0.7 }} />
+                            </Tooltip>
+                        )}
+                    </div>
+                )}
                 scroll={{ x: 1000 }}
                 onRow={({ user }) => ({
                     onDoubleClick: () => {

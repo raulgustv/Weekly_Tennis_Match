@@ -1,4 +1,4 @@
-import { Button, Checkbox, Flex, Image, Popconfirm, Table, Typography, Grid, Tooltip} from "antd"
+import { Button, Checkbox, Flex, Image, Popconfirm, Table, Typography, Grid, Tooltip } from "antd"
 import { useCountries } from "../../hooks/useCountries";
 import { useMemo, useState } from "react";
 import { togglePlayerActive, toggleUserRole } from "../../actions/admin";
@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import NTRPModal from "../../components/modals/NTRPModal";
 import ProfilePicture from "../../components/uploads/ProfilePicture";
 import { useNavigate } from "react-router-dom";
-import {InfoCircleOutlined} from "@ant-design/icons";
+
 
 
 const PlayersTable = ({ players, loading, fetchPlayers }) => {
@@ -80,37 +80,76 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
         {
             title: "Player name",
             key: "name",
-            render: ((p) => (
-                <Flex align="center" justify="space-between" gap={8}>
-
-                    <Flex
-                        align="center"
-                        style={{
-                            minWidth: 0, // 🔥 MUY IMPORTANTE para que ellipsis funcione
-                            overflow: "hidden"
-                        }}
-                    >
-                        <span
+            render: (p) => (
+                <Flex
+                    align="center"
+                    justify="space-between"
+                    gap={8}
+                    style={{ width: "100%" }}
+                >
+                    {/* LEFT SIDE (Avatar + Name) */}
+                    <Tooltip title="Click on player to view profile">
+                        <Flex
+                            align="center"
+                            gap={8}
                             style={{
-                                fontWeight: 500,
-                                whiteSpace: "nowrap",
+                                minWidth: 0,
                                 overflow: "hidden",
-                                textOverflow: "ellipsis"
+                                flex: 1,
+                                cursor: "pointer"
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/player/${p._id}`);
                             }}
                         >
-                            {p?.name} {p?.lastname}
-                        </span>
-                    </Flex>
+                            <ProfilePicture
+                                profilePicture={p?.profilePicture?.url}
+                                user={p}
+                                size={28}
+                                editable={false}
+                            />
 
-                    <ProfilePicture
-                        profilePicture={p?.profilePicture?.url}
-                        user={p}
-                        size={28}
-                        editable={false}
-                    />
+                            <span
+                                style={{
+                                    fontWeight: 500,
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis"
+                                }}
+                            >
+                                {p?.name} {p?.lastname}
+                            </span>
+                        </Flex>
+                    </Tooltip>
 
+                    {/* RIGHT SIDE */}
+                    {screens.xs ? (
+                        <Button
+                            type="primary"
+                            size="small"
+                            block
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/player/${p._id}`);
+                            }}
+                        >
+                            View profile
+                        </Button>
+                    ) : (
+                        <Button
+                            type="text"
+                            size="small"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/player/${p._id}`);
+                            }}
+                        >
+                            View
+                        </Button>
+                    )}
                 </Flex>
-            )),
+            ),
             filters: players.map((p) => ({
                 text: `${p?.name} ${p?.lastname}`,
                 value: `${p?._id}`
@@ -205,28 +244,17 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
     return (
         <>
-
-            <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
-                <Tooltip title="Double click on a row to view player profile">
-                    <Flex align="center" gap={6} style={{ cursor: "help" }}>
-                        <InfoCircleOutlined />
-                        <span style={{ fontSize: 12, opacity: 0.7 }}>
-                            Row interaction info
-                        </span>
-                    </Flex>
-                </Tooltip>
-            </Flex>
             <Table
                 dataSource={playersWithCountry}
                 columns={columns}
                 loading={loading}
                 rowKey="_id"
                 scroll={{ x: "max-content" }}
-                onRow={({ _id }) => ({
-                    onDoubleClick: () => {
-                        navigate(`/admin/player/${_id}`)
-                    }
-                })}
+            // onRow={({ _id }) => ({
+            //     onDoubleClick: () => {
+            //         navigate(`/admin/player/${_id}`)
+            //     }
+            // })}
             />
 
 
