@@ -63,28 +63,28 @@ const CourtTable = ({ courts, loadCourts, onRefresh }) => {
         }
     };
 
-    const getCourt = async(slug) => {
+    const getCourt = async (slug) => {
         try {
-            
+
             setOpenModal(true)
 
             const res = await getLocation(slug)
-            setCourt(res);            
-            
+            setCourt(res);
+
         } catch (error) {
             console.log(error)
             setOpenModal(false)
         }
     }
 
-    const handleSurfaceUpdate = async(slug, surface, courtNumber) => {
+    const handleSurfaceUpdate = async (slug, surface, courtNumber) => {
         try {
-    
+
             const res = await updateSurface(slug, courtNumber, surface);
-            
+
             toast.success(`Court updated successfully for ${res?.name}`);
             setOpenModal(false)
-            
+
         } catch (error) {
             console.log(error)
             toast.error(error?.response?.data?.message || 'Error updating court surface')
@@ -196,25 +196,27 @@ const CourtTable = ({ courts, loadCourts, onRefresh }) => {
                     scroll={{ x: "max-content" }}  // 👈 CLAVE MOBILE
                     onRow={(record) => ({
                         onDoubleClick: () => {
-                            if(!record.active){
+                            if (!record.active) {
                                 toast.warning('Location must be active to edit court surface');
                                 return;
                             }
-                            getCourt(record.slug) 
+                            getCourt(record.slug)
                         },
-                        style:{
+                        style: {
                             cursor: record.active ? "pointer" : "not-allowed",
                             opacity: record.active ? 1 : 0.5
-                        }
+                        },
+                        title: record.active ? "Double click to edit court surface" : ""
                     })}
                 />
             </Card>
 
-            <CourtModalSurface 
+            <CourtModalSurface
                 open={openModal}
                 court={court}
                 onClose={() => setOpenModal(false)}
                 updateSurface={handleSurfaceUpdate}
+
             />
         </>
     );

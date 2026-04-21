@@ -60,7 +60,7 @@ const Players = () => {
                                 <Statistic
                                     title="Total users"
                                     formatter={totalPlayers}
-                                    valueStyle={{ fontSize: 20 }}
+                                    style={{ fontSize: 20 }}
                                 />
                             </Col>
 
@@ -76,7 +76,7 @@ const Players = () => {
                                     formatter={() => (
                                         <CountUp end={newUsers?.length} />
                                     )}
-                                    valueStyle={{ fontSize: 20 }}
+                                    style={{ fontSize: 20 }}
                                 />
                             </Col>
                         </Row>
@@ -95,7 +95,7 @@ const Players = () => {
                                 <Statistic
                                     title="Total active users"
                                     formatter={totalActivePlayers}
-                                    valueStyle={{ fontSize: 20 }}
+                                    style={{ fontSize: 20 }}
                                 />
                             </Col>
 
@@ -104,7 +104,7 @@ const Players = () => {
                                     title="Active users ratio"
                                     value={playersActiveRatio}
                                     suffix="%"
-                                    valueStyle={{ fontSize: 20 }}
+                                    style={{ fontSize: 20 }}
                                 />
                             </Col>
                         </Row>

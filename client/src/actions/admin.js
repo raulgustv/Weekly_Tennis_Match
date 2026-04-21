@@ -49,3 +49,9 @@ export const getUserNoteHistory = async(id) =>{
 
     return data;
 }
+
+export const updatePaymentRecepient = async(id) =>{
+    const {data} = await axiosInstance.post(`/admin/update-recepient/${id}`);
+
+    return data;
+}

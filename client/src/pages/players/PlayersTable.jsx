@@ -1,4 +1,14 @@
-import { Button, Checkbox, Flex, Image, Popconfirm, Table, Typography, Grid, Tooltip } from "antd"
+import {
+    Button,
+    Checkbox,
+    Flex,
+    Image,
+    Popconfirm,
+    Table,
+    Typography,
+    Grid,
+    Tooltip
+} from "antd";
 import { useCountries } from "../../hooks/useCountries";
 import { useMemo, useState } from "react";
 import { togglePlayerActive, toggleUserRole } from "../../actions/admin";
@@ -7,19 +17,14 @@ import NTRPModal from "../../components/modals/NTRPModal";
 import ProfilePicture from "../../components/uploads/ProfilePicture";
 import { useNavigate } from "react-router-dom";
 
-
-
 const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
     const { useBreakpoint } = Grid;
-    const screens = useBreakpoint()
+    const screens = useBreakpoint();
 
     const { countries } = useCountries();
-
-    const [selectedPlayer, setSelectedPlayer] = useState(null)
-
+    const [selectedPlayer, setSelectedPlayer] = useState(null);
     const { Text } = Typography;
-
     const navigate = useNavigate();
 
     const countriesMap = useMemo(() => {
@@ -42,39 +47,31 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
         });
     }, [players, countriesMap]);
 
-
     const toggleActivation = async (id) => {
         try {
-
             const res = await togglePlayerActive(id);
-
             const { user, active } = res;
 
-            if (!user) return toast.error('User was not found')
+            if (!user) return toast.error('User was not found');
 
             toast.success(`${user?.name} ${user?.lastname} has been ${active ? 'activated' : 'de-activated'}`);
-
             fetchPlayers();
 
         } catch (error) {
-            console.log(error)
+            console.log(error);
         }
-    }
+    };
 
     const toggleAdminRole = async (id) => {
         try {
-
             const res = await toggleUserRole(id);
-
-            toast.success(`User successfully changed role to ${res?.user?.role}`)
-
-            fetchPlayers()
-
+            toast.success(`User successfully changed role to ${res?.user?.role}`);
+            fetchPlayers();
         } catch (error) {
-            console.log(error)
+            console.log(error);
             toast.error(error?.response?.data?.message);
         }
-    }
+    };
 
     const columns = [
         {
@@ -82,12 +79,13 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             key: "name",
             render: (p) => (
                 <Flex
-                    align="center"
+                    vertical={screens.xs} // 🔥 clave mobile
+                    align={screens.xs ? "stretch" : "center"}
                     justify="space-between"
                     gap={8}
                     style={{ width: "100%" }}
                 >
-                    {/* LEFT SIDE (Avatar + Name) */}
+                    {/* LEFT SIDE */}
                     <Tooltip title="Click on player to view profile">
                         <Flex
                             align="center"
@@ -95,7 +93,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                             style={{
                                 minWidth: 0,
                                 overflow: "hidden",
-                                flex: 1,
+                                flex: screens.xs ? "unset" : 1,
                                 cursor: "pointer"
                             }}
                             onClick={(e) => {
@@ -113,7 +111,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                             <span
                                 style={{
                                     fontWeight: 500,
-                                    whiteSpace: "nowrap",
+                                    whiteSpace: screens.xs ? "normal" : "nowrap",
                                     overflow: "hidden",
                                     textOverflow: "ellipsis"
                                 }}
@@ -124,30 +122,17 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                     </Tooltip>
 
                     {/* RIGHT SIDE */}
-                    {screens.xs ? (
-                        <Button
-                            type="primary"
-                            size="small"
-                            block
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/admin/player/${p._id}`);
-                            }}
-                        >
-                            View profile
-                        </Button>
-                    ) : (
-                        <Button
-                            type="text"
-                            size="small"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/admin/player/${p._id}`);
-                            }}
-                        >
-                            View
-                        </Button>
-                    )}
+                    <Button
+                        type={screens.xs ? "primary" : "text"}
+                        size="small"
+                        block={screens.xs}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/player/${p._id}`);
+                        }}
+                    >
+                        {screens.xs ? "View profile" : "View"}
+                    </Button>
                 </Flex>
             ),
             filters: players.map((p) => ({
@@ -161,7 +146,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                 const nameB = `${b?.name} ${b?.lastname}`.toLowerCase();
                 return nameA.localeCompare(nameB);
             },
-            sortDirections: ["ascend", "descend"], // opcional pero recomendado
+            sortDirections: ["ascend", "descend"],
         },
         {
             title: "Email",
@@ -176,29 +161,49 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
         {
             title: "Country",
             key: "country",
-            render: ((p) => (
-                <Flex justify="space-between" align="center" gap="small" vertical={screens.xs ? true : false}>
+            render: (p) => (
+                <Flex
+                    justify="space-between"
+                    align="center"
+                    gap="small"
+                    vertical={screens.xs}
+                >
                     <span>{p?.country}</span>
-                    <Image preview={false} width={screens.xs ? 18 : 25} alt={`${p?.country} flag`} src={p?.countryFlag} />
+                    <Image
+                        preview={false}
+                        width={screens.xs ? 18 : 25}
+                        alt={`${p?.country} flag`}
+                        src={p?.countryFlag}
+                    />
                 </Flex>
-            ))
+            )
         },
         {
             title: "NTRP Level",
             key: "ntrplvl",
-            render: ((p) => (
-                <Flex justify="center" align="center" gap="middle" vertical={screens.xs ? true : false}>
+            render: (p) => (
+                <Flex
+                    justify="center"
+                    align="center"
+                    gap="middle"
+                    vertical={screens.xs}
+                >
                     <span>{p?.ntrplvl.toFixed(1)}</span>
-                    <Button size="small" type="primary" onClick={() => setSelectedPlayer(p)} block >
+                    <Button
+                        size="small"
+                        type="primary"
+                        onClick={() => setSelectedPlayer(p)}
+                        block={screens.xs}
+                    >
                         Adjust
                     </Button>
                 </Flex>
-            ))
+            )
         },
         {
             title: "Active",
             key: "active",
-            render: ((p) => (
+            render: (p) => (
                 <Popconfirm
                     title={p?.isActive ? "Deactivate player?" : 'Activate player?'}
                     description={p?.isActive ? "This player will no longer be active" : "This player will be activated"}
@@ -210,37 +215,34 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                         Active player
                     </Checkbox>
                 </Popconfirm>
-            ))
+            )
         },
         {
             title: 'Role',
             key: 'role',
-            render: ((p) => (
-                <>
-                    <Flex
-                        direction={screens.xs ? "column" : "row"}
-                        align="center"
-                        gap="small"
-                        style={{ width: "100%" }}
+            render: (p) => (
+                <Flex
+                    vertical={screens.xs}
+                    align="center"
+                    gap="small"
+                    style={{ width: "100%" }}
+                >
+                    <Text type="secondary" style={{ whiteSpace: "nowrap" }}>
+                        {p?.role}
+                    </Text>
+
+                    <Button
+                        size="small"
+                        type="primary"
+                        onClick={() => toggleAdminRole(p?._id)}
+                        block={screens.xs}
                     >
-                        <Text type="secondary" style={{ whiteSpace: "nowrap" }}>
-                            {p?.role}
-                        </Text>
-
-                        <Button
-                            size="small"
-                            type="primary"
-                            onClick={() => toggleAdminRole(p?._id)}
-                            block={screens.xs}
-                        >
-                            Toggle role
-                        </Button>
-                    </Flex>
-
-                </>
-            ))
+                        Toggle role
+                    </Button>
+                </Flex>
+            )
         }
-    ]
+    ];
 
     return (
         <>
@@ -250,17 +252,16 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                 loading={loading}
                 rowKey="_id"
                 scroll={{ x: "max-content" }}
-            // onRow={({ _id }) => ({
-            //     onDoubleClick: () => {
-            //         navigate(`/admin/player/${_id}`)
-            //     }
-            // })}
             />
 
-
-            <NTRPModal player={selectedPlayer} openModal={!!selectedPlayer} onClose={() => setSelectedPlayer(null)} fetchPlayers={fetchPlayers} />
+            <NTRPModal
+                player={selectedPlayer}
+                openModal={!!selectedPlayer}
+                onClose={() => setSelectedPlayer(null)}
+                fetchPlayers={fetchPlayers}
+            />
         </>
-    )
-}
+    );
+};
 
-export default PlayersTable
+export default PlayersTable;

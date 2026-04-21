@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 import { adjustNTRPLevels } from "../jobs/adjustNTRP.js";
 import Match from "../models/Match.js";
 import User from "../models/user.js";
@@ -320,3 +320,64 @@ export const getAdmins = async(req, res) =>{
     }
 }
 
+export const updatePaymentRecepient = async (req, res) => {
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id).session(session);
+
+        if (!user) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                ok: false,
+                message: 'User not found'
+            });
+        }
+
+        if (user.role !== 'admin') {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                ok: false,
+                message: 'User is not an admin'
+            });
+        }
+
+        // 1. Reset todos
+        await User.updateMany(
+            { role: 'admin' },
+            { $set: { receivesPayment: false } },
+            { session }
+        );
+
+        // 2. Set solo uno (SIN save)
+        await User.findByIdAndUpdate(
+            id,
+            { $set: { receivesPayment: true } },
+            { session }
+        );
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(200).json({
+            ok: true,
+            message: 'Payment recipient updated'
+        });
+
+    } catch (error) {
+        console.log(error);
+        await session.abortTransaction();
+        session.endSession();
+
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal updating payment recepient'
+        });
+    }
+};
