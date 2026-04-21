@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import Match from '../models/Match.js';
+import User from '../models/user.js';
 
 cron.schedule('* * * * *', async () => {
   try {
@@ -68,6 +69,21 @@ cron.schedule('* * * * *', async () => {
       if (now >= endDate) {
         match.status = 'Played';
         await match.save();
+
+
+        await User.updateMany(
+        {
+          _id: { $in: match.players.map(p => p.user) },
+          $or: [
+            {lastMatchPlayed: {$exists: false}},
+            {lastMatchPlayed: {$lt : match.date}}
+          ]
+        },
+        {
+          $set:{lastMatchPlayed: match.date}
+        }
+      )
+
         console.log(`${match._id} → Played`);
       }
     }

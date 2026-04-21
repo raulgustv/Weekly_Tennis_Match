@@ -147,6 +147,14 @@
         walletBalance:{
             type: Number,
             default: 0
+        },
+        lastMatchPlayed: {
+            type: Date,
+            default: null
+        }, 
+        lastInactivityMailSentAt: {
+            type: Date,
+            default: null
         }
     }, {
         timestamps: true
