@@ -112,6 +112,9 @@ const matchSchema = new mongoose.Schema({
                 enum: ['unpaid', 'paid', 'booker'],
                 default: 'unpaid'
             },
+            amount: {
+                type: Number
+            },
             confirmedAt: Date,
             confirmedBy: {
                 type: mongoose.Schema.Types.ObjectId,

@@ -312,120 +312,6 @@ export const updateMatch = async (req, res) => {
     }
 }
 
-// export const joinMatch = async (req, res) => {
-//     try {
-//         const {
-//             id
-//         } = req.params;
-//         const userId = req.user._id;
-//         const {
-//             asBackup = false
-//         } = req.body;
-
-//         const match = await Match.findById(id);
-
-//         if (!match) {
-//             return res.status(404).json({
-//                 ok: false,
-//                 message: 'Match not found'
-//             });
-//         }
-
-//         if (!['Open', 'Full'].includes(match.status)) {
-//             return res.status(400).json({
-//                 ok: false,
-//                 message: 'Match is not open for registration'
-//             });
-//         }
-
-//         const alreadyJoined =
-//             match.players.some(p => p.user.toString() === userId.toString()) ||
-//             match.backUps.some(b => b.user.toString() === userId.toString());
-
-//         if (alreadyJoined) {
-//             return res.status(400).json({
-//                 ok: false,
-//                 message: 'User already registered in this match'
-//             });
-//         }
-
-//         /* -------------------- */
-//         /* Voluntary BACKUP     */
-//         /* -------------------- */
-//         if (asBackup === true) {
-//             if (match.backUps.length >= match.maxBackups) {
-//                 return res.status(400).json({
-//                     ok: false,
-//                     message: 'Backup list is full'
-//                 });
-//             }
-
-//             match.backUps.push({
-//                 user: userId,
-//                 joinedAt: new Date()
-//             });
-
-//             await match.save();
-
-//             return res.status(200).json({
-//                 role: 'backup',
-//                 match
-//             });
-//         }
-
-//         /* -------------------- */
-//         /* Normal PLAYER join   */
-//         /* -------------------- */
-//         if (match.players.length < match.maxPlayers) {
-//             match.players.push({
-//                 user: userId,
-//                 joinedAt: new Date()
-//             });
-
-//             // Status pasa a Full solo cuando se llena players
-//             if (match.players.length === match.maxPlayers) {
-//                 match.status = 'Full';
-//             }
-
-//             await match.save();
-
-//             return res.status(200).json({
-//                 role: 'player',
-//                 match
-//             });
-//         }
-
-//         /* -------------------- */
-//         /* Auto BACKUP          */
-//         /* -------------------- */
-//         if (match.backUps.length < match.maxBackups) {
-//             match.backUps.push({
-//                 user: userId,
-//                 joinedAt: new Date()
-//             });
-
-//             await match.save();
-
-//             return res.status(200).json({
-//                 role: 'backup',
-//                 match
-//             });
-//         }
-
-//         return res.status(400).json({
-//             ok: false,
-//             message: 'Match is fully booked'
-//         });
-
-//     } catch (error) {
-//         console.error(error);
-//         return res.status(500).json({
-//             ok: false,
-//             message: 'Internal error joining match'
-//         });
-//     }
-// };
-
 export const joinMatch = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -557,7 +443,8 @@ export const joinMatch = async (req, res) => {
         amount: -estimatedPrice,
         type: "match_payment",
         status: "confirmed",
-        note: `Match join ${formattedDate}`
+        note: `Match join ${formattedDate}`,
+        match: match._id
       }], { session });
 
       // 4️⃣ UPDATE MATCH STATUS
@@ -578,6 +465,10 @@ export const joinMatch = async (req, res) => {
     /* OTHER PAYMENT METHODS (UNPAID)                        */
     /* ===================================================== */
 
+    const estimatedPrice = Number(
+      (match.price / match.maxPlayers).toFixed(2)
+    );
+
     const updatedMatch = await Match.findOneAndUpdate(
       {
         _id: id,
@@ -593,7 +484,8 @@ export const joinMatch = async (req, res) => {
             joinedAt: new Date(),
             payment: {
               method: paymentMethod,
-              status: "unpaid"
+              status: "unpaid",
+              amount: estimatedPrice
             }
           }
         }
@@ -1345,7 +1237,8 @@ export const leaveMatch = async (req, res) => {
           amount: paidAmount,
           type: "refund",
           status: "confirmed",
-          note: `Refund leave match ${formattedDate}`
+          note: `Refund leave match ${formattedDate}`,
+          match: match._id
         }],
         { session }
       );
@@ -1470,7 +1363,8 @@ export const acceptInvite = async (req, res) => {
         amount: -estimatedPrice,
         type: "match_payment",
         status: "confirmed",
-        note: `Match invite ${formattedDate}`
+        note: `Match invite ${formattedDate}`,
+        match: match._id
       }], { session });
 
       // 4️⃣ FULL STATUS
@@ -1506,7 +1400,8 @@ export const acceptInvite = async (req, res) => {
             joinedAt: new Date(),
             payment: {
               method: paymentMethod,
-              status: "unpaid"
+              status: "unpaid",
+              amount: estimatedPrice
             }
           }
         },

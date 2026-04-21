@@ -26,6 +26,7 @@ import { togglePayment } from "../../actions/admin";
 import colors from "../../themes/colors";
 import ProfilePicture from "../uploads/ProfilePicture";
 import CourtDetail from "./CourtDetail";
+import { toast } from "react-toastify";
 
 const { Title, Text } = Typography;
 
@@ -67,8 +68,9 @@ const MatchPlayers = () => {
       const updated = await getMatch(id)
       setMatch(updated)
 
-    } catch (error) {
-      console.log(error)
+    } catch ({response}) {
+      console.log({response})
+      toast.error(response?.data?.message || 'Error setting user payment')
       setLoading(false)
     } finally { setLoading(false) }
   }
