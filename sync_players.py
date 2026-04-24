@@ -8,16 +8,17 @@ Original file is located at
 """
 
 import pandas as pd
+import os
 from pymongo import MongoClient
 from sqlalchemy import create_engine
-from google.colab import userdata
+##from google.colab import userdata
 
 """# 1. Conexiones
 
 """
 
-MONGO_URI = userdata.get('MONGO_URI')
-NEON_URI = userdata.get('NEON_URI')
+MONGO_URI = os.environ('MONGO_URI')
+NEON_URI = os.environ('NEON_URI')
 
 if not MONGO_URI or not NEON_URI:
     raise Exception("Missing connection URIs")
