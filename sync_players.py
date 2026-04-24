@@ -113,7 +113,7 @@ players_df.to_sql(
 
 """# UPSERT"""
 
-with engine.connect() as conn:
+with engine.begin() as conn:
     conn.execute(text("""
       INSERT INTO  players (
         player_id, name, lastname, email, phone, role, ntrp_level, gender, wallet_balance, last_match_played
@@ -197,7 +197,7 @@ matches_df.to_sql(
     index=False
 )
 
-with engine.connect() as conn:
+with engine.begin() as conn:
     conn.execute(text(
         """
           INSERT INTO MATCHES (
