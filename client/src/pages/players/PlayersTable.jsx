@@ -16,6 +16,7 @@ import { toast } from "react-toastify";
 import NTRPModal from "../../components/modals/NTRPModal";
 import ProfilePicture from "../../components/uploads/ProfilePicture";
 import { useNavigate } from "react-router-dom";
+import ExportToExcel from "../../components/common/ExportExcel";
 
 const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
@@ -246,6 +247,14 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
     return (
         <>
+
+            <Flex gap={4}>
+                <ExportToExcel
+                    data={playersWithCountry}
+                    fileName="players.xlsx"
+                />
+            </Flex>
+
             <Table
                 dataSource={playersWithCountry}
                 columns={columns}

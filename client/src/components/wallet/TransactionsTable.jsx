@@ -3,6 +3,7 @@ import dayjs from "dayjs"
 import RefundAdjustModal from "../modals/RefundAdjustModal";
 import { useState } from "react";
 import{InfoCircleOutlined} from '@ant-design/icons'
+import ExportToExcel from "../common/ExportExcel";
 
 const TransactionsTable = ({ transactions, isMobile, loading, isAdmin, refresh }) => {
 
@@ -122,6 +123,7 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin, refresh }
 
     return (
         <>
+        <ExportToExcel fileName="transactions.xlsx" data={transactions} />
             <Table
                 rowKey="_id"
                 columns={columns}

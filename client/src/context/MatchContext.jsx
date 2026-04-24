@@ -3,42 +3,62 @@ import axiosInstance from "../API/axios";
 import { useAuth } from "./AuthContext";
 
 
-const MaatchesContext = createContext();
+const MatchesContext = createContext();
 
-export const MatchesProvider = ({children}) =>{
+export const MatchesProvider = ({ children }) => {
 
-    const {user, loading} = useAuth();
+    const { user, loading } = useAuth();
 
 
     const [matches, setMatches] = useState([]);
     const [loadMatches, setLoadMatches] = useState(false);
 
-    const fetchMatches = async() =>{
+    const fetchMatches = async (isSilent = false) => {
         try {
-            setLoadMatches(true);
+            if (!isSilent) setLoadMatches(true);
 
-            const {data} = await axiosInstance.get('/match/view-all');
+            const { data } = await axiosInstance.get('/match/view-all');
 
             setMatches(data)
         } catch (error) {
             console.log(error)
-        }finally{
-            setLoadMatches(false)
+        } finally {
+            if (!isSilent) setLoadMatches(false)
         }
     }
 
-    useEffect(() =>{
-        if(!user) return 
-        if(loading) return 
+    useEffect(() => {
+        if (!user || loading) return;
         fetchMatches();
     }, [user, loading]);
-    
+
+
+
+    //polling automático por cron
+    useEffect(() => {
+        if (!user || loading) return;
+
+
+        const shouldRefresh = () => matches.some((m) =>
+            ["Ready", "Playing", "Played"].includes(m?.status)
+        )
+
+        if (!shouldRefresh) return;
+
+        const interval = setInterval(() => {
+            fetchMatches(true);
+        }, 300000);
+
+        return () => clearInterval(interval)
+
+    }, [user, loading, matches])
+
 
     return (
-        <MaatchesContext.Provider value={{matches, loadMatches, fetchMatches}}>
+        <MatchesContext.Provider value={{ matches, loadMatches, fetchMatches }}>
             {children}
-        </MaatchesContext.Provider>
+        </MatchesContext.Provider>
     )
 };
 
-export const useMatches = () => useContext(MaatchesContext);
+export const useMatches = () => useContext(MatchesContext);
