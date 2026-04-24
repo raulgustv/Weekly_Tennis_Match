@@ -37,6 +37,7 @@ def clean_mongo(doc):
 
 #Colab
 
+
 #Uncomment for prod
 MONGO_URI = os.environ.get('MONGO_URI')
 NEON_URI = os.environ.get('NEON_URI')
@@ -61,6 +62,8 @@ users = list(db.users.find())
 players_df = pd.DataFrame(users)
 players_df = players_df[["_id", "name", "lastname", "email", "phone", "role", "ntrplvl", "gender", "walletBalance", "lastMatchPlayed", "isActive", "createdAt"]]
 
+
+
 #players_df.head()
 #matches_df.head()
 
@@ -70,7 +73,9 @@ players_df = players_df.rename(columns={
     "_id": "player_id",
     "ntrplvl": "ntrp_level",
     "walletBalance": "wallet_balance",
-    "lastMatchPlayed": "last_match_played"
+    "lastMatchPlayed": "last_match_played",
+    "isActive": "is_active",
+    "createdAt": "created_at"
 })
 
 players_df["player_id"] = players_df["player_id"].astype("str")
@@ -83,7 +88,7 @@ players_df=players_df.fillna({
 
 """# Subir los datos a **NEON**"""
 
-
+from sqlalchemy import text
 
 with engine.connect() as conn:
     conn.execute(text("""CREATE TABLE IF NOT EXISTS players(
@@ -97,7 +102,7 @@ with engine.connect() as conn:
                       gender TEXT,
                       wallet_balance FLOAT,
                       last_match_played TIMESTAMP,
-                      isAcive BOOLEAN,
+                      is_active BOOLEAN,
                       created_at TIMESTAMP
                       );
     """))
@@ -113,14 +118,20 @@ players_df.to_sql(
 
 """# UPSERT"""
 
+from sqlalchemy import text
+
 with engine.begin() as conn:
     conn.execute(text("""
-      INSERT INTO  players (
-        player_id, name, lastname, email, phone, role, ntrp_level, gender, wallet_balance, last_match_played
+      INSERT INTO players (
+        player_id, name, lastname, email, phone, role,
+        ntrp_level, gender, wallet_balance, last_match_played,
+        is_active, created_at
       )
       SELECT
-        player_id, name, lastname, email, phone, role, ntrp_level, gender, wallet_balance, last_match_played
-        FROM players_staging
+        player_id, name, lastname, email, phone, role,
+        ntrp_level, gender, wallet_balance, last_match_played,
+        is_active, created_at
+      FROM players_staging
       ON CONFLICT (player_id)
       DO UPDATE SET
         name = EXCLUDED.name,
@@ -131,10 +142,12 @@ with engine.begin() as conn:
         ntrp_level = EXCLUDED.ntrp_level,
         gender = EXCLUDED.gender,
         wallet_balance = EXCLUDED.wallet_balance,
-        last_match_played = EXCLUDED.last_match_played;
+        last_match_played = EXCLUDED.last_match_played,
+        is_active = EXCLUDED.is_active,
+        created_at = EXCLUDED.created_at;
     """))
 
-    print("Players sync OK")
+print("Players sync OK")
 
 """# LEER DATOS MATCHES"""
 
