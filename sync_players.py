@@ -38,8 +38,8 @@ def clean_mongo(doc):
 #Colab
 
 #Uncomment for prod
-MONGO_URI = os.environ('MONGO_URI')
-NEON_URI = os.environ('NEON_URI')
+MONGO_URI = os.environo.get('MONGO_URI')
+NEON_URI = os.environ.get('NEON_URI')
 
 
 
