@@ -13,7 +13,7 @@ export const protect = async(req, res, next) =>{
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         req.user = await User.findById(decoded.id)
-                                .select("name lastname email role isActive ntrplvl adjustmentHistory profilePicture country")
+                                .select("name lastname email role isActive ntrplvl adjustmentHistory profilePicture country walletBalance")
         if(!req.user) return res.status(401).json({
             ok: false,
             message: "User no longer exists"
@@ -54,3 +54,25 @@ export const verifyAdmin = async(req, res, next) =>{
     }
    
 }
+
+export const verifyBookerOrAdmin = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user._id).select("role");
+
+        if (!user || (user.role !== "admin" && user.role !== "booker")) {
+            return res.status(403).json({
+                ok: false,
+                message: "Only admin or booker can access this resource"
+            });
+        }
+
+        next(); 
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            message: "Error verifying role"
+        });
+    }
+};

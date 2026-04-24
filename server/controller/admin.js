@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { adjustNTRPLevels } from "../jobs/adjustNTRP.js";
 import Match from "../models/Match.js";
 import User from "../models/user.js";
+import WalletTransaction from '../models/Wallet.js'
 
 export const closeMatch = async(req, res) =>{
    try {
@@ -246,7 +247,7 @@ export const toggleAdminRole = async(req, res) =>{
 }
 
 export const togglePaymentStatus = async(req, res) =>{
-    const {matchId, userId} = req.params;
+    const {matchId, userId} = req.params;  
 
     try {
 
@@ -259,7 +260,7 @@ export const togglePaymentStatus = async(req, res) =>{
 
         const match = await Match.findOne(
             {_id: matchId, "players.user": userId},
-            {'players.$': 1}
+            {'players.$': 1, date: 1}
         );
 
         if(!match || !match.players.length){
@@ -269,7 +270,13 @@ export const togglePaymentStatus = async(req, res) =>{
             })
         }
 
-        const currentStatus = match.players[0].payment.status;
+        const player = match?.players[0];
+        const paymentMethod = player.payment.method || "unknown";
+        const amount = player.payment.amount;
+
+         const formattedDate = new Date(match.date).toLocaleDateString("es-ES");     
+
+        const currentStatus = player.payment.status;
 
         const newStatus = currentStatus === "paid" ? "unpaid" : "paid"
 
@@ -283,6 +290,47 @@ export const togglePaymentStatus = async(req, res) =>{
             }, {new: true}
         )
 
+         if (newStatus === "paid"){        
+
+            const existingTx = await WalletTransaction.findOne({
+                user: userId,
+                match: matchId,
+                type: "match_payment"
+            });
+
+            if (!existingTx) {
+
+                //actualizar transactions
+                    const newTransaction = new WalletTransaction({
+                    user: userId,
+                    amount,
+                    type: 'match_payment',
+                    status: 'confirmed',
+                    method: paymentMethod,
+                    assignedAdmin: req.user._id,
+                    reviewedBy: req.user._id,
+                    reviewedAt: new Date(),
+                    note: `Match join on ${formattedDate}`,
+                    match: match._id
+
+                });
+
+                await newTransaction.save();
+            }
+         }
+
+         if (newStatus === "unpaid") {
+
+        await WalletTransaction.findOneAndDelete({
+            user: userId,
+            match: matchId,
+            type: "match_payment"
+        });
+
+}
+
+        
+
         return res.status(200).json({
             message: "Payment status updated",
             updatedMatch
@@ -292,7 +340,92 @@ export const togglePaymentStatus = async(req, res) =>{
         console.log(error)
         return res.status(500).json({
             ok: false,
-            message: 'Internal error updating user role'
+            message: 'Error updating payment status'
         })
     }
 }
+
+export const getAdmins = async(req, res) =>{
+    try {
+
+        const user = await User.find({
+            role: 'admin', isActive: true
+        }).select('name lastname email phone role country receivesPayment')
+
+        if(!user) return res.status(200).json({
+            ok: false,
+            message: 'Admins not found'
+        })
+
+        return res.status(200).json(user)
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal error obtaining admin data'
+        })
+    }
+}
+
+export const updatePaymentRecepient = async (req, res) => {
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id).session(session);
+
+        if (!user) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                ok: false,
+                message: 'User not found'
+            });
+        }
+
+        if (user.role !== 'admin') {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                ok: false,
+                message: 'User is not an admin'
+            });
+        }
+
+        // 1. Reset todos
+        await User.updateMany(
+            { role: 'admin' },
+            { $set: { receivesPayment: false } },
+            { session }
+        );
+
+        // 2. Set solo uno (SIN save)
+        await User.findByIdAndUpdate(
+            id,
+            { $set: { receivesPayment: true } },
+            { session }
+        );
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(200).json({
+            ok: true,
+            message: 'Payment recipient updated'
+        });
+
+    } catch (error) {
+        console.log(error);
+        await session.abortTransaction();
+        session.endSession();
+
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal updating payment recepient'
+        });
+    }
+};

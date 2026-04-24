@@ -12,6 +12,7 @@ import matchRoutes from './routes/match.js';
 import profileRoutes from './routes/profile.js';
 import skillRoutes from './routes/skill.js';
 import adminRoutes from './routes/admin.js';
+import walletRoutes from './routes/wallet.js';
 import './jobs/matchStatus.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
@@ -25,7 +26,10 @@ const app = express();
 
 //Middleware
 app.use(globalLimiter)
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+}));
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(helmet())
@@ -41,6 +45,7 @@ app.use('/api/location', locationRoutes)
 app.use('/api/match', matchRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/vote', skillRoutes)
+app.use('/api/wallet', walletRoutes)
 
 //Conexión
 const PORT = process.env.PORT || 7000;
@@ -48,5 +53,3 @@ const PORT = process.env.PORT || 7000;
 app.listen(PORT, () =>{
     console.log(`Server running on port ${PORT}`)
 });
-
-

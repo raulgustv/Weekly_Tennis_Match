@@ -31,10 +31,14 @@ const Players = () => {
     return (
         <>
             {/* 🔥 HEADER + STATS */}
-            <Row gutter={[16, 16]} align="stretch">
-                {/* TITLE SECTION */}
+            <Row
+                gutter={[12, 12]}
+                align="stretch"
+                style={{ marginBottom: 16 }}
+            >
+                {/* TITLE */}
                 <Col xs={24} md={8}>
-                    <div style={{ marginBottom: 24 }}>
+                    <div>
                         <Title level={3} style={{ marginBottom: 0 }}>
                             Players
                         </Title>
@@ -46,72 +50,70 @@ const Players = () => {
 
                 {/* STATS CARD 1 */}
                 <Col xs={24} md={8}>
-                    <div style={{ marginBottom: 24 }}>
-                        <StatsCard
-                            accent="info"
-                            icon={<UserSwitchOutlined />}
-                        >
-                            <Row gutter={[16, 16]}>
-                                <Col xs={24} sm={12}>
-                                    <Statistic
-                                        title="Total users"
-                                        formatter={totalPlayers}
-                                    />
-                                </Col>
+                    <StatsCard
+                        accent="info"
+                        icon={<UserSwitchOutlined />}
+                        style={{ width: "100%" }}
+                    >
+                        <Row gutter={[8, 8]}>
+                            <Col xs={24} sm={12}>
+                                <Statistic
+                                    title="Total users"
+                                    formatter={totalPlayers}
+                                    style={{ fontSize: 20 }}
+                                />
+                            </Col>
 
-                                <Col xs={24} sm={12}>
-                                    <Statistic
-                                        title={
-                                            <div>
-                                                New users
-                                                <br />
-                                                <small>
-                                                    (Last 30 days)
-                                                </small>
-                                            </div>
-                                        }
-                                        formatter={() => (
-                                            <CountUp
-                                                end={newUsers?.length}
-                                            />
-                                        )}
-                                    />
-                                </Col>
-                            </Row>
-                        </StatsCard>
-                    </div>
+                            <Col xs={24} sm={12}>
+                                <Statistic
+                                    title={
+                                        <div>
+                                            New users
+                                            <br />
+                                            <small>(Last 30 days)</small>
+                                        </div>
+                                    }
+                                    formatter={() => (
+                                        <CountUp end={newUsers?.length} />
+                                    )}
+                                    style={{ fontSize: 20 }}
+                                />
+                            </Col>
+                        </Row>
+                    </StatsCard>
                 </Col>
 
                 {/* STATS CARD 2 */}
                 <Col xs={24} md={8}>
-                    <div style={{ marginBottom: 24 }}>
-                        <StatsCard
-                            accent="info"
-                            icon={<UsergroupAddOutlined />}
-                        >
-                            <Row gutter={[16, 16]}>
-                                <Col xs={24} sm={12}>
-                                    <Statistic
-                                        title="Total active users"
-                                        formatter={totalActivePlayers}
-                                    />
-                                </Col>
+                    <StatsCard
+                        accent="info"
+                        icon={<UsergroupAddOutlined />}
+                        style={{ width: "100%" }}
+                    >
+                        <Row gutter={[8, 8]}>
+                            <Col xs={24} sm={12}>
+                                <Statistic
+                                    title="Total active users"
+                                    formatter={totalActivePlayers}
+                                    style={{ fontSize: 20 }}
+                                />
+                            </Col>
 
-                                <Col xs={24} sm={12}>
-                                    <Statistic
-                                        title="Active users ratio"
-                                        value={playersActiveRatio}
-                                        suffix="%"
-                                    />
-                                </Col>
-                            </Row>
-                        </StatsCard>
-                    </div>
+                            <Col xs={24} sm={12}>
+                                <Statistic
+                                    title="Active users ratio"
+                                    value={playersActiveRatio}
+                                    suffix="%"
+                                    style={{ fontSize: 20 }}
+                                />
+                            </Col>
+                        </Row>
+                    </StatsCard>
                 </Col>
             </Row>
 
-            {/* 🔥 TABLE SECTION */}
-            <Row gutter={[16, 16]}>
+            {/* 🔥 TABLE */}
+            <Row gutter={[12, 12]}>
                 <Col xs={24}>
                     <PlayersTable
                         players={players}

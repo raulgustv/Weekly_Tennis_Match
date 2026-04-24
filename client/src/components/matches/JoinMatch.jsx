@@ -6,6 +6,8 @@ import dayjs from "dayjs";
 import { getMatchStartDateTime } from "../../helpers/time";
 import { useState } from "react";
 import PaymentModal from "./PaymentModal";
+import {  useTransactions } from "../../hooks/useTransactions";
+import { useAuth } from "../../context/AuthContext";
 
 const { useBreakpoint } = Grid;
 const { Timer } = Statistic;
@@ -13,6 +15,13 @@ const { Timer } = Statistic;
 const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
 
   const screens = useBreakpoint();
+
+
+  const { fetchTransactions } = useTransactions()
+  const {user, loadUser} = useAuth();
+
+
+  const balance = user?.walletBalance;
 
   // 🔵 AÑADIDO
   const [selectedMatch, setSelectedMatch] = useState(null);
@@ -53,6 +62,9 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
 
     setPaymentModal(false);
     setSelectedMatch(null);
+    //fetchAllTransactions()
+    fetchTransactions()
+    loadUser()
   };
 
   const handleLeave = async (id) => {
@@ -60,6 +72,10 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
       await leaveMatch(id);
       toast.success("Successfully left the match");
       fetchMatches();
+      //fetchAllTransactions()
+      fetchTransactions()
+      loadUser()
+
     } catch (error) {
       toast.error(error?.response?.data?.message);
     }
@@ -78,7 +94,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
           const matchStart =
             startTime && startTime > Date.now() ? startTime : null;
 
-          const vertical = !screens.lg; 
+          const vertical = !screens.lg;
 
           return (
             <Col key={match._id} xs={24} sm={12} lg={8}>
@@ -143,7 +159,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
                 <MatchSummaryTabs
                   matchSummary={match}
                   showJoinButton
-                  onRequestJoin={handleRequestJoin} 
+                  onRequestJoin={handleRequestJoin}
                   onJoin={handleJoin}
                   onLeave={handleLeave}
                 />
@@ -163,6 +179,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
             selectedMatch.price /
             selectedMatch.maxPlayers
           ).toFixed(2)}
+          balance={balance}
         />
       )}
     </>

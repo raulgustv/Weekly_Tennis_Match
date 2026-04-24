@@ -30,3 +30,28 @@ export const togglePayment = async(matchId, userId) =>{
 
     return data;
 }
+
+export const viewPlayer = async(id) =>{
+    const {data} = await axiosInstance.get(`/user/${id}`);
+
+    return data;
+}
+
+export const addUserNote = async(id, note) =>{
+    const {data} = await axiosInstance.post(`/user/${id}`, {note})
+
+    return data;
+} 
+
+
+export const getUserNoteHistory = async(id) =>{
+    const {data} = await axiosInstance.get(`/user/notes/${id}`);
+
+    return data;
+}
+
+export const updatePaymentRecepient = async(id) =>{
+    const {data} = await axiosInstance.post(`/admin/update-recepient/${id}`);
+
+    return data;
+}

@@ -8,7 +8,8 @@ const PaymentModal = ({
     onCancel,
     onConfirm,
     paymentMethods = [],
-    price
+    price,
+    balance
 }) => {
 
     const [selectedPayment, setSelectedPayment] = useState(null);
@@ -18,6 +19,13 @@ const PaymentModal = ({
             setSelectedPayment(null);
         }
     }, [open]);
+
+    // 👉 formatter euros
+    const formatEUR = (value) =>
+        new Intl.NumberFormat("es-ES", {
+            style: "currency",
+            currency: "EUR",
+        }).format(value || 0);
 
     return (
         <Modal
@@ -33,7 +41,7 @@ const PaymentModal = ({
             destroyOnHidden
         >
             <p style={{ marginBottom: 16 }}>
-                Price per player <strong>€{price}</strong>
+                Price per player <strong>{formatEUR(price)}</strong>
             </p>
 
             <Radio.Group
@@ -42,28 +50,53 @@ const PaymentModal = ({
                 style={{ width: "100%" }}
             >
                 <Space orientation="vertical" style={{ width: "100%" }} size="middle">
-                    {paymentMethods.map((pm) => (
-                        <Card
-                            key={pm.type}
-                            hoverable
-                            onClick={() => setSelectedPayment(pm.type)}
-                            style={{
-                                border:
-                                    selectedPayment === pm.type
-                                        ? "2px solid #1677ff"
-                                        : "1px solid #f0f0f0",
-                                borderRadius: 8,
-                                cursor: "pointer",
-                                transition: "all 0.2s ease"
-                            }}
-                        >
-                            <Radio value={pm.type} style={{ width: "100%" }}>
-                                <strong>{pm.type.toUpperCase()}</strong>
-                                <br />
-                                <Text type="secondary">{pm.value}</Text>
-                            </Radio>
-                        </Card>
-                    ))}
+                    {paymentMethods.map((pm) => {
+
+                        const isWallet = pm.type === "wallet";
+                        const isDisabled = isWallet && balance <= 0;
+
+                        return (
+                            <Card
+                                key={pm.type}
+                                hoverable={!isDisabled}
+                                onClick={() => !isDisabled && setSelectedPayment(pm.type)}
+                                style={{
+                                    border:
+                                        selectedPayment === pm.type
+                                            ? "2px solid #1677ff"
+                                            : "1px solid #f0f0f0",
+                                    borderRadius: 8,
+                                    cursor: isDisabled ? "not-allowed" : "pointer",
+                                    opacity: isDisabled ? 0.5 : 1,
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                <Radio
+                                    value={pm.type}
+                                    disabled={isDisabled}
+                                    style={{ width: "100%" }}
+                                >
+                                    <strong>{pm.type.toUpperCase()}</strong>
+                                    <br />
+
+                                    <Text type="secondary">
+                                        {isWallet
+                                            ? formatEUR(balance)
+                                            : pm.value}
+                                    </Text>
+
+                                    {isWallet && balance <= 0 && (
+                                        <>
+                                            <br />
+                                            <Text type="danger">
+                                                Insufficient balance
+                                            </Text>
+                                        </>
+                                    )}
+                                </Radio>
+                            </Card>
+                        );
+                    })}
                 </Space>
             </Radio.Group>
         </Modal>

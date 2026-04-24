@@ -65,3 +65,10 @@ export  const googleValidator = [
     body("token")
     .notEmpty().withMessage("Token is required")
 ]
+
+export const noteValidator = [
+    body("note")
+    .trim()
+    .notEmpty().withMessage("Note is required")
+    .isLength({max: 1000}).withMessage("Note cannot exceed 1000 characters")
+];

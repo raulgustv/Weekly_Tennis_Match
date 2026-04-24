@@ -9,6 +9,7 @@ import {
   ContactsOutlined,
   HomeOutlined,
   DribbbleOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context";
@@ -30,8 +31,11 @@ const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const isAdmin = user?.role === "admin";
+  const isBooker = user?.role === "booker";
+
   const menuItems =
-    user?.role === "admin"
+    isAdmin
       ? [
           {
             key: "/admin/dashboard",
@@ -72,6 +76,47 @@ const MainLayout = () => {
               { key: "/profile", label: "View admin profile" },
             ],
           },
+          {
+            key: "/admin-wallet",
+            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
+            label: "Wallet administration",
+            children: [
+              { key: "/admin/transactions", label: "Transaction admin" },
+              { key: "/wallet", label: "View wallet" },
+            ],
+          },
+        ]
+      : isBooker
+      ? [
+          {
+            key: "/games",
+            icon: <DribbbleOutlined style={{ color: "#52C41A" }} />,
+            label: "Games",
+          },
+          {
+            key: "/vote",
+            icon: <FlagOutlined style={{ color: "#1677FF" }} />,
+            label: "Vote matches",
+          },
+          {
+            key: "/admin-matches",
+            icon: <TrophyFilled style={{ color: "#FADB14" }} />,
+            label: "Match administration",
+            children: [
+              { key: "/admin/matches", label: "New match" },
+              { key: "/admin/view-matches", label: "View matches" },
+            ],
+          },
+          {
+            key: "/profile",
+            icon: <UserOutlined style={{ color: "#9254DE" }} />,
+            label: "User Profile",
+          },
+            {
+            key: "/wallet",
+            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
+            label: "Wallet administration",
+            }
         ]
       : [
           {
@@ -89,6 +134,11 @@ const MainLayout = () => {
             icon: <UserOutlined style={{ color: "#9254DE" }} />,
             label: "User Profile",
           },
+          {
+            key: "/wallet",
+            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
+            label: "Wallet administration",
+            }
         ];
 
   const userMenu = {
@@ -212,15 +262,15 @@ const MainLayout = () => {
           </Dropdown>
         </Header>
 
-        {/* CONTENT (CLAVE 🔥) */}
+        {/* CONTENT */}
         <Content
           style={{
-            flex: 1, // 🔥 ocupa todo el espacio disponible
+            flex: 1,
             margin: 16,
-            padding: 16, // 🔥 reducido
+            padding: 16,
             background: "#fff",
             borderRadius: 8,
-            overflow: "auto", // 🔥 scroll SOLO aquí si hace falta
+            overflow: "auto",
           }}
         >
           <Outlet />

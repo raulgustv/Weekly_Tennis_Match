@@ -20,6 +20,9 @@ import TermsAndConditions from '../pages/auth/TermsAndConditions'
 import About from '../pages/information/About'
 import PublicLayout from '../layouts/PublicLayout'
 import Contact from '../pages/auth/Contact'
+import ProfileViewAdmin from '../pages/profile/ProfileViewAdmin'
+import Wallet from '../pages/wallet/Wallet'
+import WalletAdmin from '../pages/wallet/WalletAdmin'
 
 const AppRouter = () => {
   return (
@@ -50,6 +53,8 @@ const AppRouter = () => {
               <Route path='vote' element={<MatchVote />} />
               <Route path='profile' element={<UserProfile />} />
               <Route path='match/details/:id' element={<MatchPlayers />} />
+              <Route path='wallet' element={<Wallet />} />
+
               {/* <Route path='matches/details/:id' element={<MatchPlayers />} /> */}
 
               {/* admin routes */}
@@ -59,7 +64,9 @@ const AppRouter = () => {
                 <Route path='matches' element={<Matches />} />
                 <Route path='view-matches' element={<MatchesTable />} />
                 <Route path='players' element={<Players />} />
+                <Route path='transactions' element={<WalletAdmin />} />
                 <Route path='match/edit/:id' element={<EditMatch />} />
+                <Route path='player/:id' element={<ProfileViewAdmin />} />
               </Route>
             </Route>
           </Route>

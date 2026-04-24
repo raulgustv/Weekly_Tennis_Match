@@ -23,6 +23,7 @@ import { useState } from "react";
 import AddNewCourtsModal from "../../components/matches/AddNewCourtsModal";
 import { surfaceColors } from "../../themes/surfaceColors";
 import WhatsappMessage from "../../components/modals/WhatsappMessage";
+import ExportToExcel from "../../components/common/ExportExcel";
 
 
 const MatchesTable = () => {
@@ -123,7 +124,7 @@ const MatchesTable = () => {
             key: "date",
             render: (m) => dayjs(m.date).format("DD/MM/YYYY"),
             sorter: (a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf(),
-            defaultSortOrder: "ascend",
+            defaultSortOrder: "descend",
         },
         {
             title: "Days until match",
@@ -252,6 +253,8 @@ const MatchesTable = () => {
         <>
             <Title level={3}>All matches</Title>
             <Text type="secondary">View all matches and manage status</Text>
+
+            <ExportToExcel fileName="matches.xlsx" data={matches} />
 
             <Table
                 columns={columns}

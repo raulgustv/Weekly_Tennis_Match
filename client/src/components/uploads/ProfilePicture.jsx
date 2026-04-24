@@ -5,7 +5,7 @@ import { uploadPicture } from "../../actions/auth";
 import { toast } from "react-toastify";
 
 
-const ProfilePicture = ({ user, profilePicture, size = 125, editable = true }) => {
+const ProfilePicture = ({ user, profilePicture, size = 125, editable }) => {
 
     //console.log(user)
 

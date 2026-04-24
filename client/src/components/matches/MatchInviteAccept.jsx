@@ -5,12 +5,15 @@ import axiosInstance from "../../API/axios";
 import { Result, Statistic } from "antd";
 import { useMatches } from "../../context/MatchContext";
 import PaymentModal from "./PaymentModal";
+import { useAuth } from "../../context/AuthContext";
 
 const MatchInviteAccept = () => {
 
   const { Timer } = Statistic;
 
   const { fetchMatches } = useMatches()
+
+   const {user, loadUser} = useAuth()
 
   const [paymentMethod, setPaymentMethod] = useState([])
   const [price, setPrice] = useState(null)
@@ -23,6 +26,8 @@ const MatchInviteAccept = () => {
   const navigate = useNavigate()
 
   const token = searchParams.get('token');
+ 
+  const balance = user?.walletBalance;
 
   const deadline = Date.now() + 3000
 
@@ -62,6 +67,7 @@ const MatchInviteAccept = () => {
 
       setOpenPaymentModal(false);
       setSuccess(true)
+      loadUser();
 
     } catch (error) {
       console.log(error);
@@ -101,6 +107,7 @@ const MatchInviteAccept = () => {
       onConfirm={handleConfirm}
       paymentMethods={paymentMethod}
       price={price}
+      balance={balance}
     />
   )
 }
