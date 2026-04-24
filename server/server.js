@@ -26,9 +26,21 @@ const app = express();
 
 //Middleware
 app.use(globalLimiter)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://weekly-tennis-match.vercel.app"
+];
+
 app.use(cors({
-    origin: "http://localhost:3000",
-    credentials: true
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // permite Postman / mobile
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("CORS not allowed"));
+    }
+  },
+  credentials: true
 }));
 app.use(express.json());
 app.use(morgan("dev"));
