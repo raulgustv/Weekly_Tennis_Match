@@ -17,8 +17,8 @@ from sqlalchemy import create_engine
 
 """
 
-MONGO_URI = os.environ('MONGO_URI')
-NEON_URI = os.environ('NEON_URI')
+MONGO_URI = os.environ.get('MONGO_URI')
+NEON_URI = os.environ.get('NEON_URI')
 
 if not MONGO_URI or not NEON_URI:
     raise Exception("Missing connection URIs")
