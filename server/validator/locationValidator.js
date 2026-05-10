@@ -9,8 +9,8 @@ export const newLocationValidator = [
 
     body("address")
     .trim()
-    .notEmpty().withMessage("Court name required")
-    .isLength({min: 5, max: 500}).withMessage("Court name must be between 5 and 500 characters"),
+    .notEmpty().withMessage("Court address required")
+    .isLength({min: 5, max: 2000}).withMessage("Court name must be between 5 and 500 characters"),
 
     body("courts")
     .isInt({min: 1, max: 29}).withMessage("There must be between 1 and 29  courts")
