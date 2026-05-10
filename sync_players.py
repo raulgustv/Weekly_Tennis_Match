@@ -7,6 +7,29 @@ Original file is located at
     https://colab.research.google.com/drive/1Sqd6LXQsRQ86AfAC544plPz-gjwu5VT8
 """
 
+
+
+import pandas as pd
+from pymongo import MongoClient
+from sqlalchemy import create_engine, text
+import os
+import json
+
+from bson import ObjectId
+from datetime import datetime
+import json
+
+def clean_mongo(doc):
+    if isinstance(doc, list):
+        return [clean_mongo(d) for d in doc]
+    elif isinstance(doc, dict):
+        return {k: clean_mongo(v) for k, v in doc.items()}
+    elif isinstance(doc, ObjectId):
+        return str(doc)
+    elif isinstance(doc, datetime):
+        return doc.isoformat()   # 🔥 clave
+    else:
+        return doc
 import pandas as pd
 from pymongo import MongoClient
 from sqlalchemy import create_engine
@@ -15,6 +38,14 @@ from google.colab import userdata
 """# 1. Conexiones
 
 """
+
+#Colab
+
+
+#Uncomment for prod
+MONGO_URI = os.environ.get('MONGO_URI')
+NEON_URI = os.environ.get('NEON_URI')
+
 
 MONGO_URI = userdata.get('MONGO_URI')
 NEON_URI = userdata.get('NEON_URI')
@@ -26,6 +57,17 @@ mongo = MongoClient(MONGO_URI)
 db = mongo["test"]
 
 engine = create_engine(NEON_URI)
+
+"""# LEER DATOS PLAYERS"""
+
+#matches = list(db.matches.find())
+users = list(db.users.find())
+
+
+#print(f"Documents: {len(users)} ")
+players_df = pd.DataFrame(users)
+players_df = players_df[["_id", "name", "lastname", "email", "phone", "role", "ntrplvl", "gender", "walletBalance", "lastMatchPlayed", "isActive", "createdAt"]]
+
 
 """# LEER DATOS"""
 
@@ -49,6 +91,9 @@ players_df = players_df.rename(columns={
     "_id": "player_id",
     "ntrplvl": "ntrp_level",
     "walletBalance": "wallet_balance",
+    "lastMatchPlayed": "last_match_played",
+    "isActive": "is_active",
+    "createdAt": "created_at"
     "lastMatchPlayed": "last_match_played"
 })
 
@@ -76,6 +121,7 @@ with engine.connect() as conn:
                       gender TEXT,
                       wallet_balance FLOAT,
                       last_match_played TIMESTAMP,
+                      is_active BOOLEAN,
                       isAcive BOOLEAN,
                       created_at TIMESTAMP
                       );
@@ -92,6 +138,20 @@ players_df.to_sql(
 
 """# UPSERT"""
 
+from sqlalchemy import text
+
+with engine.begin() as conn:
+    conn.execute(text("""
+      INSERT INTO players (
+        player_id, name, lastname, email, phone, role,
+        ntrp_level, gender, wallet_balance, last_match_played,
+        is_active, created_at
+      )
+      SELECT
+        player_id, name, lastname, email, phone, role,
+        ntrp_level, gender, wallet_balance, last_match_played,
+        is_active, created_at
+      FROM players_staging
 with engine.connect() as conn:
     conn.execute(text("""
       INSERT INTO  players (
@@ -110,6 +170,126 @@ with engine.connect() as conn:
         ntrp_level = EXCLUDED.ntrp_level,
         gender = EXCLUDED.gender,
         wallet_balance = EXCLUDED.wallet_balance,
+        last_match_played = EXCLUDED.last_match_played,
+        is_active = EXCLUDED.is_active,
+        created_at = EXCLUDED.created_at;
+    """))
+
+print("Players sync OK")
+
+"""# LEER DATOS MATCHES"""
+
+matches = list(db.matches.find())
+
+matches_df = pd.DataFrame(matches)
+
+matches_df = matches_df[[
+    "_id", "location", "createdBy", "maxPlayers", "date", "startTime", "endTime", "paymentMethods",
+    "price","status", "players", "backUps", "courts", "createdAt"
+]]
+
+matches_df = matches_df.rename(columns={
+    "_id": "match_id",
+    "createdBy": "created_by",
+    "location": "location",
+    "maxPlayers": "max_players",
+    "startTime": "start_time",
+    "endTime": "end_time",
+    "price": "price",
+    "paymentMethods": "payment_methods",
+    "status": "status",
+    "players": "players",
+    "backUps": "backups",
+    "courts": "courts",
+    "createdAt": "created_at"
+  })
+
+#JSON
+
+matches_df["players"] = matches_df["players"].apply(
+    lambda x: json.dumps(clean_mongo(x)) if isinstance(x, list) else None
+)
+
+matches_df["backups"] = matches_df["backups"].apply(
+    lambda x: json.dumps(clean_mongo(x)) if isinstance(x, list) else None
+)
+
+matches_df["courts"] = matches_df["courts"].apply(
+    lambda x: json.dumps(clean_mongo(x)) if isinstance(x, list) else None
+)
+
+matches_df["payment_methods"] = matches_df["payment_methods"].apply(
+    lambda x: json.dumps(clean_mongo(x)) if isinstance(x, list) else None
+)
+
+
+matches_df["match_id"] = matches_df["match_id"].astype("str")
+matches_df["created_by"] = matches_df["created_by"].astype("str")
+matches_df["location"] = matches_df["location"].astype("str")
+
+matches_df.head()
+
+"""# Matches en NEON"""
+
+matches_df.to_sql(
+    "matches_staging",
+    engine,
+    if_exists="replace",
+    index=False
+)
+
+with engine.begin() as conn:
+    conn.execute(text(
+        """
+          INSERT INTO MATCHES (
+            match_id,
+            created_by,
+            location,
+            courts,
+            max_players,
+            start_time,
+            end_time,
+            price,
+            payment_methods,
+            status,
+            players,
+            backUps,
+            created_at
+          )
+
+          SELECT
+            match_id,
+            created_by,
+            location,
+            courts::jsonb,
+            max_players,
+            start_time,
+            end_time,
+            price,
+            payment_methods::jsonb,
+            status,
+            players::jsonb,
+            backUps::jsonb,
+            created_at
+            FROM matches_staging
+            ON CONFLICT(match_id)
+            DO UPDATE SET
+              created_by = EXCLUDED.created_by,
+              location = EXCLUDED.location,
+              courts = EXCLUDED.courts,
+              max_players = EXCLUDED.max_players,
+              start_time = EXCLUDED.start_time,
+              end_time = EXCLUDED.end_time,
+              price = EXCLUDED.price,
+              payment_methods = EXCLUDED.payment_methods,
+              status = EXCLUDED.status,
+              players = EXCLUDED.players,
+              backUps = EXCLUDED.backUps,
+              created_at = EXCLUDED.created_at
+        """
+    ))
+
+    print("Matches sync OK")
         last_match_played = EXCLUDED.last_match_played;
     """))
 

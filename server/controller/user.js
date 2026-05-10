@@ -37,7 +37,7 @@ export const register =  async(req, res) =>{
     try {
 
 
-        const {name, lastname, email, password, phone, ntrplvl, gender, country} = req.body;
+        const {name, lastname, email, password, phone, ntrplvl, gender, country, termsAndConditions} = req.body;
 
         //check if exists
         const exists = await User.findOne({email: req.body.email})
@@ -45,6 +45,11 @@ export const register =  async(req, res) =>{
         if(exists){
             return res.status(409).json({message: 'Email already registered'})
         }
+
+        if(!termsAndConditions) return res.status(400).json({
+            ok: false,
+            message: 'Terms and conditions have not been accepted'
+        })
 
         const user = await User.create({
             name,
@@ -54,7 +59,8 @@ export const register =  async(req, res) =>{
             phone,
             ntrplvl,
             gender,
-            country
+            country,
+            termsAndConditions
             
         });
 
