@@ -3,6 +3,7 @@ import { favoriteLocation, getAllLocations, getLocation, newLocation, toggleActi
 import { protect, verifyAdmin, verifyBookerOrAdmin } from '../middlewares/auth.js';
 import { newLocationValidator, updateSurfaceValidator } from '../validator/locationValidator.js';
 import { validateFields } from '../middlewares/validateFields.js';
+import { urlShortener } from '../controller/shortener.js';
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.post('/status/:slug', protect, verifyAdmin, toggleActivation)
 router.get('/view-all', protect,verifyBookerOrAdmin, getAllLocations)
 router.get('/view/:slug', protect,verifyBookerOrAdmin, getLocation)
 router.put('/:slug', protect,verifyAdmin, updateSurfaceValidator, validateFields, updateCourtSuface)
+router.post('/shorten', urlShortener)
 
 export default router

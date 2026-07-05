@@ -1,14 +1,9 @@
-import {
-    useEffect,
-    useState
-} from "react"
-import {
-    countriesList
-} from "../actions/auth";
+import { useEffect, useState } from "react";
+import { countriesList } from "../actions/auth";
 
 export const useCountries = () => {
     const [countries, setCountries] = useState([]);
-    const [loadCountries, setLoadCountries] = useState(false)
+    const [loadCountries, setLoadCountries] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -19,27 +14,34 @@ export const useCountries = () => {
             try {
                 const data = await countriesList();
 
-                const normalizedData = data
-                    .filter(c => c.idd?.root)
-                    .map(c => ({
-                        name: c.name.common,
-                        iso: c.cca2,
-                        flag: c.flags?.svg,
-                        phoneCodes: c.idd.suffixes.map(s => `${c.idd.root}${s}`)
+                  const normalizedData = data
+                    .map(country => ({
+                        name: country.name,
+                        iso: country.iso2,
+                        flag: country.flag
                     }))
-                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .sort((a, b) => a.name.localeCompare(b.name));
 
-                if (mounted) setCountries(normalizedData)
+                if (mounted) {
+                    setCountries(normalizedData);
+                }
+
             } catch (error) {
-                console.log(error)
-            }finally{
-                setLoadCountries(false)
+                console.error(error);
+            } finally {
+                setLoadCountries(false);
             }
-        }
+        };
 
         load();
-        return () => (mounted = false)
+
+        return () => {
+            mounted = false;
+        };
     }, []);
 
-    return {countries, loadCountries}
-}
+    return {
+        countries,
+        loadCountries
+    };
+};
