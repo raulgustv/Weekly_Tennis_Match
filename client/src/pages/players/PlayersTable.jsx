@@ -24,6 +24,9 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
     const screens = useBreakpoint();
 
     const { countries } = useCountries();
+
+    console.log(countries)
+
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const { Text } = Typography;
     const navigate = useNavigate();

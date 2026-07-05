@@ -27,8 +27,9 @@ export const getUserAuth = async() =>{
 }
 
 export const countriesList = async() =>{
-    const {data} = await countriesAPI.get("/all?fields=name,idd,cca2,flags")
-    return data; 
+    const {data} = await countriesAPI.get("https://countriesnow.space/api/v0.1/countries/flag/images")
+
+    return data.data; 
 }
 
 
