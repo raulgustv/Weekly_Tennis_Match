@@ -15,6 +15,7 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange }) => {
 
     const { Text, Link } = Typography;
 
+
     const { countries } = useCountries()
 
     const total_cooldown = 120000

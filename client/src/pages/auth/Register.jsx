@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Checkbox, Form, Input, Select, Space, Steps, Typography } from "antd";
+import { Button, Checkbox, Form, Input, Select, Space, Steps, Typography, Image} from "antd";
 import { CheckOutlined, CloseOutlined, LoadingOutlined } from "@ant-design/icons";
 import NTRPLevel from "../../components/utils/NTRPLevel";
 import { register, checkEmailValidity } from "../../actions/auth";
@@ -45,6 +45,9 @@ const Register = () => {
   // }, [countries, form]);
 
 
+
+
+
   const renderEmailIcon = () => {
     switch (emailStatus) {
       case "loading":
@@ -64,14 +67,7 @@ const Register = () => {
     { title: "Tennis level" }
   ];
 
-  // const onCountryChange = (countryName) => {
-  //   const country = countries.find(c => c.name === countryName);
-  //   if (country?.phoneCodes?.length) {
-  //     form.setFieldsValue({
-  //       prefix: country.phoneCodes[0]
-  //     });
-  //   }
-  // };
+
 
   const prefixSelector = (
     <Form.Item
@@ -83,17 +79,27 @@ const Register = () => {
       <Select
         showSearch
         style={{ width: 110 }}
+        popupMatchSelectWidth={250}
         placeholder="+34"
         options={
           countries
-            .flatMap(c =>
-              c.phoneCodes.map(code => ({
-                key: code,
-                label: `${code}`,
-                value: `${code}-${c.iso}`
-              }))
-            )
-            .sort((a, b) => a.label.localeCompare(b.label))
+            .map((c, index) => ({
+              key: `${c.iso2} -${index}`,
+              value: c.phoneCode,
+              search: `${c.name} ${c.phoneCode}`,
+              label: ( 
+                <Space size={4}>
+                  <Image
+                    src={c.flag}
+                    width={20}
+                    preview={false}
+                  />
+                  {c.phoneCode}
+                </Space>
+              )
+
+            }))
+          //.sort((a, b) => a.label.localeCompare(b.label))
         }
       />
     </Form.Item>
@@ -217,7 +223,7 @@ const Register = () => {
             <Input placeholder="johndoe@john.com" suffix={renderEmailIcon()} />
           </Form.Item>
 
-        <PasswordField />
+          <PasswordField />
 
           <Form.Item
             label="Confirm password"

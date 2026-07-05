@@ -18,7 +18,8 @@ export const useCountries = () => {
                     .map(country => ({
                         name: country.name,
                         iso: country.iso2,
-                        flag: country.flag
+                        flag: country.flag,
+                        phoneCode: country?.phoneCode
                     }))
                     .sort((a, b) => a.name.localeCompare(b.name));
 
