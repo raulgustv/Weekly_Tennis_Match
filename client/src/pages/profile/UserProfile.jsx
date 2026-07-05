@@ -17,7 +17,7 @@ const UserProfile = () => {
 
     const { user } = useAuth();
 
-    //console.log(user)
+    console.log(user)
 
     const { countries } = useCountries();
 
@@ -98,6 +98,8 @@ const UserProfile = () => {
             <Divider />
 
             {/* ================= PERSONAL INFO ================= */}
+
+            
 
             <PersonalInfo user={user} countryFlag={countryFlag} handleSendReset={handleSendReset} passwordChange={true} />
 

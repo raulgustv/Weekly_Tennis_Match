@@ -17,9 +17,9 @@ axiosInstance.interceptors.request.use((config) =>{
     return config
 }, (error)=> Promise.reject(error))
 
-export const countriesAPI = axios.create({
-  baseURL: "https://restcountries.com/v3.1",
-  timeout: 10000
-});
+// export const countriesAPI = axios.create({
+//   baseURL: "https://restcountries.com/v3.1",
+//   timeout: 10000
+// });
 
 export default axiosInstance;

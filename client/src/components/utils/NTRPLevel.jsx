@@ -1,4 +1,5 @@
-import { Flex, Form, Slider } from "antd"
+import { Flex, Form, Image, Popover, Slider, Typography} from "antd"
+
 
 
 const NTRPLevel = () => {
@@ -14,6 +15,8 @@ const NTRPLevel = () => {
         4.5: "4.5",
         5.0: "5.0",
     }
+
+    const {Link} = Typography
 
     return (
         <>
@@ -40,10 +43,18 @@ const NTRPLevel = () => {
                     <a href="https://courtmatch.ca/quiz/" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12 }}>
                         Take a self assesment quiz 
                     </a>
+                    
+                    <Popover
+                        placement="right"
+                        trigger="hover"
+                        content={
+                            <Image src={'/images/NTRP-chart.jpg'} width={400} preview={false} />                            
+                        }
+                    >
+                        <Link>Hover to see NTRP Chart</Link>
+                    </Popover>
 
-                    <a href="https://germanmillstennisclub.com/ntrp-chart/" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12 }}>
-                        See NTRP info chart
-                    </a>
+                    
                 </Flex>
 
             </div>

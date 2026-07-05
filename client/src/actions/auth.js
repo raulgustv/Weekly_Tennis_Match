@@ -1,4 +1,5 @@
-import axiosInstance, { countriesAPI } from "../API/axios"
+import axiosInstance from "../API/axios"
+import countries from '../data/country_codes.json';
 
 
 export const login = async (values) => {
@@ -27,9 +28,8 @@ export const getUserAuth = async() =>{
 }
 
 export const countriesList = async() =>{
-    const {data} = await countriesAPI.get("https://countriesnow.space/api/v0.1/countries/flag/images")
+    return countries;
 
-    return data.data; 
 }
 
 
