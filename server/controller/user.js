@@ -466,6 +466,50 @@ export const userNotes = async(req, res) =>{
 
 
 
+export const suspendUser = async(req, res) =>{
+    try {
+
+        const {id} = req.params;
+
+        const {note, days = 7} = req.body;
+
+        const user = await User.findById(id);
+
+        if(!user){
+            return res.status(404).json({
+                ok: false,
+                message: "User not found"
+            })
+        }
+
+        user.suspendedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+
+        user.suspendedBy = req.user._id;
+
+        user.notesHistory.push({
+            note,
+            createdBy: req.user._id
+        });
+
+        await user.save();
+
+        return res.status(200).json({
+            ok: true,
+            message: `User suspended for ${days} day(s).`,
+            suspendedUntil: user.suspendedUntil
+        })
+
+        
+        
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({
+            ok: false,
+            message: 'Unable to suspend user'
+        })
+    }
+}
+
 
 
 

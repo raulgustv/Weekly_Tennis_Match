@@ -1,14 +1,16 @@
-import { Row, Col, Typography, Tag, Space } from "antd"
+import { Row, Col, Typography, Tag, Space, Statistic } from "antd"
 import ProfilePicture from "../uploads/ProfilePicture"
 import dayjs from "dayjs";
 
 
+
 const ProfileHeader = ({ user, editable }) => {
 
-    const {Text, Title} = Typography;
+    const { Text, Title } = Typography;
 
-    //console.log(user)
+    const isSuspended = user?.suspendedUntil && new Date(user.suspendedUntil) > new Date()
 
+    const { Timer } = Statistic;
 
     return (
         <Row gutter={[16, 16]} align="middle">
@@ -29,11 +31,31 @@ const ProfileHeader = ({ user, editable }) => {
                     <Tag color="gold">
                         NTRP Level: {user?.ntrplvl.toFixed(1)}
                     </Tag>
+
+                    {isSuspended && (
+                        <Tag color='volcano' style={{ fontSize: 14, padding: "4px 12px" }}>
+                            Temporarily Suspended
+                        </Tag>
+                    )}
                 </Space>
 
                 <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
                     Member since {dayjs(user?.createdAt).format("DD-MM-YYYY")}
                 </Text>
+
+                {isSuspended && (
+                    <div style={{ marginTop: 16 }}>
+                        <Timer
+                            title='Suspension ends in'
+                            type="countdown"
+                            value={new Date(user.suspendedUntil).getTime()}
+                            format="D [days] H [hours] m [minutes] s [seconds]"
+                            onFinish={() => {
+                                window.location.reload();
+                            }}
+                        />
+                    </div>
+                )}
             </Col>
         </Row>
     )

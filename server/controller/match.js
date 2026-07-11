@@ -325,6 +325,22 @@ export const joinMatch = async (req, res) => {
       throw new Error("Invalid match ID");
     }
 
+    const user = await User.findById(userId).session(session);
+
+    if(!user) {
+      return res.status(404).json({
+        ok: false,
+        message: 'User not found'
+      })
+    }
+
+    if (user.suspendedUntil && user.suspendedUntil > new Date()){
+      return res.status(400).json({
+        ok: false,
+        message: `You are suspended and you cannot join a match until ${user.suspendedUntil.toLocaleDateString('es-ES')}`
+      })
+    }
+
     /* ===================================================== */
     /* BACKUP JOIN (NO WALLET IMPACT)                       */
     /* ===================================================== */
@@ -390,18 +406,14 @@ export const joinMatch = async (req, res) => {
 
     if (paymentMethod === "wallet") {
 
-      const user = await User.findById(userId).session(session);
-
-      if (!user) throw new Error("User not found");
-
-      // 💰 precio estimado por jugador
+      //  precio estimado por jugador
       const estimatedPrice = match.price / match.maxPlayers;
 
       if (user.walletBalance < estimatedPrice) {
         throw new Error("Insufficient balance");
       }
 
-      // 1️⃣ JOIN MATCH
+      //  1 JOIN MATCH
       const updatedMatch = await Match.findOneAndUpdate(
         {
           _id: id,
@@ -430,11 +442,11 @@ export const joinMatch = async (req, res) => {
         throw new Error("Match is full");
       }
 
-      // 2️⃣ UPDATE WALLET
+      // 2️ UPDATE WALLET
       user.walletBalance -= estimatedPrice;
       await user.save({ session });
 
-      // 3️⃣ CREATE WALLET TRANSACTION
+      // 3️ CREATE WALLET TRANSACTION
 
       const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
 
@@ -447,7 +459,7 @@ export const joinMatch = async (req, res) => {
         match: match._id
       }], { session });
 
-      // 4️⃣ UPDATE MATCH STATUS
+      // 4️ UPDATE MATCH STATUS
       if (updatedMatch.players.length === updatedMatch.maxPlayers) {
         updatedMatch.status = "Full";
         await updatedMatch.save({ session });
