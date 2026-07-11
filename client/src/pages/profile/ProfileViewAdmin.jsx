@@ -41,6 +41,12 @@ const ProfileViewAdmin = () => {
 
     const ntrpHistory = useNTRPAdjustment(player?.adjustmentHistory);
 
+    //suspension
+    const isSuspended =
+    player?.suspendedUntil &&
+    new Date(player.suspendedUntil) > new Date();
+  
+
     const isLoading = !user || !ntrpHistory
 
 
@@ -107,7 +113,7 @@ const ProfileViewAdmin = () => {
                 </Col>
 
                 <Col xs={24} md={12} lg={12}>
-                    <UserNotes userId={id} />
+                    <UserNotes userId={id} isSuspended={isSuspended} />
                 </Col>
 
 

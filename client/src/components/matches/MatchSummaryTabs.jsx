@@ -32,6 +32,10 @@ const MatchSummaryTabs = ({
     const { user } = useAuth();
     const navigate = useNavigate();
 
+    const isSuspended =
+        user?.suspendedUntil &&
+        new Date(user.suspendedUntil) > new Date();
+
     const {
         location,
         date,
@@ -46,7 +50,7 @@ const MatchSummaryTabs = ({
     } = matchSummary || {};
 
     /* --------------------------
-       🔢 CALCULATE AVERAGE NTRP
+       CALCULATE AVERAGE NTRP
     -------------------------- */
 
     const averageNTRP = useMemo(() => {
@@ -63,22 +67,22 @@ const MatchSummaryTabs = ({
       Less than 24h
    -------------------------- */
 
-  const isLess24h = useMemo(() => {
-    if (!date || !startTime) return false;
+    const isLess24h = useMemo(() => {
+        if (!date || !startTime) return false;
 
-    const [hour, minute] = startTime.split(":");
+        const [hour, minute] = startTime.split(":");
 
-    const matchDateTime = dayjs(date)
-        .hour(Number(hour))
-        .minute(Number(minute))
-        .second(0)
-        .millisecond(0);
+        const matchDateTime = dayjs(date)
+            .hour(Number(hour))
+            .minute(Number(minute))
+            .second(0)
+            .millisecond(0);
 
-    const now = dayjs();
+        const now = dayjs();
 
-    return matchDateTime.diff(now) < 24 * 60 * 60 * 1000;
+        return matchDateTime.diff(now) < 24 * 60 * 60 * 1000;
 
-}, [date, startTime]);
+    }, [date, startTime]);
 
     const pricePerPerson = Number(price / maxPlayers).toFixed(2);
 
@@ -191,22 +195,30 @@ const MatchSummaryTabs = ({
                                     <Button
                                         type="primary"
                                         block
-                                        disabled={players.length >= maxPlayers}
+                                        disabled={players.length >= maxPlayers || isSuspended}
                                         style={{ marginBottom: 10 }}
+
                                     >
                                         Join Match
                                     </Button>
                                 </Popconfirm>
                             ) : (
-                                <Button
-                                    type="primary"
-                                    block
-                                    disabled={players.length >= maxPlayers}
-                                    onClick={() => onRequestJoin(matchSummary)}
-                                    style={{ marginBottom: 10 }}
+                                <Tooltip
+                                    color="volcano"
+                                    title={
+                                        isSuspended ? `Your account is suspended until ${dayjs(user.suspendedUntil).format("DD/MM/YYYY HH:mm")}` : null
+                                    }
                                 >
-                                    Join Match
-                                </Button>
+                                    <Button
+                                        type="primary"
+                                        block
+                                        disabled={players.length >= maxPlayers || isSuspended}
+                                        onClick={() => onRequestJoin(matchSummary)}
+                                        style={{ marginBottom: 10 }}
+                                    >
+                                        Join Match
+                                    </Button>
+                                </Tooltip>
                             )}
 
                             <Popconfirm
@@ -214,9 +226,19 @@ const MatchSummaryTabs = ({
                                 description="You are joining this match as backup. Are you sure?"
                                 onConfirm={() => onJoin(_id, true)}
                             >
-                                <Button type="link" block>
-                                    Join as backup
-                                </Button>
+                                <Tooltip
+                                    color="volcano"
+                                    title={
+                                        isSuspended ? `Your account is suspended until ${dayjs(user.suspendedUntil).format("DD/MM/YYYY HH:mm")}` : null
+                                    }
+                                >
+                                    <Button
+                                        type="link" block
+                                        disabled={isSuspended}
+                                    >
+                                        Join as backup
+                                    </Button>
+                                </Tooltip>
                             </Popconfirm>
                         </>
                     ) : (

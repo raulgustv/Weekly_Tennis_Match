@@ -43,12 +43,18 @@ export const addUserNote = async(id, note) =>{
     return data;
 } 
 
+export const addSuspension = async(id, note) => {
+    const {data} = await axiosInstance.post(`/user/suspend/${id}`, {note})
+    return data;
+}
+
 
 export const getUserNoteHistory = async(id) =>{
     const {data} = await axiosInstance.get(`/user/notes/${id}`);
 
     return data;
 }
+
 
 export const updatePaymentRecepient = async(id) =>{
     const {data} = await axiosInstance.post(`/admin/update-recepient/${id}`);
