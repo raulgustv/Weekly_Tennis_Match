@@ -1,7 +1,8 @@
-import { Form, Input, InputNumber, Modal, Select, Typography } from "antd";
+import { Form, Input, InputNumber, Modal, Select, Typography, Space, Tooltip } from "antd";
 //import LoadingSpinner from "../utils/LoadingSpinner";
 import { adminRefundAdjust } from "../../actions/wallet";
-import {toast} from 'react-toastify'
+import { toast } from 'react-toastify'
+import { QuestionCircleOutlined } from "@ant-design/icons";
 
 const RefundAdjustModal = ({ user, open, setOpen, refresh }) => {
 
@@ -9,24 +10,24 @@ const RefundAdjustModal = ({ user, open, setOpen, refresh }) => {
     const { Text } = Typography;
 
 
-    const onFinish = async(values) => {
+    const onFinish = async (values) => {
         try {
 
             const payload = {
                 userId: user._id,
-                amount: values.amount, 
+                amount: values.amount,
                 type: values.type,
                 note: values.note
-            } 
+            }
 
             const res = await adminRefundAdjust(payload)
             refresh()
 
-            toast.success(res.message) 
+            toast.success(res.message)
 
             form.resetFields();
             setOpen(false);
-        } catch ({response}) {
+        } catch ({ response }) {
             console.log(response)
             toast.error(response?.data?.message || 'Error processing adjustment/refund')
         }
@@ -47,6 +48,7 @@ const RefundAdjustModal = ({ user, open, setOpen, refresh }) => {
             cancelText="Cancel"
             title={`Refund / Adjustment — ${user?.name} ${user?.lastname}`}
             destroyOnHidden
+
         >
             <Form
                 form={form}
@@ -58,7 +60,7 @@ const RefundAdjustModal = ({ user, open, setOpen, refresh }) => {
                     name="type"
                     label="Transaction type"
                     rules={[
-                        {required: true, message: 'Please select a transaction type'}
+                        { required: true, message: 'Please select a transaction type' }
                     ]}
                 >
                     <Select
@@ -74,19 +76,35 @@ const RefundAdjustModal = ({ user, open, setOpen, refresh }) => {
                 <Form.Item
                     name="amount"
                     label={
-                        <>
-                            <Text>Amount</Text><Text type="secondary">(max/min amount 500€)</Text>
-                        </>
+                        <Space size={4}>
+                            <Text>Amount</Text>
+
+                            <Tooltip
+                                title={
+                                    <>
+                                        • Enter only positive amounts.<br />
+                                        • Refunds will credit the user's wallet.<br />
+                                        • Adjustments will deduct the entered amount automatically.
+                                    </>
+                                }
+                            >
+                                <QuestionCircleOutlined
+                                    style={{ color: "#1677ff", cursor: "pointer" }}
+                                />
+                            </Tooltip>
+
+                            <Text type="secondary">(max amount €500)</Text>
+                        </Space>
                     }
                     rules={[
-                        {required: true, message: 'Please add an amount'}
+                        { required: true, message: 'Please add an amount' }
                     ]}
                 >
                     <InputNumber
                         type="number"
-                        min={-500}
+                        min={0}
                         max={500}
-                        placeholder="e.g. 5.5 or -3.2"
+                        placeholder="e.g. 5.50"
                         suffix='€'
                     />
                 </Form.Item>
@@ -110,8 +128,8 @@ const RefundAdjustModal = ({ user, open, setOpen, refresh }) => {
 
                 {/* INFO */}
                 <Text type="secondary">
-                    Refund → positive amount <br />
-                    Adjustment → negative amount
+                    Refund → adds the entered amount to the wallet.<br />
+                    Adjustment → deducts the entered amount from the wallet.
                 </Text>
             </Form>
         </Modal>

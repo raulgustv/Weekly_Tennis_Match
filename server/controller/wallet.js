@@ -362,7 +362,20 @@ export const refundAdjustments = async(req, res) =>{
 
         const {userId, amount, type, note} = req.body;
 
-        if(!userId || !amount || !type){
+        const amountNumber = Number(amount);
+
+        if (!userId || !type || isNaN(amountNumber) || amountNumber <= 0) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                ok: false,
+                message: 'User, amount and type are required'
+            });
+        }
+
+
+        
+
+        if(!userId || !amountNumber || !type){
             await session.abortTransaction();
             return res.status(400).json({
                 ok: false,
@@ -396,7 +409,7 @@ export const refundAdjustments = async(req, res) =>{
 
         const transaction = await WalletTransaction.create([{
             user: userId,
-            amount,
+            amount: amountNumber,
             type,
             status: 'confirmed',
             reviewedBy: adminId,
@@ -413,11 +426,11 @@ export const refundAdjustments = async(req, res) =>{
         let balanceUpdate = 0;
 
         if(type === 'refund'){
-            balanceUpdate = amount;
+            balanceUpdate = amountNumber;
         }
 
         if(type === 'adjustment'){
-            balanceUpdate = amount;
+            balanceUpdate = -amountNumber;
         }
 
         await User.findByIdAndUpdate(

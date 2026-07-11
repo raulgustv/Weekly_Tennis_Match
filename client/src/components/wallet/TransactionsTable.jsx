@@ -153,7 +153,7 @@ const TransactionsTable = ({ transactions, isMobile, loading, isAdmin, refresh }
                 })}
             />
 
-            <RefundAdjustModal user={user} open={openModal} setOpen={setOpenModal} refresh={refresh} />
+            <RefundAdjustModal user={user} open={openModal} setOpen={setOpenModal} refresh={refresh}  />
         </>
     )
 }
