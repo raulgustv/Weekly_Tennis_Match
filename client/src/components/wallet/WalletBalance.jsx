@@ -90,6 +90,7 @@ const WalletBalance = ({ balance, fetchTransactions, loading, setLoading }) => {
                                 { value: "bizum", label: 'Bizum' },
                                 { value: "revolut", label: 'Revolut' },
                                 { value: "paypal", label: 'Paypal' },
+                                { value: "cash", label: 'Cash' },
                             ]}
                         />
 
