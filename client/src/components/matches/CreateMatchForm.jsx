@@ -62,7 +62,10 @@ const CreateMatchForm = ({ refreshMatches }) => {
       return sum + p;
     }, 0) : 0;
 
-  const pricePerPlayer = totalPlayers && totalPrice ? Number(totalPrice / totalPlayers).toFixed(2) : null;
+  const pricePerPlayer =
+    totalPlayers && totalPrice
+      ? (Math.round(((totalPrice / totalPlayers) + Number.EPSILON) * 100) / 100).toFixed(2)
+      : null;
 
   const handleNewMatch = async (values) => {
     const payload = {

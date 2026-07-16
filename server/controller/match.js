@@ -409,7 +409,7 @@ export const joinMatch = async (req, res) => {
     if (paymentMethod === "wallet") {
 
       //  precio estimado por jugador
-      const estimatedPrice = match.price / match.maxPlayers;
+      const estimatedPrice = Math.round((match.price / match.maxPlayers) * 100) / 100;;
 
       if (user.walletBalance < estimatedPrice) {
         throw new Error("Insufficient balance");
@@ -479,9 +479,7 @@ export const joinMatch = async (req, res) => {
     /* OTHER PAYMENT METHODS (UNPAID)                        */
     /* ===================================================== */
 
-    const estimatedPrice = Number(
-      (match.price / match.maxPlayers).toFixed(2)
-    );
+    const estimatedPrice = Math.round((match.price / match.maxPlayers) * 100) / 100;
 
     const updatedMatch = await Match.findOneAndUpdate(
       {
@@ -1310,7 +1308,7 @@ export const acceptInvite = async (req, res) => {
     if (!match) throw new Error("Match not found");
 
     // 💰 precio dinámico
-    const estimatedPrice = match.price / match.maxPlayers;
+    const estimatedPrice = Math.round((match.price / match.maxPlayers) * 100) / 100;
 
     /* ===================================================== */
     /* WALLET FLOW                                           */
