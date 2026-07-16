@@ -61,7 +61,9 @@ export const newMatch = async (req, res) => {
             });
         }
 
-        const totalPrice  = courts.reduce((sum, c) => sum + Number(c.price), 0);
+        const totalPrice = Math.ceil(
+          courts.reduce((sum, c) => sum + Number(c.price), 0) * 10
+        ) / 10;
 
         const maxPlayers = courtNumbersParsed.length * 4;
 
