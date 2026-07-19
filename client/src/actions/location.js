@@ -28,3 +28,9 @@ export const updateSurface = async(slug, courtNumber, surface ) =>{
     const {data} = await axiosInstance.put(`/location/${slug}`, {courtNumber, surface})
     return data;
 }
+
+export const toggleFavoriteCourt = async(slug, courtNumber) =>{
+    const {data} = await axiosInstance.patch(`/location/${slug}/courts/${courtNumber}/favorite`)
+
+    return data;
+}

@@ -193,7 +193,7 @@ const CourtTable = ({ courts, loadCourts, onRefresh }) => {
                     rowKey="_id"
                     size="small"
                     loading={loadCourts}
-                    scroll={{ x: "max-content" }}  // 👈 CLAVE MOBILE
+                    scroll={{ x: "max-content" }} 
                     onRow={(record) => ({
                         onDoubleClick: () => {
                             if (!record.active) {
