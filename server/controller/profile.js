@@ -214,8 +214,11 @@ export const uploadProfilePicture = async (req, res) => {
 
         //sanitize image
         const processedImage = await sharp(req.file.buffer)
-                                .resize(400, 400)
-                                .toFormat("webp")
+                                .rotate()
+                                .resize(400, 400, {
+                                    fit: "cover",
+                                    position: 'centre'
+                                })
                                 .webp({quality: 90})
                                 .toBuffer()
             
