@@ -39,10 +39,8 @@ const CourtModalSurface = ({ open, onClose, court, updateSurface }) => {
 
     const handleToggleCourtFavorite = async (slug, courtNumber, currentFavorite) => {
         try {
-            const res = await toggleFavoriteCourt(slug, courtNumber)
-
+            await toggleFavoriteCourt(slug, courtNumber)
             setFavoriteOverrides(prev => ({ ...prev, [courtNumber]: !currentFavorite }));
-
         } catch (error) {
             console.log(error)
         }
