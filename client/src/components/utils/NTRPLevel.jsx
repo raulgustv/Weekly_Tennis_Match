@@ -48,7 +48,7 @@ const NTRPLevel = () => {
                         placement="right"
                         trigger="hover"
                         content={
-                            <Image src={'/images/NTRP-chart.jpg'} width={400} preview={false} />                            
+                            <Image src={'https://res.cloudinary.com/rgustv-personal/image/upload/v1784460255/Public%20images/qvgzgrzwhbhplnwoqn4k.jpg'} width={400} preview={false} />                            
                         }
                     >
                         <Link>Hover to see NTRP Chart</Link>
