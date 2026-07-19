@@ -1,5 +1,5 @@
-import { Flex, Form, Image, Popover, Slider, Typography} from "antd"
-
+import { Flex, Form, Image, Slider, Typography, Modal} from "antd"
+import { useState } from "react"
 
 
 const NTRPLevel = () => {
@@ -17,6 +17,8 @@ const NTRPLevel = () => {
     }
 
     const {Link} = Typography
+
+    const [openChart, setopenChart] = useState(false)
 
     return (
         <>
@@ -43,21 +45,31 @@ const NTRPLevel = () => {
                     <a href="https://courtmatch.ca/quiz/" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12 }}>
                         Take a self assesment quiz 
                     </a>
-                    
-                    <Popover
-                        placement="right"
-                        trigger="hover"
-                        content={
-                            <Image src={'https://res.cloudinary.com/rgustv-personal/image/upload/v1784460255/Public%20images/qvgzgrzwhbhplnwoqn4k.jpg'} width={400} preview={false} />                            
-                        }
-                    >
-                        <Link>Hover to see NTRP Chart</Link>
-                    </Popover>
-
-                    
+ 
+                        <Link onClick={() => setopenChart(true)}>
+                            Hover to see NTRP Chart
+                        </Link>                   
                 </Flex>
-
             </div>
+
+            <Modal
+                open={openChart}
+                onCancel={() => setopenChart(false)}
+                centered
+                width="50%"
+                footer={false}
+            >
+                <Image 
+                    src="https://res.cloudinary.com/rgustv-personal/image/upload/v1784460255/Public%20images/qvgzgrzwhbhplnwoqn4k.jpg"
+                    style={{
+                        width:"100%",
+                        height: "auto"
+                    }}
+                    preview={{
+                        mask: "Click to enlarge"
+                    }}
+                />
+            </Modal>
 
         </>
     )
