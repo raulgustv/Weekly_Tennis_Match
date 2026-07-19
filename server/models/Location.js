@@ -9,6 +9,10 @@ const courtSchema = new mongoose.Schema({
         type: String,
         enum: ['Quick', 'Hard', 'Clay', 'Grass'],
         default: "Quick"
+    }, 
+    favorite: {
+        type: Boolean,
+        default: false
     }
 }, {_id: false});
 

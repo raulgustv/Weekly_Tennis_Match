@@ -205,3 +205,43 @@ export const updateCourtSuface = async(req, res) =>{
     }
 }
 
+export const toggleFavoriteCourt = async(req, res) =>{
+    try {
+
+        const {slug, courtNumber} = req.params;
+
+        const location = await Location.findOne({slug});
+
+        if(!location) return res.status(404).json({
+            ok: false,
+            message: 'Location not found'
+        });
+
+        const court  = location.courts.find(
+            court => court.number === Number(courtNumber)
+        )
+
+        if(!court) return res.status(404).json({
+            ok: false,
+            message: 'Court does not exist or not found'
+        });
+
+        court.favorite = !court.favorite;
+
+        await location.save();
+
+        return res.status(200).json({
+            ok: true,
+            message: `Court ${courtNumber} has been ${court.favorite ? 'marked as favorite' : 'Removed from favorites'}`
+        })
+
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal error adding court to favorite'
+        });
+    }
+}
+
