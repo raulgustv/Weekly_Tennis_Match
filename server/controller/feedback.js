@@ -47,7 +47,7 @@ export const checkEligibility  = async(req, res) =>{
             const daysSinceShown = (Date.now() - lastRequest.shownAt) / (1000 * 60 * 60 * 24)
 
             if(daysSinceShown < COOLDOWN_DAYS){
-                    return res.status(400).json({
+                    return res.status(200).json({
                         eligible: false,
                         reason: 'Cooldown'
                     })
