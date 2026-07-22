@@ -132,6 +132,14 @@
             type: Number,
             default: 0
         },
+        successfulLoginCount:{
+            type: Number, 
+            default: 0
+        },
+        eligibleFeedback:{
+            type: Boolean,
+            default: true
+        }, 
         lockUntil:{
             type: Date,
             default: null,

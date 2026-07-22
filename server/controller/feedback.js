@@ -1,7 +1,9 @@
 import FeedbackRequest from "../models/Feedback.js";
+import User from "../models/user.js";
 
 const COOLDOWN_DAYS = 21;
 const SAMPLE_RATE = 0.15;
+const MIN_LOGINS_FEEDBACK = 1
 
 export const checkEligibility  = async(req, res) =>{
     try {
@@ -16,30 +18,46 @@ export const checkEligibility  = async(req, res) =>{
             })
         }
 
+        //antiguedad cuenta 
+        const user = await User.findById(userId).select("successfulLoginCount");
+
+        if(!user || (user.successfulLoginCount || 0) < MIN_LOGINS_FEEDBACK){
+            return res.status(200).json({
+                eligible: false,
+                message: 'Insuficcient logins for feedback'
+            })
+        }
+
+
+        if(user.eligibleFeedback === false){
+            return res.status(200).json({
+                eligible: false,
+                message: 'User not eligible for sample feedback'
+            })
+        }       
+
         //1. Buscar ultima solicitud (excepto user_initiated)
         const lastRequest = await FeedbackRequest.findOne({
             userId,
             triggerType: {$ne: 'user_initiated'}
         }).sort({shownAt: -1})
 
-        if(lastRequest){
-            const daysSinceLastRequest  = (Date.now() - lastRequest.shownAt) / (1000*60*60*24)
+        if(lastRequest && lastRequest.dismissed){
 
-            if(daysSinceLastRequest < COOLDOWN_DAYS){
-                return res.status(400).json({
-                    eligible: false,
-                    reason: 'cooldown'
-                })
-            }
-        }
+            const daysSinceShown = (Date.now() - lastRequest.shownAt) / (1000 * 60 * 60 * 24)
 
-        const selected = Math.random() < SAMPLE_RATE;
+            if(daysSinceShown < COOLDOWN_DAYS){
+                    return res.status(400).json({
+                        eligible: false,
+                        reason: 'Cooldown'
+                    })
+                }   
+            }           
 
-        //const selected = true
-
+        const selected = Math.random() < SAMPLE_RATE;    
 
         if(!selected){
-            return res.status(400).json({
+            return res.status(200).json({
                 eligible: false,
                 reason: 'Not sampled'
             })
@@ -115,9 +133,28 @@ export const submitResponse = async(req, res) =>{
         )
 
         if(!feedbackRequest){
+
+            const exists = await FeedbackRequest.findOne({
+                _id: id,
+                userId: req.user._id
+            })
+
+            if(exists && exists.responded){
+                return res.status(409).json({
+                    eligible: false,
+                    message: 'This feedback was already responded'
+                })
+            }
+
             return res.status(400).json({
                 ok: false,
                 message: 'Feedback request not found'
+            })
+        }
+
+        if(feedbackRequest.triggerType !== 'user_initiated'){
+            await User.findByIdAndUpdate(req.user._id, {
+                eligibleFeedback: false
             })
         }
 
@@ -141,7 +178,7 @@ export const dismissFeedback = async(req, res) =>{
         const {id} = req.params;
 
         const feedbackRequest = await FeedbackRequest.findOneAndUpdate(
-            {_id: id, userId: req.user._id},
+            {_id: id, userId: req.user._id, responded: false, respondedAt: Date.now()},
             {dismissed: true}, 
             {new: true}
         )

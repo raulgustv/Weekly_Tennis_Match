@@ -134,6 +134,7 @@ export const login = async(req, res) =>{
 
         user.loginAttempts = 0;
         user.lockUntil = null;
+        user.successfulLoginCount = (user.successfulLoginCount || 0) + 1;
 
         await user.save()
         
