@@ -13,9 +13,10 @@ import {
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "../styles/menu.css";
 import AppFooter from "./AppFooter";
+import { useFeedback } from "../context/FeedbackContext";
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
@@ -30,6 +31,15 @@ const MainLayout = () => {
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const {triggerFeedbackCheck} = useFeedback()
+
+
+  useEffect(() =>{
+    if(user) {
+      triggerFeedbackCheck('usage_milestone')
+    }
+  }, [user?._id], triggerFeedbackCheck)
 
   const isAdmin = user?.role === "admin";
   const isBooker = user?.role === "booker";
