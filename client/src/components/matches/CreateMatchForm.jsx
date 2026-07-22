@@ -282,7 +282,7 @@ const CreateMatchForm = ({ refreshMatches }) => {
                 {fields.map(({ key, name, ...restField }) => (
                   <Space
                     key={key}
-                    direction="vertical"
+                    orientation="vertical"
                     style={{ width: "100%", marginBottom: 16 }}
                   >
                     <Form.Item
