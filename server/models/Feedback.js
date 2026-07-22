@@ -37,6 +37,20 @@ const feedbackSchema = new Schema({
             min: 1,
             max: 5
         },
+        category: {
+            type: String,
+            enum: [
+                'match_organization',
+                'match_balance',
+                'scheduling',
+                'skill_voting',
+                'social_experience',
+                'app_usability', 
+                'performance', 
+                'bug_report',
+                'other'
+            ],
+        }, 
         comment: {
             type: String,
             maxLength: 1000

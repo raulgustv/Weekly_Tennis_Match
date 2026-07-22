@@ -54,7 +54,9 @@ export const checkEligibility  = async(req, res) =>{
                 }   
             }           
 
-        const selected = Math.random() < SAMPLE_RATE;    
+        //const selected = Math.random() < SAMPLE_RATE;  
+        const selected = true  
+        
 
         if(!selected){
             return res.status(200).json({
@@ -106,13 +108,13 @@ export const submitResponse = async(req, res) =>{
     try {
         
         const {id} = req.params;
-        const {rating, comment} = req.body;
+        const {rating, category, comment} = req.body;
 
-        if(!rating){
+        if(!rating || !category){
             return res.status(400).json(
                 {
-                    ok: false
-                    , message: "Missing rating"
+                    ok: false,
+                    message: "Missing rating/category"
                 }
             )
         }
@@ -127,6 +129,7 @@ export const submitResponse = async(req, res) =>{
                 respondedAt: Date.now(),
                 response: {
                     rating,
+                    category,
                     comment
                 }
             }, {new: true}
