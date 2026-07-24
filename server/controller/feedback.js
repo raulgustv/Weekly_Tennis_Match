@@ -24,7 +24,14 @@ export const checkEligibility  = async(req, res) =>{
         }
 
         //APP Feedback
-        const user = await User.findOne(userId).select('nextAppFeedbakMilestone lastAppFeedback')
+        const user = await User.findById(userId).select('nextAppFeedbakMilestone lastAppFeedback')
+
+        if(!user){
+            return res.status(404).json({
+                ok: false,
+                message: 'User not found'
+            })
+        }
 
         const completedMatches = await Match.countDocuments({
             status: 'Played',
@@ -64,7 +71,7 @@ export const checkEligibility  = async(req, res) =>{
         }
 
         return res.status(200).json({
-            elegible: true
+            eligible: true
         })    
         
     } catch (error) {
@@ -178,7 +185,7 @@ export const dismissFeedback = async(req, res) =>{
         const {id} = req.params;
 
         const feedbackRequest = await FeedbackRequest.findOneAndUpdate(
-            {_id: id, userId: req.user._id, responded: false, respondedAt: Date.now()},
+            {_id: id, userId: req.user._id, responded: false},
             {dismissed: true}, 
             {new: true}
         )
@@ -211,4 +218,3 @@ export const dismissFeedback = async(req, res) =>{
         })
     }
 }
-
