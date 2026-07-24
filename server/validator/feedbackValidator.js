@@ -12,15 +12,21 @@ export const feedbackValidator = [
 
     body('category')
     .notEmpty().withMessage('Category is required')
-    .isIn(['match_organization',
-                'match_balance',
-                'scheduling',
-                'skill_voting',
-                'social_experience',
-                'app_usability', 
-                'performance', 
-                'bug_report',
-                'other']).withMessage('Invalid category')
+    .isIn([
+        "usability",
+        "performance",
+        "bugs",
+        "features",
+        "notifications",
+        "design",
+        "organization",
+        "level_balance",
+        "court",
+        "players",
+        "host",
+        "overall_experience",
+        "other",
+    ]).withMessage('Invalid category')
    
 ]
 

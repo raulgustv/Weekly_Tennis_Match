@@ -1,4 +1,3 @@
-import axios from "axios";
 import axiosInstance from "../API/axios"
 
 export const checkFeedbackEligibility = async(triggerType, type) => {
@@ -20,10 +19,13 @@ export const recordFeedbackShown = async(triggerType, triggerContext = {}) =>{
 }
 
 
-export const submitFeedbackResponse = async(rating, category, comment) =>{
-    const {data} = await axios.patch('/feedback/response',{
+export const submitFeedbackResponse = async(rating, category, comment, feedbackRequestId) =>{
+
+    const {data} = await axiosInstance.patch(`/feedback/response/${feedbackRequestId}`,{
         rating, category, comment
     })
+
+    console.log(data)
 
      return data;
 }

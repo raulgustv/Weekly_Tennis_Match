@@ -10,13 +10,16 @@ const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
 
     const [form] = useForm();
 
-    const handleSubmit = async ({rating, category, comment }) => {
 
+    const handleSubmit = async ({rating, category, comment}) => {
         try {
 
-            const res = await submitFeedbackResponse(rating, '', comment)
+            const res = await submitFeedbackResponse(rating, category, comment, feedbackRequestId)
 
-            console.log(res)
+            if(res?.responded) toast.success('Your feedback has been submitted. Thank you')
+            
+            form.resetFields();
+            onClose();
             
         } catch (error) {
             console.log(error)
