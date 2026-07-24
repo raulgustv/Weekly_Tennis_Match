@@ -1,18 +1,30 @@
-import {Modal, Form, Input, Rate} from 'antd'
+import { Modal, Form, Input, Rate, Select } from 'antd'
 import { useForm } from 'antd/es/form/Form';
 import { toast } from 'react-toastify'
+import { category_options } from '../utils/categoryOptions';
+import { submitFeedbackResponse } from '../../actions/feedback';
 
-const FeedbackModal = ({open, feedbackRequestId, onClose}) => {
+const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
 
-    const {TextArea}  = Input;
+    const { TextArea } = Input;
 
     const [form] = useForm();
 
-    const handleSubmit = () =>{
-        console.log('Thanks feedback')
+    const handleSubmit = async ({rating, category, comment }) => {
+
+        try {
+
+            const res = await submitFeedbackResponse(rating, '', comment)
+
+            console.log(res)
+            
+        } catch (error) {
+            console.log(error)
+        }
+        
     }
 
-    const handleCancel = async() => {
+    const handleCancel = async () => {
         console.log('No feedback :(')
     }
 
@@ -36,25 +48,38 @@ const FeedbackModal = ({open, feedbackRequestId, onClose}) => {
                     <Form.Item
                         name="rating"
                         label="Leave us a review using the MTC App"
-                        rules={[{ required: true, message: 'Please select a star rating'}]}
+                        rules={[{ required: true, message: 'Please select a star rating' }]}
                     >
                         <Rate />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="category"
+                        label='Tell us about your feedback'
+                        rules={[
+                            { required: true, message: 'Please select a category' }
+                        ]}
+                    >
+                        <Select
+                            placeholder="Please select a category"
+                            options={category_options}
+                        />
                     </Form.Item>
 
                     <Form.Item
                         name="comment"
                         label="Let us know about your experience so far (optional)"
                     >
-                        <TextArea 
+                        <TextArea
                             rows={3}
                             maxLength={1000}
                             showCount
                         />
                     </Form.Item>
-                </Form>                
+                </Form>
             </Modal>
         </>
-  )
+    )
 }
 
 export default FeedbackModal

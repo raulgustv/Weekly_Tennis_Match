@@ -9,9 +9,25 @@ const feedbackSchema = new Schema({
         required: true,
         index: true
     },
+    type:{
+        type: String,
+        enum: ['app', 'match']
+    },
+    matchId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Match',
+        default: null 
+    },
     triggerType:{
         type: String,
-        enum: ['post_action', 'friction', 'usage_milestone', 'user_initiated'],
+        enum: [
+            'first_match',
+            'usage_milestone',
+            'after_mayor_update',
+            'returning_user',
+            'post_match',
+            'user_initiated'
+        ],
         required: true
     },
     triggerContext: {
@@ -36,24 +52,31 @@ const feedbackSchema = new Schema({
             type: Number,
             min: 1,
             max: 5
-        },
-        category: {
-            type: String,
-            enum: [
-                'match_organization',
-                'match_balance',
-                'scheduling',
-                'skill_voting',
-                'social_experience',
-                'app_usability', 
-                'performance', 
-                'bug_report',
-                'other'
-            ],
-        }, 
+    },
+    category: {
+    type: String,
+    enum: [
+        // APP
+        "usability",
+        "performance",
+        "bugs",
+        "features",
+        "notifications",
+        "design",
+          // MATCH
+          "organization",
+          "level_balance",
+          "court",
+          "players",
+          "host",
+          "overall_experience",
+          "other",
+        ],
+      },
         comment: {
             type: String,
-            maxLength: 1000
+            maxLength: 1000,
+            trim: true,
         }
     },
     dismissed: {
@@ -65,6 +88,8 @@ const feedbackSchema = new Schema({
 });
 
 feedbackSchema.index({userId: 1, shownAt: -1})
+feedbackSchema.index({type: 1})
+feedbackSchema.index({matchId: 1})
 
 const FeedbackRequest = mongoose.model('FeedbackRequest', feedbackSchema);
 

@@ -9,7 +9,7 @@ export const useFeedbackPrompt = () =>{
     const modalOpenRef = useRef(false);
     const checkingRef = useRef(false)
 
-    const triggerFeedbackCheck = useCallback(async (triggerType, triggerContext = {}) =>{
+    const triggerFeedbackCheck = useCallback(async (triggerType, type, triggerContext = {}) =>{
 
         if(modalOpenRef.current || checkingRef.current) return;
 
@@ -17,7 +17,7 @@ export const useFeedbackPrompt = () =>{
 
             checkingRef.current = true
 
-            const {eligible} = await checkFeedbackEligibility(triggerType)
+            const {eligible} = await checkFeedbackEligibility(triggerType, type='app')
 
             if(!eligible) return;
 

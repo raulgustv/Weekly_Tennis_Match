@@ -172,6 +172,14 @@
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             default: null
+        },
+        nextAppFeedbakMilestone:{
+            type: Number,
+            default: 1
+        },
+        lastAppFeedback:{
+            type: Date,
+            default: null 
         }
     }, {
         timestamps: true

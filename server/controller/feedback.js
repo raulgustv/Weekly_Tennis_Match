@@ -1,74 +1,71 @@
 import FeedbackRequest from "../models/Feedback.js";
 import User from "../models/user.js";
+import Match from "../models/Match.js";
 
-const COOLDOWN_DAYS = 21;
-const SAMPLE_RATE = 0.15;
-const MIN_LOGINS_FEEDBACK = 1
+const COOLDOWN_DAYS = 90;
 
 export const checkEligibility  = async(req, res) =>{
     try {
 
         const userId = req.user._id;
-        const {triggerType} = req.query;
+        const {type, triggerType} = req.query;
 
-        if(!triggerType){
+        if(!triggerType || !type){
             return res.status(400).json({
                 ok: false,
-                message: 'Trigger type is required'
+                message: 'Trigger type and type are required'
             })
         }
 
-        //antiguedad cuenta 
-        const user = await User.findById(userId).select("successfulLoginCount");
-
-        if(!user || (user.successfulLoginCount || 0) < MIN_LOGINS_FEEDBACK){
+        if (type === "match") {
             return res.status(200).json({
-                eligible: false,
-                message: 'Insuficcient logins for feedback'
-            })
+                eligible: true
+            });
         }
 
+        //APP Feedback
+        const user = await User.findOne(userId).select('nextAppFeedbakMilestone lastAppFeedback')
 
-        if(user.eligibleFeedback === false){
-            return res.status(200).json({
-                eligible: false,
-                message: 'User not eligible for sample feedback'
-            })
-        }       
-
-        //1. Buscar ultima solicitud (excepto user_initiated)
-        const lastRequest = await FeedbackRequest.findOne({
-            userId,
-            triggerType: {$ne: 'user_initiated'}
-        }).sort({shownAt: -1})
-
-        if(lastRequest && lastRequest.dismissed){
-
-            const daysSinceShown = (Date.now() - lastRequest.shownAt) / (1000 * 60 * 60 * 24)
-
-            if(daysSinceShown < COOLDOWN_DAYS){
-                    return res.status(200).json({
-                        eligible: false,
-                        reason: 'Cooldown'
-                    })
-                }   
-            }           
-
-        //const selected = Math.random() < SAMPLE_RATE;  
-        const selected = true  
+        const completedMatches = await Match.countDocuments({
+            status: 'Played',
+            "players.user": userId
+        });
         
-
-        if(!selected){
+        if(completedMatches < user.nextAppFeedbakMilestone){
             return res.status(200).json({
                 eligible: false,
-                reason: 'Not sampled'
+                reason: 'Milestone not reached'
             })
+        }
+
+        const pendingRequest = await FeedbackRequest.findOne({
+            userId,
+            type: "app",
+            responded: false,
+            dismissed: false,
+        })
+
+        if(pendingRequest){
+             return res.status(200).json({
+                eligible: false,
+                reason: 'Pending request'
+            })
+        }
+
+        if(user.lastAppFeedback){
+            const daysSinceLastFeedback = (Date.now() - user.lastAppFeedback) / (1000 * 60 * 60 * 24)
+
+            if (daysSinceLastFeedback < COOLDOWN_DAYS) {
+                    return res.status(200).json({
+                    eligible: false,
+                    reason: 'Feedback cooldown'
+                })
+            }
         }
 
         return res.status(200).json({
-            eligible: true
-        })
-
+            elegible: true
+        })    
         
     } catch (error) {
         console.log(error)
