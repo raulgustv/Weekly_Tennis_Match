@@ -830,6 +830,10 @@ export const updateMatchStatus = async (req, res) => {
 
         match.status = status;
 
+        if(status === 'Played'){
+            match.wasPlayed = true;
+        }
+
         await match.save();
 
         return res.status(200).json(match)

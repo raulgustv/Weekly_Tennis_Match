@@ -35,7 +35,7 @@ export const checkEligibility  = async(req, res) =>{
         }
 
         const completedMatches = await Match.countDocuments({
-            status: 'Closed',
+            wasPlayed: true,
             "players.user": userId
         });
         
@@ -98,7 +98,7 @@ export const recordShown = async(req, res) =>{
         })
 
 
-        if(type || 'app' === 'app' && triggerType === 'usage_milestone'){
+        if((type || 'app') === 'app' && triggerType === 'usage_milestone'){
             const user = await User.findById(userId).select('nextAppFeedbakMilestone')
 
             if(user){

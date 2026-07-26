@@ -161,6 +161,10 @@ const matchSchema = new mongoose.Schema({
         enum: ['Open', 'Full', 'Ready', 'Playing', 'Played', 'Cancelled', 'Closed',],
         default: "Open"
     },
+    wasPlayed: {
+        type: Boolean,
+        default: false
+    },
     generatedMatches: [generatedMatchSchema]
 }, {timestamps: true});
 

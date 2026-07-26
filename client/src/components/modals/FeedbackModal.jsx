@@ -23,17 +23,20 @@ const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
             
         } catch (error) {
             console.log(error)
+            onClose()
         }
         
     }
 
     const handleCancel = async () => {
         try {
-            const res = await dismissFeedbackResponse(feedbackRequestId);
+            await dismissFeedbackResponse(feedbackRequestId);
 
-            console.log(res)
+            onClose()
+            
         } catch (error) {
             console.log(error)
+            onClose()
         }
     }
 

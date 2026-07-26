@@ -9,7 +9,7 @@ export const useFeedbackPrompt = () =>{
     const modalOpenRef = useRef(false);
     const checkingRef = useRef(false)
 
-    const triggerFeedbackCheck = useCallback(async (triggerType, type = 'app', triggerContext = {}) =>{
+    const triggerFeedbackCheck = useCallback(async (triggerType, triggerContext = {}, type = 'app') =>{
 
         if(modalOpenRef.current || checkingRef.current) return;
 

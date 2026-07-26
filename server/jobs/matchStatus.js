@@ -68,6 +68,7 @@ cron.schedule('* * * * *', async () => {
 
       if (now >= endDate) {
         match.status = 'Played';
+        match.wasPlayed = true;
         await match.save();
 
 
