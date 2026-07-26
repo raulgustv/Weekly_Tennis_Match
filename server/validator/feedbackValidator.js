@@ -40,5 +40,9 @@ export const eligibilityValidator = [
             'returning_user',
             'post_match',
             'user_initiated'
-    ]).withMessage('Please use a valid trigger type')
+    ]).withMessage('Please use a valid trigger type'),
+
+    body("type")
+    .optional()
+    .isIn(['app', 'match']).withMessage('Please use a valid type')
 ]

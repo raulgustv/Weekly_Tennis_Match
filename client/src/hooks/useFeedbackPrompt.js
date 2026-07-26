@@ -21,7 +21,7 @@ export const useFeedbackPrompt = () =>{
 
             if(!eligible) return;
 
-            const {feedbackRequestId} = await recordFeedbackShown(triggerType, triggerContext)
+            const {feedbackRequestId} = await recordFeedbackShown(triggerType, triggerContext, type)
 
             modalOpenRef.current = true
             setFeedbackRequestId(feedbackRequestId)

@@ -25,7 +25,14 @@ export const submitFeedbackResponse = async(rating, category, comment, feedbackR
         rating, category, comment
     })
 
-    console.log(data)
+    //console.log(data)
 
      return data;
+}
+
+
+export const dismissFeedbackResponse = async(feedbackRequestId) => {
+    const {data}  = await axiosInstance.patch(`/feedback/response/${feedbackRequestId}`);
+
+    return data;
 }

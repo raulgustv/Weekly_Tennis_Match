@@ -2,7 +2,7 @@ import { Modal, Form, Input, Rate, Select } from 'antd'
 import { useForm } from 'antd/es/form/Form';
 import { toast } from 'react-toastify'
 import { category_options } from '../utils/categoryOptions';
-import { submitFeedbackResponse } from '../../actions/feedback';
+import { dismissFeedbackResponse, submitFeedbackResponse } from '../../actions/feedback';
 
 const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
 
@@ -28,7 +28,13 @@ const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
     }
 
     const handleCancel = async () => {
-        console.log('No feedback :(')
+        try {
+            const res = await dismissFeedbackResponse(feedbackRequestId);
+
+            console.log(res)
+        } catch (error) {
+            console.log(error)
+        }
     }
 
     return (

@@ -8,7 +8,7 @@ import { useState } from "react";
 import PaymentModal from "./PaymentModal";
 import {  useTransactions } from "../../hooks/useTransactions";
 import { useAuth } from "../../context/AuthContext";
-import { useFeedback } from "../../context/FeedbackContext";
+
 
 const { useBreakpoint } = Grid;
 const { Timer } = Statistic;
@@ -20,7 +20,6 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
 
   const { fetchTransactions } = useTransactions()
   const {user, loadUser} = useAuth();
-  const {triggerFeedbackCheck} = useFeedback()
 
   const balance = user?.walletBalance;
 
@@ -39,21 +38,10 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
         )} as ${data?.role}`
       );
 
-      fetchMatches();
-
-      triggerFeedbackCheck('post_action', {
-        action: backup ? 'match_joined_backup' : 'match_joined_player',
-        matchId: id
-      })
+      fetchMatches();  
       
     } catch (error) {
-
       toast.error(error?.response?.data?.message);
-      triggerFeedbackCheck('friction', {
-        action: 'join_failed',
-        matchId: id,
-        reason: error?.response?.data?.message
-      })
     }
   };
 

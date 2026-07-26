@@ -1,6 +1,7 @@
 import FeedbackRequest from "../models/Feedback.js";
 import User from "../models/user.js";
 import Match from "../models/Match.js";
+import { getNextMilestone } from "../helpers/FeedbackMilestone.js";
 
 const COOLDOWN_DAYS = 90;
 
@@ -34,7 +35,7 @@ export const checkEligibility  = async(req, res) =>{
         }
 
         const completedMatches = await Match.countDocuments({
-            status: 'Played',
+            status: 'Closed',
             "players.user": userId
         });
         
@@ -87,13 +88,25 @@ export const recordShown = async(req, res) =>{
     try {
 
         const userId = req.user._id;
-        const {triggerType, triggerContext} = req.body;
+        const {triggerType, triggerContext, type} = req.body;
 
         const feedbackRequest = await FeedbackRequest.create({
             userId,
             triggerType,
+            type: type || 'app',
             triggerContext: triggerContext || {}
         })
+
+
+        if(type || 'app' === 'app' && triggerType === 'usage_milestone'){
+            const user = await User.findById(userId).select('nextAppFeedbakMilestone')
+
+            if(user){
+                await User.findByIdAndUpdate(userId, {
+                    nextAppFeedbakMilestone: getNextMilestone(user.nextAppFeedbakMilestone)
+                })
+            }
+        }
 
         return res.status(201).json({
             feedbackRequestId: feedbackRequest._id
