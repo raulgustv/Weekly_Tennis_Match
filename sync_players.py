@@ -80,7 +80,7 @@ players_df = pd.DataFrame(users)
 matches_df = pd.DataFrame(matches)
 
 players_df = players_df[["_id", "name", "lastname", "email", "phone", "role", "ntrplvl", "gender", "walletBalance", "lastMatchPlayed", "isActive", "createdAt"]]
-matches_df = matches_df[["_id", "location", "createdBy", "maxPlayers", "date", "startTime", "endTime", "price", "status"]]
+matches_df = matches_df[["_id", "location", "createdBy", "maxPlayers", "maxBackups", "date", "startTime", "endTime", "price", "status"]]
 
 #players_df.head()
 #matches_df.head()
@@ -175,7 +175,7 @@ matches = list(db.matches.find())
 matches_df = pd.DataFrame(matches)
 
 matches_df = matches_df[[
-    "_id", "location", "createdBy", "maxPlayers", "date", "startTime", "endTime", "paymentMethods",
+    "_id", "location", "createdBy", "maxPlayers", "maxBackups", "date", "startTime", "endTime", "paymentMethods",
     "price","status", "players", "backUps", "courts", "createdAt"
 ]]
 
@@ -184,6 +184,7 @@ matches_df = matches_df.rename(columns={
     "createdBy": "created_by",
     "location": "location",
     "maxPlayers": "max_players",
+    "maxBackups": "max_backups",
     "startTime": "start_time",
     "endTime": "end_time",
     "price": "price",
@@ -238,6 +239,7 @@ with engine.begin() as conn:
             location,
             courts,
             max_players,
+            max_backups,
             start_time,
             end_time,
             price,
@@ -254,6 +256,7 @@ with engine.begin() as conn:
             location,
             courts::jsonb,
             max_players,
+            max_backups,
             start_time,
             end_time,
             price,
@@ -269,6 +272,7 @@ with engine.begin() as conn:
               location = EXCLUDED.location,
               courts = EXCLUDED.courts,
               max_players = EXCLUDED.max_players,
+              max_backups = EXCLUDED.max_backups,
               start_time = EXCLUDED.start_time,
               end_time = EXCLUDED.end_time,
               price = EXCLUDED.price,
