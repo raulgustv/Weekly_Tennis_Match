@@ -80,7 +80,7 @@ players_df = pd.DataFrame(users)
 matches_df = pd.DataFrame(matches)
 
 players_df = players_df[["_id", "name", "lastname", "email", "phone", "role", "ntrplvl", "gender", "walletBalance", "lastMatchPlayed", "isActive", "createdAt"]]
-matches_df = matches_df[["_id", "location", "createdBy", "maxPlayers", "maxBackups", "date", "startTime", "endTime", "price", "status"]]
+matches_df = matches_df[["_id", "location", "createdBy", "maxPlayers", "date", "startTime", "endTime", "price", "status"]]
 
 #players_df.head()
 #matches_df.head()
@@ -94,7 +94,6 @@ players_df = players_df.rename(columns={
     "lastMatchPlayed": "last_match_played",
     "isActive": "is_active",
     "createdAt": "created_at"
-    "lastMatchPlayed": "last_match_played"
 })
 
 players_df["player_id"] = players_df["player_id"].astype("str")
@@ -152,14 +151,6 @@ with engine.begin() as conn:
         ntrp_level, gender, wallet_balance, last_match_played,
         is_active, created_at
       FROM players_staging
-with engine.connect() as conn:
-    conn.execute(text("""
-      INSERT INTO  players (
-        player_id, name, lastname, email, phone, role, ntrp_level, gender, wallet_balance, last_match_played
-      )
-      SELECT
-        player_id, name, lastname, email, phone, role, ntrp_level, gender, wallet_balance, last_match_played
-        FROM players_staging
       ON CONFLICT (player_id)
       DO UPDATE SET
         name = EXCLUDED.name,
@@ -290,7 +281,3 @@ with engine.begin() as conn:
     ))
 
     print("Matches sync OK")
-        last_match_played = EXCLUDED.last_match_played;
-    """))
-
-    print("Players sync OK")
