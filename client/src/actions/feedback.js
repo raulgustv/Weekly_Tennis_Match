@@ -32,7 +32,7 @@ export const submitFeedbackResponse = async(rating, category, comment, feedbackR
 
 
 export const dismissFeedbackResponse = async(feedbackRequestId) => {
-    const {data}  = await axiosInstance.patch(`/feedback/response/${feedbackRequestId}`);
+    const {data}  = await axiosInstance.patch(`/feedback/dismiss/${feedbackRequestId}`);
 
     return data;
 }
