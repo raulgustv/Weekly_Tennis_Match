@@ -5,11 +5,15 @@ import { checkFeedbackEligibility, recordFeedbackShown } from "../actions/feedba
 export const useFeedbackPrompt = () =>{
     const [feedbackRequestId , setFeedbackRequestId ] = useState(null);
     const [modalOpen, setModalOpen] = useState(false)
+    const [modalTitle, setModalTitle] = useState(null);
+    const [modalType, setModalType] = useState(null)
+
 
     const modalOpenRef = useRef(false);
     const checkingRef = useRef(false)
 
-    const triggerFeedbackCheck = useCallback(async (triggerType, triggerContext = {}, type = 'app') =>{
+    const triggerFeedbackCheck = useCallback(async (triggerType, triggerContext = {}, type, title= null) =>{
+
 
         if(modalOpenRef.current || checkingRef.current) return;
 
@@ -17,15 +21,19 @@ export const useFeedbackPrompt = () =>{
 
             checkingRef.current = true
 
-            const {eligible} = await checkFeedbackEligibility(triggerType, type)
+            const {eligible} = await checkFeedbackEligibility(triggerType, type, triggerContext?.matchId)
 
             if(!eligible) return;
 
             const {feedbackRequestId} = await recordFeedbackShown(triggerType, triggerContext, type)
 
+
             modalOpenRef.current = true
             setFeedbackRequestId(feedbackRequestId)
+            setModalTitle(title)
+            setModalType(type)
             setModalOpen(true)
+
 
         } catch (error) {
             console.log(error)
@@ -37,12 +45,16 @@ export const useFeedbackPrompt = () =>{
     const closeFeedbackModal = useCallback(() => {
         modalOpenRef.current = false
         setModalOpen(false);
+        setModalTitle(null);
+        setModalType(null);
         setFeedbackRequestId(null)
     }, []);
 
     return{
         modalOpen, 
         feedbackRequestId,
+        modalTitle,
+        modalType,
         triggerFeedbackCheck,
         closeFeedbackModal
     }

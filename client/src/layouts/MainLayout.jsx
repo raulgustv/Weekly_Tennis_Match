@@ -34,12 +34,11 @@ const MainLayout = () => {
 
   const {triggerFeedbackCheck} = useFeedback()
 
-
   useEffect(() =>{
     if(user) {
-      triggerFeedbackCheck('usage_milestone')
+      triggerFeedbackCheck('usage_milestone', {}, 'app', 'How is the experience so far?')
     }
-  }, [user?._id], triggerFeedbackCheck)
+  }, [user, triggerFeedbackCheck])
 
   const isAdmin = user?.role === "admin";
   const isBooker = user?.role === "booker";

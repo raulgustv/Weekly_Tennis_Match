@@ -9,7 +9,7 @@ export const checkEligibility  = async(req, res) =>{
     try {
 
         const userId = req.user._id;
-        const {type, triggerType} = req.query;
+        const {type, triggerType, matchId} = req.query;
 
         if(!triggerType || !type){
             return res.status(400).json({
@@ -19,8 +19,15 @@ export const checkEligibility  = async(req, res) =>{
         }
 
         if (type === "match") {
+
+            const alreadyShown = await FeedbackRequest.findOne({
+                userId, 
+                type: 'match',
+                matchId
+            })
+
             return res.status(200).json({
-                eligible: true
+                eligible: !alreadyShown
             });
         }
 
@@ -94,7 +101,8 @@ export const recordShown = async(req, res) =>{
             userId,
             triggerType,
             type: type || 'app',
-            triggerContext: triggerContext || {}
+            triggerContext: triggerContext || {},
+            matchId: type === 'match' ? triggerContext?.matchId || null : null
         })
 
 

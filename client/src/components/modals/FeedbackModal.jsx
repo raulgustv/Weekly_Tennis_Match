@@ -1,14 +1,21 @@
 import { Modal, Form, Input, Rate, Select } from 'antd'
 import { useForm } from 'antd/es/form/Form';
 import { toast } from 'react-toastify'
-import { category_options } from '../utils/categoryOptions';
+import { app_category_options, match_category_options } from '../utils/categoryOptions';
 import { dismissFeedbackResponse, submitFeedbackResponse } from '../../actions/feedback';
 
-const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
+const FeedbackModal = ({ open, feedbackRequestId, onClose, modalTitle, modalType }) => {
 
     const { TextArea } = Input;
 
     const [form] = useForm();
+
+    const category_select = {
+        app: app_category_options,
+        match: match_category_options
+    }
+
+    const categoryOptions = category_select[modalType] || null;
 
 
     const handleSubmit = async ({rating, category, comment}) => {
@@ -23,6 +30,7 @@ const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
             
         } catch (error) {
             console.log(error)
+            toast.error('There was an issue submitting your feedback')
             onClose()
         }
         
@@ -36,6 +44,7 @@ const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
             
         } catch (error) {
             console.log(error)
+            toast.error('There was an issue with your feedback')
             onClose()
         }
     }
@@ -43,7 +52,7 @@ const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
     return (
         <>
             <Modal
-                title="How is the experience so far?"
+                title={modalTitle}
                 open={open}
                 onCancel={handleCancel}
                 onOk={() => form.submit()}
@@ -74,7 +83,7 @@ const FeedbackModal = ({ open, feedbackRequestId, onClose }) => {
                     >
                         <Select
                             placeholder="Please select a category"
-                            options={category_options}
+                            options={categoryOptions}
                         />
                     </Form.Item>
 
