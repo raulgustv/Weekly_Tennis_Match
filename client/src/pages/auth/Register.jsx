@@ -250,7 +250,7 @@ const Register = () => {
         {/* STEP 2 */}
         <div style={{ display: current === 1 ? "block" : "none" }}>
           <Form.Item name="name" label="Name" rules={[
-            { required: true, message: "Lastname is required" },
+            { required: true, message: "Name is required" },
             { min: 2, message: "Name must be longer than 1 character" }
           ]}>
             <Input />
@@ -265,7 +265,8 @@ const Register = () => {
 
           <Form.Item
             name="country"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: 'Please select a country' }]}
+            label="Where are you from?"
           >
             <Select
               showSearch
