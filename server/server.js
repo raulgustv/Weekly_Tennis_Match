@@ -13,6 +13,7 @@ import profileRoutes from './routes/profile.js';
 import skillRoutes from './routes/skill.js';
 import adminRoutes from './routes/admin.js';
 import walletRoutes from './routes/wallet.js';
+import feedbackRoutes from './routes/feedback.js'
 import './jobs/matchStatus.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
@@ -22,6 +23,9 @@ import helmet from 'helmet'
 
 //aplicación
 const app = express();
+
+//render y proxies
+app.set('trust_proxy', 1)
 
 
 //Middleware
@@ -58,6 +62,7 @@ app.use('/api/match', matchRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/vote', skillRoutes)
 app.use('/api/wallet', walletRoutes)
+app.use('/api/feedback', feedbackRoutes)
 
 //Conexión
 const PORT = process.env.PORT || 7000;

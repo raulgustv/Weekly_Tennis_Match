@@ -3,22 +3,38 @@ import { useAuth } from "../../context";
 import { useMatches } from "../../context/MatchContext";
 import VoteCard from "../../components/matches/VoteCard";
 import EmptyVote from "../../components/matches/EmptyVote";
+import { useEffect } from "react";
+import { useFeedback } from "../../context/FeedbackContext";
 
 const MatchVote = () => {
 
     const { matches, loadMatches } = useMatches();
     const { user } = useAuth();
+    const {triggerFeedbackCheck} = useFeedback();    
 
     const voteMatches = matches
         .filter(m =>
             m.status === "Played" &&
             m.players?.some(p => p.user?._id === user._id)
         )
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
+        .sort((a, b) => new Date(a.date) - new Date(b.date));    
     
-        if (!voteMatches || voteMatches.length === 0) return <EmptyVote />
 
+    useEffect(() => {
+        if (voteMatches.length && user){
+            triggerFeedbackCheck(
+                'post_match',
+                {
+                    action: 'match_played',
+                    matchId: voteMatches[0]?._id
+                },
+                'match',
+                'How was your experience on your match?'
+            )
+        }
+    }, [user, voteMatches, triggerFeedbackCheck])
+
+    if (!voteMatches || voteMatches.length === 0) return <EmptyVote />
 
     return (
         <Row gutter={[16, 16]}>

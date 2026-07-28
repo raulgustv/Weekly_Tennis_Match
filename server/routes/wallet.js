@@ -3,16 +3,17 @@ import { addFunds, allDeposits, confirmDeposit, pendingDeposits, refundAdjustmen
 import { protect, verifyAdmin } from "../middlewares/auth.js";
 import { validateFields, validateObjectId } from "../middlewares/validateFields.js";
 import { addFundsValidator } from "../validator/walletValidator.js";
+import { addFundsLimiter, adminLimiter, readLimiter, writeLimiter } from "../config/expressLimit.js";
 
 const router = Router();
 
-router.post('/', protect, addFundsValidator, validateFields, addFunds)
-router.post('/confirm/:id', protect, verifyAdmin, validateObjectId('id'), confirmDeposit)
-router.post('/reject/:id', protect, verifyAdmin, validateObjectId('id'), rejectDeposit)
-router.post('/refund-adjust', protect, verifyAdmin, refundAdjustments)
-router.get('/pending', protect, verifyAdmin, pendingDeposits)
-router.get('/', protect, verifyAdmin, allDeposits)
-router.get('/user/funds', protect, userDeposits)
+router.post('/', protect, addFundsLimiter, addFundsValidator, validateFields, addFunds)
+router.post('/confirm/:id', protect, verifyAdmin, adminLimiter, validateObjectId('id'), confirmDeposit)
+router.post('/reject/:id', protect, verifyAdmin, adminLimiter, validateObjectId('id'), rejectDeposit)
+router.post('/refund-adjust', protect, verifyAdmin, adminLimiter, refundAdjustments)
+router.get('/pending', protect, verifyAdmin, readLimiter, pendingDeposits)
+router.get('/', protect, verifyAdmin, readLimiter, allDeposits)
+router.get('/user/funds', protect, readLimiter, userDeposits)
 
 
 export default router;

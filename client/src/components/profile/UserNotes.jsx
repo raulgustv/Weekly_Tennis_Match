@@ -56,7 +56,7 @@ const UserNotes = ({ userId, isSuspended }) => {
             if (shouldSuspend) {
                 setShouldSuspend(true)
             }
-            setShouldSuspend(true)
+            //setShouldSuspend(true)
         }
     }
 

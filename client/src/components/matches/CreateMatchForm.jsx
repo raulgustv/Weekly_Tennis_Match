@@ -54,6 +54,7 @@ const CreateMatchForm = ({ refreshMatches }) => {
 
   const selectedCourtNumbers = Form.useWatch("courtNumber", form);
   const courtPrices = Form.useWatch("courtPrices", form) || {};
+  const paymentMethods = Form.useWatch("paymentMethods", form) || [];
 
   const totalPlayers = selectedCourtNumbers ? selectedCourtNumbers.length * 4 : 0;
   const totalPrice = selectedCourtNumbers ?
@@ -165,7 +166,7 @@ const CreateMatchForm = ({ refreshMatches }) => {
             {selectedCourtNumbers && selectedCourtNumbers.length > 0 && (
               <Row gutter={[16, 16]}>
                 {selectedCourtNumbers.map((cn) => (
-                  <Col md={3}>
+                  <Col key={cn} md={3}>
                     <Form.Item
                       name={["courtPrices", cn]}
                       label={`Court ${cn} price (€)`}
@@ -276,13 +277,12 @@ const CreateMatchForm = ({ refreshMatches }) => {
                   Add payment method
                 </Button>
 
-                {/* 🔴 ERROR EN ROJO (sin romper nada) */}
                 <Form.ErrorList errors={errors} />
 
                 {fields.map(({ key, name, ...restField }) => (
                   <Space
                     key={key}
-                    direction="vertical"
+                    orientation="vertical"
                     style={{ width: "100%", marginBottom: 16 }}
                   >
                     <Form.Item
@@ -296,6 +296,17 @@ const CreateMatchForm = ({ refreshMatches }) => {
                         placeholder="Type"
                         options={paymentMethodOptions}
                         style={{ width: "100%" }}
+                        onChange={(value) => {
+                          if (value === "cash") {
+                            form.setFieldValue(["paymentMethods", name, "value"], "N/A");
+                          } else {
+                            if (
+                              form.getFieldValue(["paymentMethods", name, "value"]) === "N/A"
+                            ) {
+                              form.setFieldValue(["paymentMethods", name, "value"], "");
+                            }
+                          }
+                        }}
                       />
                     </Form.Item>
 
@@ -306,7 +317,10 @@ const CreateMatchForm = ({ refreshMatches }) => {
                         { required: true, message: "Enter payment info" },
                       ]}
                     >
-                      <Input placeholder="Phone / user / info" />
+                      <Input
+                        placeholder="Phone / user / info"
+                        disabled={paymentMethods[name]?.type === "cash"}
+                      />
                     </Form.Item>
 
                     <MinusCircleOutlined

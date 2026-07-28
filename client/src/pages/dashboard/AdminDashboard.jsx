@@ -4,6 +4,7 @@ import UpComingMatches from "../../components/matches/UpComingMatches"
 import { useMatches } from "../../context/MatchContext"
 import PendingTransactions from "../../components/wallet/PendingTransactions"
 import { usePendingTransactions } from "../../hooks/useTransactions"
+import FeedbackModal from "../../components/modals/FeedbackModal"
 
 
 const AdminDashboard = () => {
@@ -35,6 +36,8 @@ const AdminDashboard = () => {
           />
         </Col>
       </Row>
+
+      {/* <FeedbackModal open={true} /> */}
     </>
   )
 }

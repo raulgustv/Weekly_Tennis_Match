@@ -9,6 +9,7 @@ import PaymentModal from "./PaymentModal";
 import {  useTransactions } from "../../hooks/useTransactions";
 import { useAuth } from "../../context/AuthContext";
 
+
 const { useBreakpoint } = Grid;
 const { Timer } = Statistic;
 
@@ -19,7 +20,6 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
 
   const { fetchTransactions } = useTransactions()
   const {user, loadUser} = useAuth();
-
 
   const balance = user?.walletBalance;
 
@@ -38,7 +38,8 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
         )} as ${data?.role}`
       );
 
-      fetchMatches();
+      fetchMatches();  
+      
     } catch (error) {
       toast.error(error?.response?.data?.message);
     }

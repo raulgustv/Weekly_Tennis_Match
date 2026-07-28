@@ -161,7 +161,15 @@ const matchSchema = new mongoose.Schema({
         enum: ['Open', 'Full', 'Ready', 'Playing', 'Played', 'Cancelled', 'Closed',],
         default: "Open"
     },
+    wasPlayed: {
+        type: Boolean,
+        default: false
+    },
     generatedMatches: [generatedMatchSchema]
 }, {timestamps: true});
+
+matchSchema.index({ status: 1, date: 1 });
+matchSchema.index({ createdBy: 1 });
+matchSchema.index({ "players.user": 1 });
 
 export default mongoose.model('Match', matchSchema);

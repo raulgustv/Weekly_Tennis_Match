@@ -11,19 +11,21 @@ import {
 } from "antd";
 import { AuditOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import colors from "../../themes/colors";
 import Voting from "./Voting";
 import { toast } from "react-toastify";
 import { voteSkill } from "../../actions/matches";
 import useMatchVotes from "../../hooks/useMatchVotes";
 import ProfilePicture from "../uploads/ProfilePicture";
+import { useFeedback } from "../../context/FeedbackContext";
 
 const { Text, Title } = Typography;
 
 const VoteCard = ({ match, loadMatches, userId }) => {
 
   const { votedUserIds, markAsVoted } = useMatchVotes(match?._id);
+  const {triggerFeedbackCheck} = useFeedback();
 
   // SOLO jugadores con los que realmente jugó el user
   const playersToVote = useMemo(() => {
@@ -64,6 +66,21 @@ const VoteCard = ({ match, loadMatches, userId }) => {
     return Array.from(uniqueMap.values());
 
   }, [match, userId]);
+
+  useEffect(() =>{
+    if(!playersToVote.length) return;
+
+    const allVoted = playersToVote.every(
+      p => votedUserIds.includes(String(p._id))
+    )
+
+    if(allVoted){
+      triggerFeedbackCheck('post_action', {
+        action: 'match_voting_completed',
+        matchId: match?._id
+      })
+    }
+  }, [votedUserIds, playersToVote, match?._id, triggerFeedbackCheck])
 
   const handleVote = async (playerId, value) => {
     try {

@@ -1,8 +1,16 @@
-import { Typography, Card, Flex, Divider } from "antd";
+import { Typography, Card, Flex, Divider, Button } from "antd";
+import { useFeedback } from "../../context/FeedbackContext";
 
 const { Title, Paragraph, Text } = Typography;
 
 const Contact = () => {
+
+  const {triggerFeedbackCheck} = useFeedback();
+
+  const handleFeedbackClick = ()=>{
+    triggerFeedbackCheck('user_initiated', {}, 'app', 'Share your feedback')
+  }
+
   return (
     <Flex justify="center" style={{ width: "100%" }}>
       <div style={{ maxWidth: 700, width: "100%" }}>
@@ -78,6 +86,19 @@ const Contact = () => {
           <Paragraph type="secondary">
             We usually reply within 24-48 hours.
           </Paragraph>
+        </Card>
+
+        {/* Feedback section */}
+        <Card style={{borderRadius: 16}}>
+          <Title level={4}>Feedback</Title>
+
+          <Paragraph>
+            Have thoughts on how to improve? Let us know.
+          </Paragraph>
+
+          <Button type="primary" onClick={handleFeedbackClick}>
+             Give feedback 
+          </Button>
         </Card>
 
       </div>
