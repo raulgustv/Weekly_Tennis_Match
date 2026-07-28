@@ -1,0 +1,56 @@
+name: Daily MongoDB Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Todos los días a las 03:00 UTC
+
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar MongoDB Database Tools
+        run: |
+          wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.12.2.deb
+          sudo dpkg -i mongodb-database-tools-ubuntu2204-x86_64-100.12.2.deb
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar rclone
+        run: curl https://rclone.org/install.sh | sudo bash
+
+      - name: Crear backup
+        run: |
+          mkdir backup
+
+          mongodump \
+            --uri="${{ secrets.MONGO_URI }}" \
+            --gzip \
+            --archive=backup/mongodb-$(date +%F).gz
+
+      - name: Configurar credenciales Google Drive
+        run: |
+          echo '${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}' > credentials.json
+
+          mkdir -p ~/.config/rclone
+
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [gdrive]
+          type = drive
+          scope = drive.file
+          service_account_file = credentials.json
+          EOF
+
+      - name: Subir backup a Google Drive
+        run: |
+          rclone copy backup gdrive:${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
