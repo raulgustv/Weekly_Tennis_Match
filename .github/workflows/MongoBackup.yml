@@ -63,8 +63,15 @@ jobs:
           rclone listremotes
 
           echo ""
-          echo "=== R2 buckets ==="
-          rclone lsd r2:
+
+      - name: Debug rclone configuration
+        run: |
+          echo "=== Rclone remotes ==="
+          rclone listremotes
+
+          echo ""
+          echo "=== Current bucket objects before upload ==="
+          rclone ls r2:${{ secrets.R2_BUCKET }} || true
 
           echo ""
           echo "=== Current bucket objects before upload ==="
