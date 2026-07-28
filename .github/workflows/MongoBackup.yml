@@ -58,5 +58,4 @@ jobs:
           rclone ls r2:${{ secrets.R2_BUCKET }}
 
       - name: Delete backups older than 30 days
-        run: |
-          rclone delete r2:${{ secrets.R2_BUCKET }} --min-age 30d
+        run: rclone delete r2:${{ secrets.R2_BUCKET }} --min-age 30d
