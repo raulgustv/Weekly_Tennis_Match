@@ -9,7 +9,6 @@ export const MatchesProvider = ({ children }) => {
 
     const { user, loading } = useAuth();
 
-
     const [matches, setMatches] = useState([]);
     const [loadMatches, setLoadMatches] = useState(false);
 
