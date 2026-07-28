@@ -6,7 +6,10 @@ import { toast } from 'react-toastify'
 
 const MatchesContext = createContext();
 
-const POLL_INTERVAL = 1 * 60 * 1000;
+const getPollInterval = () => {
+    const day = new Date().getDay(); // 3 = miércoles
+    return day === 3 ? 60 * 1000 : 60 * 60 * 1000; // miércoles: 1 min, resto: 1h
+};
 
 export const MatchesProvider = ({ children }) => {
 
@@ -57,7 +60,7 @@ export const MatchesProvider = ({ children }) => {
 
             intervalRef.current = setInterval(() => {
                 fetchOpenMatches(true)
-            }, POLL_INTERVAL);
+            }, getPollInterval());
         }
 
         const stopPolling = () => clearInterval(intervalRef.current)
