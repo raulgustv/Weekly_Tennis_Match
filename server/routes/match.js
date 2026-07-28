@@ -8,16 +8,16 @@ updateGeneratedMatches,
 updateMatch, updateMatchStatus } from '../controller/match.js';
 import { createMatchValidator } from '../validator/matchCreateValidator.js';
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
-import { matchLimiter, readLimiter, writeLimiter } from '../config/expressLimit.js';
+import { matchLimiter, readLimiter, viewMatchesLimiter, writeLimiter } from '../config/expressLimit.js';
 
 const router = Router();
 
 router.post('/new', protect,verifyBookerOrAdmin, createMatchValidator, validateFields, newMatch)
 router.put('/update/:id', protect,verifyBookerOrAdmin, validateObjectId("id"), updateMatch)
 router.post('/update-status/:id', protect,verifyBookerOrAdmin, validateObjectId("id"), updateMatchStatus)
-router.get('/view-open-match', protect, readLimiter, getOpenMatch)
-router.get('/view-all', protect, readLimiter, getAllMatches)
-router.get('/view-match/:id', protect, readLimiter, validateObjectId("id"), getMatch)
+router.get('/view-open-match', protect, viewMatchesLimiter, getOpenMatch)
+router.get('/view-all', protect, viewMatchesLimiter, getAllMatches)
+router.get('/view-match/:id', protect, viewMatchesLimiter, validateObjectId("id"), getMatch)
 
 //post match creation
 router.post('/join/:id', protect, matchLimiter, validateObjectId("id"), joinMatch)

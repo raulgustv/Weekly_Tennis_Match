@@ -31,6 +31,12 @@ export const checkEligibility  = async(req, res) =>{
             });
         }
 
+        if (triggerType === 'user_initiated') {
+            return res.status(200).json({
+                eligible: true
+            })
+        }
+
         //APP Feedback
         const user = await User.findById(userId).select('nextAppFeedbakMilestone lastAppFeedback')
 

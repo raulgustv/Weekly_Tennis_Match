@@ -168,7 +168,7 @@ const matchSchema = new mongoose.Schema({
     generatedMatches: [generatedMatchSchema]
 }, {timestamps: true});
 
-matchSchema.index({ status: 1, date: -1 });
+matchSchema.index({ status: 1, date: 1 });
 matchSchema.index({ createdBy: 1 });
 matchSchema.index({ "players.user": 1 });
 

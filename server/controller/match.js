@@ -201,7 +201,7 @@ export const getOpenMatch = async (req, res) => {
                   $in: ['Open', 'Full', 'Ready']
                 }
             })
-            .sort('date', 1)
+            .sort({'date': 1})
             .populate('location', 'name address courts')
             .populate('players.user', 'name lastname ntrplvl profilePicture')
             .populate('backUps.user', 'name lastname ntrplvl profilePicture')

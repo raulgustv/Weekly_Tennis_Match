@@ -142,3 +142,16 @@ export const uploadLimiter = rateLimit({
         message: "Too many uploads."
     }
 });
+
+
+export const viewMatchesLimiter = rateLimit({
+    ...defaultOptions,
+
+    windowMs: 5 * 60 * 1000, // 5 minutos
+    max: 500,
+
+    message: {
+        ok: false,
+        message: "Too many requests."
+    }
+});
