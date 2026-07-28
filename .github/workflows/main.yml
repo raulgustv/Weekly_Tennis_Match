@@ -1,0 +1,62 @@
+name: Daily MongoDB Backup
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install MongoDB Database Tools
+        run: |
+          wget -q https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.12.2.deb
+          sudo dpkg -i mongodb-database-tools-ubuntu2204-x86_64-100.12.2.deb
+
+      - name: Install rclone
+        run: curl https://rclone.org/install.sh | sudo bash
+
+      - name: Create backup
+        run: |
+          mkdir -p backup
+
+          FILE="weekly-tennis-$(date +'%Y-%m-%d_%H-%M-%S').archive.gz"
+
+          mongodump \
+            --uri="${{ secrets.MONGO_URI }}" \
+            --gzip \
+            --archive="backup/$FILE"
+
+      - name: Configure rclone
+        run: |
+          mkdir -p ~/.config/rclone
+
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [r2]
+          type = s3
+          provider = Cloudflare
+
+          access_key_id = ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret_access_key = ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
+          endpoint = https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+
+          acl = private
+          no_check_bucket = true
+          EOF
+
+      - name: Upload backup
+        run: |
+          rclone copy backup r2:${{ secrets.R2_BUCKET }}
+
+      - name: Verify upload
+        run: |
+          rclone ls r2:${{ secrets.R2_BUCKET }}
+
+      - name: Delete backups older than 30 days
+        run: |
+          rclone delete r2:${{ secrets.R2_BUCKET }} --min-age 30d
