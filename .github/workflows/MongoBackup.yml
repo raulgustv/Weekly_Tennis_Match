@@ -91,10 +91,10 @@ jobs:
 
           rclone ls r2:${{ secrets.R2_BUCKET }} -vv
 
-      - name: Show R2 bucket info
+      - name: Verify upload
         run: |
-          echo "=== Bucket listing ==="
-          rclone lsd r2:
+          echo "=== Objects after upload ==="
+          rclone ls r2:${{ secrets.R2_BUCKET }} -vv
 
       - name: Delete backups older than 30 days
         run: |
