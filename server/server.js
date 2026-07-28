@@ -24,6 +24,9 @@ import helmet from 'helmet'
 //aplicación
 const app = express();
 
+//render y proxies
+app.set('trust_proxy', 1)
+
 
 //Middleware
 app.use(globalLimiter)
