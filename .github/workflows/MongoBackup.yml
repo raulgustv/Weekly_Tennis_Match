@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
       - name: Install MongoDB Database Tools
         run: |
@@ -18,7 +19,8 @@ jobs:
           sudo dpkg -i mongodb-database-tools-ubuntu2204-x86_64-100.12.2.deb
 
       - name: Install rclone
-        run: curl https://rclone.org/install.sh | sudo bash
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
 
       - name: Create backup
         run: |
@@ -30,6 +32,11 @@ jobs:
             --uri="${{ secrets.MONGO_URI }}" \
             --gzip \
             --archive="backup/$FILE"
+
+      - name: Check backup file
+        run: |
+          echo "=== Backup folder ==="
+          ls -lah backup
 
       - name: Configure rclone
         run: |
@@ -47,15 +54,40 @@ jobs:
 
           acl = private
           no_check_bucket = true
+          force_path_style = true
           EOF
+
+      - name: Debug rclone configuration
+        run: |
+          echo "=== Rclone remotes ==="
+          rclone listremotes
+
+          echo ""
+          echo "=== R2 buckets ==="
+          rclone lsd r2:
+
+          echo ""
+          echo "=== Current bucket objects before upload ==="
+          rclone ls r2:${{ secrets.R2_BUCKET }} || true
 
       - name: Upload backup
         run: |
-          rclone copy backup r2:${{ secrets.R2_BUCKET }}
+          echo "Uploading to bucket: ${{ secrets.R2_BUCKET }}"
+
+          rclone copy backup r2:${{ secrets.R2_BUCKET }} \
+            --progress \
+            -vv
 
       - name: Verify upload
         run: |
-          rclone ls r2:${{ secrets.R2_BUCKET }}
+          echo "=== Objects after upload ==="
+
+          rclone ls r2:${{ secrets.R2_BUCKET }} -vv
+
+      - name: Show R2 bucket info
+        run: |
+          echo "=== Bucket listing ==="
+          rclone lsd r2:
 
       - name: Delete backups older than 30 days
         run: |
