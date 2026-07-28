@@ -196,20 +196,51 @@ export const getMatch = async (req, res) => {
 
 export const getOpenMatch = async (req, res) => {
     try {
-        const match = await Match.find({
-                status: "Open"
+        const matches = await Match.find({
+                status: {
+                  $in: ['Open', 'Full', 'Ready']
+                }
             })
-            .populate("location", "name address")
-            .populate('players.user', "name lastname ntrplvl")
+            .sort('date', 1)
+            .populate('location', 'name address courts')
+            .populate('players.user', 'name lastname ntrplvl profilePicture')
+            .populate('backUps.user', 'name lastname ntrplvl profilePicture')
+            .populate('createdBy', 'name lastname')
+            .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl profilePicture')
+            .populate('generatedMatches.teamB.player2', 'name lastname ntrplvl profilePicture')
+            .lean();
 
-        if (!match) {
+        if (!matches) {
             return res.status(404).json({
                 ok: false,
                 message: 'Match not found'
             });
         }
 
-        return res.status(200).json(match)
+        const matchesWithSurface = matches.map(match => {
+
+            const courts = match.courts.map(court => {
+
+                const locationCourt = match.location.courts.find(
+                    lc => lc.number === court.courtNumber
+                );
+
+                return {
+                    ...court,
+                    surface: locationCourt?.surface || null
+                };
+            });
+
+            return {
+                ...match,
+                courts
+            };
+        });
+
+        return res.status(200).json(matchesWithSurface);
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({
