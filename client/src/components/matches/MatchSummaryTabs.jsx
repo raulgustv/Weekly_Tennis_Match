@@ -28,6 +28,9 @@ const MatchSummaryTabs = ({
     onLeave
 }) => {
 
+
+
+
     const { Text, Title, Link } = Typography;
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -109,6 +112,12 @@ const MatchSummaryTabs = ({
 
     const disabledLeave = isJoinedPlayer && isLess24h;
 
+
+    const leaveDeadline = dayjs(date)
+        .hour(Number(startTime.split(":")[0]))
+        .minute(Number(startTime.split(":")[1]))
+        .subtract(24, "hour");
+
     if (!user?._id) return null;
 
     return (
@@ -119,6 +128,12 @@ const MatchSummaryTabs = ({
                 </Title>
                 <Text type="secondary">
                     <ClockCircleOutlined /> {startTime} - {endTime}
+                </Text>
+
+                <br />
+
+                <Text type="danger" style={{ fontSize: 12 }}>
+                    <small>Deadline: {leaveDeadline.format("ddd DD MMM, HH:mm")}</small>
                 </Text>
             </div>
 
