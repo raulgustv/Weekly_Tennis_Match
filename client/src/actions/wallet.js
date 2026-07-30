@@ -24,3 +24,10 @@ export const adminRefundAdjust = async(payload) =>{
 
     return data;
 }
+
+
+export const addFundsUserWallet = async(id) =>{
+    const data = await axiosInstance.post(`/wallet/add-funds-user/${id}`)
+
+    return data;
+}

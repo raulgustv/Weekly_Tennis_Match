@@ -478,7 +478,7 @@ export const refundAdjustments = async(req, res) =>{
 }
 
 export const addFundsUser = async(req, res) =>{
-        const session = await mongoose.startSession();
+    const session = await mongoose.startSession();
 
     try {
 
@@ -486,33 +486,23 @@ export const addFundsUser = async(req, res) =>{
 
         const adminId = req.user._id;
         const {id} = req.params;
-        const {amount, type, method, note} = req.body;
+        const {amount, method, note} = req.body;
 
         const amountNumber = Number(amount);
 
-
-
-        if (!id || !type || isNaN(amountNumber) || amountNumber <= 0) {
+        if (!id || isNaN(amountNumber) || amountNumber <= 0) {
             await session.abortTransaction();
             return res.status(400).json({
                 ok: false,
-                message: 'User, amount and type are required'
+                message: 'User, amount  are required'
             });
         }        
 
-        if(!id || !amountNumber || !type || !method){
+        if(!id || !amountNumber || !method){
             await session.abortTransaction();
             return res.status(400).json({
                 ok: false,
-                message: 'User amount, method and type are required'
-            })
-        }
-
-        if(!['deposit'].includes(type)){
-            await session.abortTransaction();
-            return res.status(400).json({
-                ok: false,
-                message: 'Please select a valid type deposit'
+                message: 'User amount, method  are required'
             })
         }
 
@@ -535,7 +525,7 @@ export const addFundsUser = async(req, res) =>{
             user: id,
             amount: amountNumber,
             method,
-            type,
+            type: 'deposit',
             status: 'confirmed',
             reviewedBy: adminId,
             reviewedAt: new Date(),
@@ -559,7 +549,7 @@ export const addFundsUser = async(req, res) =>{
         session.endSession();
  
         return res.status(200).json({
-            message: `${type} has been processed`,
+            message: `Desposit has been processed`,
             transaction: transaction[0]        })        
 
 
