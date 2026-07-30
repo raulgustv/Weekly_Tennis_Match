@@ -1,0 +1,15 @@
+.tennis-loader {
+    font-size: 64px;
+    animation: tennis-spin 1s linear infinite;
+    user-select: none;
+}
+
+@keyframes tennis-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

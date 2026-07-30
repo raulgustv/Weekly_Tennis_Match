@@ -198,7 +198,7 @@ export const getOpenMatch = async (req, res) => {
     try {
         const matches = await Match.find({
                 status: {
-                  $in: ['Open', 'Full', 'Ready']
+                  $in: ['Open', 'Full', 'Ready', 'Played']
                 }
             })
             .sort({'date': 1})
