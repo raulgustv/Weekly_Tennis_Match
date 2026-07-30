@@ -351,7 +351,6 @@ export const userDeposits = async(req, res) =>{
 
 export const refundAdjustments = async(req, res) =>{
 
-
     const session = await mongoose.startSession();
 
     try {
@@ -370,10 +369,7 @@ export const refundAdjustments = async(req, res) =>{
                 ok: false,
                 message: 'User, amount and type are required'
             });
-        }
-
-
-        
+        }        
 
         if(!userId || !amountNumber || !type){
             await session.abortTransaction();
@@ -466,6 +462,102 @@ export const refundAdjustments = async(req, res) =>{
             `
         });
 
+        return res.status(200).json({
+            message: `${type} has been processed`,
+            transaction: transaction[0]        })        
+
+
+        
+    } catch (error) {
+        console.log(error)
+         return res.status(400).json({
+                ok: false,
+                message: 'Internal error refunding/adjusting user'
+        })
+    }
+}
+
+export const addFundsUser = async(req, res) =>{
+        const session = await mongoose.startSession();
+
+    try {
+
+        session.startTransaction();
+
+        const adminId = req.user._id;
+        const {id} = req.params;
+        const {amount, type, method, note} = req.body;
+
+        const amountNumber = Number(amount);
+
+
+
+        if (!id || !type || isNaN(amountNumber) || amountNumber <= 0) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                ok: false,
+                message: 'User, amount and type are required'
+            });
+        }        
+
+        if(!id || !amountNumber || !type || !method){
+            await session.abortTransaction();
+            return res.status(400).json({
+                ok: false,
+                message: 'User amount, method and type are required'
+            })
+        }
+
+        if(!['deposit'].includes(type)){
+            await session.abortTransaction();
+            return res.status(400).json({
+                ok: false,
+                message: 'Please select a valid type deposit'
+            })
+        }
+
+        const user = await User.findById(id).session(session);
+
+        if(!user){
+            await session.abortTransaction();
+            return res.status(400).json({
+                ok: false,
+                message: 'User not found'
+            })
+        }
+         /*
+        ==========================================
+        CREATE TRANSACTION
+        ==========================================
+        */
+
+        const transaction = await WalletTransaction.create([{
+            user: id,
+            amount: amountNumber,
+            method,
+            type,
+            status: 'confirmed',
+            reviewedBy: adminId,
+            reviewedAt: new Date(),
+            note
+        }], {session});
+
+        /*
+        ==========================================
+        UPDATE BALANCE
+        ==========================================
+        */   
+
+        await User.findByIdAndUpdate(
+            id,
+            {$inc: {walletBalance: amountNumber}},
+            {session}
+        );
+
+        await session.commitTransaction();
+        
+        session.endSession();
+ 
         return res.status(200).json({
             message: `${type} has been processed`,
             transaction: transaction[0]        })        
