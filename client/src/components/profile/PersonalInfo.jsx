@@ -5,16 +5,18 @@ import {
     InfoCircleOutlined,
     LockOutlined,
     MailOutlined,
+    PlusCircleOutlined
 } from "@ant-design/icons";
 import { formatTimeMs } from "../../helpers/time";
 import { useCountries } from "../../hooks/useCountries";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import AdminAddFundsModal from "../modals/AdminAddFundsModal";
 
 
-const PersonalInfo = ({ user, handleSendReset = null, passwordChange }) => {
+const PersonalInfo = ({ user, handleSendReset = null, passwordChange, addFundsButton }) => {
+
 
     const { Text, Link } = Typography;
-
 
     const { countries } = useCountries()
 
@@ -23,6 +25,10 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange }) => {
     const resetCooldown = useCountdown({
         duration: total_cooldown
     })
+
+    //console.log(user)
+
+    const [openFundModal, setOpenFundModal] = useState(false)
 
     const countryFlag = useMemo(() => {
         if (!user?.country || !countries?.length) return null;
@@ -38,6 +44,11 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange }) => {
     const percent = resetCooldown.active
         ? 100 - Math.round((resetCooldown.remaining / total_cooldown) * 100)
         : 0;
+
+
+    const addFunds = () => {
+        setOpenFundModal(true)
+    }
 
 
 
@@ -130,29 +141,40 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange }) => {
                     </Space>
                 </Descriptions.Item>
 
-                <Descriptions.Item
-                    label={
-                        <Space>
-                            💰 Wallet Balance
+                {addFundsButton && (
+                    <Descriptions.Item
+                        label={
+                            <Space>
+                                💰 Wallet Balance
 
-                            <Tooltip title="Click on the icon to add funds to your wallet">
-                                <Link href="/wallet">
-                                    <InfoCircleOutlined
-                                        style={{
-                                            color: "rgba(22, 119, 255, 0.65)",
-                                            cursor: "pointer"
-                                        }}
-                                    />
-                                </Link>
+                                <Tooltip title="Wallet information">
+                                    <Link href="/wallet">
+                                        <InfoCircleOutlined />
+                                    </Link>
+                                </Tooltip>
+                            </Space>
+                        }
+                    >
+                        <Space align="center">
+                            <Text strong style={{ fontSize: 16 }}>
+                                {user?.walletBalance.toFixed(2)}€
+                            </Text>
+
+                            <Tooltip title="Add funds">
+                                <Button
+                                    type="primary"
+                                    shape="circle"
+                                    size="small"
+                                    icon={<PlusCircleOutlined />}
+                                    onClick={addFunds}
+                                />
                             </Tooltip>
                         </Space>
-                    }
-                >
-                    <Text strong style={{ fontSize: 16 }}>
-                        {user?.walletBalance.toFixed(2)}€
-                    </Text>
-                </Descriptions.Item>
+                    </Descriptions.Item>
+                )}
             </Descriptions>
+
+            <AdminAddFundsModal openModal={openFundModal} setOpenModal={setOpenFundModal} id={user?._id} name={user?.name} />
         </>
     )
 }

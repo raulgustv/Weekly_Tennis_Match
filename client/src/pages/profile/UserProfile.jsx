@@ -101,7 +101,7 @@ const UserProfile = () => {
 
             
 
-            <PersonalInfo user={user} countryFlag={countryFlag} handleSendReset={handleSendReset} passwordChange={true} />
+            <PersonalInfo user={user} countryFlag={countryFlag} handleSendReset={handleSendReset} passwordChange={true} addFundsButton={false} />
 
             {/* ================= NTRP HISTORY ================= */}
 

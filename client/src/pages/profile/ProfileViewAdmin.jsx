@@ -101,7 +101,7 @@ const ProfileViewAdmin = () => {
 
             {/* ================= PERSONAL INFO ================= */}
 
-            <PersonalInfo user={player} passwordChange={false} />
+            <PersonalInfo user={player} passwordChange={false} addFundsButton={true} />
 
             {/* ================= NTRP HISTORY ================= */}
 
