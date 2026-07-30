@@ -1,4 +1,4 @@
-import { Row, Col, Empty, Space, Typography, Button, Spin } from "antd";
+import { Row, Col, Empty, Flex, Typography, Button, Spin } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 
 import WeatherCard from "../../components/common/WeatherCard";
@@ -12,108 +12,118 @@ import { usePendingTransactions } from "../../hooks/useTransactions";
 const { Title } = Typography;
 
 const AdminDashboard = () => {
+    const {
+        openMatches,
+        loadOpenMatches,
+        fetchOpenMatches,
+    } = useMatches();
 
-  const {
-    openMatches,
-    loadOpenMatches,
-    fetchOpenMatches,
-  } = useMatches();
+    const {
+        pendingTransactions,
+        loadPendingTransactions,
+        setLoadPendingTransactions,
+        fetchPendingTransactions,
+    } = usePendingTransactions();
 
-  const {
-    pendingTransactions,
-    loadPendingTransactions,
-    setLoadPendingTransactions,
-    fetchPendingTransactions,
-  } = usePendingTransactions();
+    const upcomingMatches = openMatches.filter(
+        (m) => m?.status !== "Played"
+    );
 
-  const upcomingMatches = openMatches.filter(
-    (m) => m?.status !== "Played"
-  );
+    const loading = loadOpenMatches || loadPendingTransactions;
 
-  const loading = loadOpenMatches || loadPendingTransactions;
+    const refreshDashboard = async () => {
+        await Promise.all([
+            fetchOpenMatches(),
+            fetchPendingTransactions(),
+        ]);
+    };
 
-  const refreshDashboard = async () => {
-    await Promise.all([
-      fetchOpenMatches(),
-      fetchPendingTransactions(),
-    ]);
-  };
+    return (
+        <>
+            <Flex
+                justify="space-between"
+                align="center"
+                wrap
+                gap={16}
+                style={{
+                    marginBottom: 24,
+                }}
+            >
+                <Title
+                    level={3}
+                    style={{
+                        margin: 0,
+                        flex: 1,
+                        minWidth: 220,
+                    }}
+                >
+                    🛠️ Admin Dashboard
+                </Title>
 
-  return (
-    <>
-      <Space
-        style={{
-          width: "100%",
-          justifyContent: "space-between",
-          marginBottom: 20,
-          alignItems: "center",
-        }}
-      >
-        <Title level={3} style={{ margin: 0 }}>
-          🛠️ Admin Dashboard
-        </Title>
+                <Button
+                    type="primary"
+                    icon={<ReloadOutlined spin={loading} />}
+                    disabled={loading}
+                    onClick={refreshDashboard}
+                    size="large"
+                    style={{
+                        background:
+                            "linear-gradient(135deg, #7CB342 0%, #43A047 100%)",
+                        border: "none",
+                        borderRadius: 999,
+                        fontWeight: 700,
+                        paddingInline: 24,
+                        width: "100%",
+                        maxWidth: 260,
+                        boxShadow: "0 6px 16px rgba(67,160,71,.35)",
+                        transition: "all .25s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow =
+                            "0 10px 24px rgba(67,160,71,.45)";
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow =
+                            "0 6px 16px rgba(67,160,71,.35)";
+                    }}
+                >
+                    {loading ? "Refreshing..." : "Refresh Dashboard"}
+                </Button>
+            </Flex>
 
-        <Button
-          type="primary"
-          icon={<ReloadOutlined spin={loading} />}
-          disabled={loading}
-          onClick={refreshDashboard}
-          size="large"
-          style={{
-            background: "linear-gradient(135deg, #7CB342 0%, #43A047 100%)",
-            border: "none",
-            borderRadius: 999,
-            fontWeight: 700,
-            paddingInline: 24,
-            boxShadow: "0 6px 16px rgba(67,160,71,.35)",
-            transition: "all .25s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow =
-              "0 10px 24px rgba(67,160,71,.45)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow =
-              "0 6px 16px rgba(67,160,71,.35)";
-          }}
-        >
-          {loading ? "Refreshing..." : "Refresh Dashboard"}
-        </Button>
-      </Space>
+            <Spin
+                spinning={loading}
+                indicator={<TennisLoader />}
+            >
+                <Row gutter={[20, 20]}>
+                    <Col xs={24} md={12} xl={8}>
+                        <WeatherCard />
+                    </Col>
 
-      <Spin
-        spinning={loading}
-        indicator={<TennisLoader />}
-      >
-        <Row gutter={[16, 16]}>
-          <Col lg={8} md={12} sm={16} xs={24}>
-            <WeatherCard />
-          </Col>
+                    <Col xs={24} md={12} xl={8}>
+                        {upcomingMatches.length === 0 ? (
+                            <Empty description="No upcoming matches available" />
+                        ) : (
+                            <UpComingMatches
+                                matches={upcomingMatches}
+                                loadMatches={loadOpenMatches}
+                            />
+                        )}
+                    </Col>
 
-          <Col lg={8} md={12} sm={16} xs={24}>
-            {upcomingMatches.length === 0 ? (
-              <Empty description="No upcoming matches available" />
-            ) : (
-              <UpComingMatches
-                matches={upcomingMatches}
-                loadMatches={loadOpenMatches}
-              />
-            )}
-          </Col>
-
-          <Col lg={8} md={12} sm={16} xs={24}>
-            <PendingTransactions
-              transactions={pendingTransactions}
-              setLoading={setLoadPendingTransactions}
-              fetchTransactions={fetchPendingTransactions}
-            />
-          </Col>
-        </Row>
-      </Spin>
-    </>
-  );
+                    <Col xs={24} md={24} xl={8}>
+                        <PendingTransactions
+                            transactions={pendingTransactions}
+                            setLoading={setLoadPendingTransactions}
+                            fetchTransactions={fetchPendingTransactions}
+                        />
+                    </Col>
+                </Row>
+            </Spin>
+        </>
+    );
 };
 
 export default AdminDashboard;
