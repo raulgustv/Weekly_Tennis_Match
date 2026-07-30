@@ -26,7 +26,7 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange, addFundsBu
         duration: total_cooldown
     })
 
-    console.log(user)
+    //console.log(user)
 
     const [openFundModal, setOpenFundModal] = useState(false)
 
@@ -174,7 +174,7 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange, addFundsBu
                 )}
             </Descriptions>
 
-            <AdminAddFundsModal openModal={openFundModal} setOpenModal={setOpenFundModal} id={user?._id} />
+            <AdminAddFundsModal openModal={openFundModal} setOpenModal={setOpenFundModal} id={user?._id} name={user?.name} />
         </>
     )
 }
