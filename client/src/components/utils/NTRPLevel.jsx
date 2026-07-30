@@ -47,7 +47,7 @@ const NTRPLevel = () => {
                     </a>
  
                         <Link onClick={() => setopenChart(true)}>
-                            Hover to see NTRP Chart
+                            Click to see NTRP Chart
                         </Link>                   
                 </Flex>
             </div>

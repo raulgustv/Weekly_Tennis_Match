@@ -51,6 +51,9 @@ const WhatsappMessage = ({ open, setOpenMessage, match }) => {
 
         const message = `🎾 Tennis Doubles Game 🎾
 
+Only for visibility please join using the link
+https://weekly-tennis-match.vercel.app/games
+
 DEADLINE: ${deadline.format("H[h]")} - ${deadline.format("dddd, MMM D, YYYY")}
 Date:  ${matchDateTime.format("dddd, MMM D, YYYY HH[h]")}
 Location: ${match.location.name} - ${match.location.address}
