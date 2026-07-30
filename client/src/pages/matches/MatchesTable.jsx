@@ -114,6 +114,28 @@ const MatchesTable = () => {
         }
     };
 
+
+    //export to excel
+    const flattenMatchesForExcel = (matches) => {
+    return matches.map((m) => ({
+        Date: dayjs(m.date).format("DD/MM/YYYY"),
+        StartTime: m.startTime,
+        EndTime: m.endTime,
+        Location: m?.location?.name || "",
+        Address: m?.location?.address || "",
+        Status: m.status,
+        Courts: m.courts?.map((c) => `Court ${c.courtNumber}`).join(", "),
+        Players: m.players
+            ?.map((p) => `${p.user?.name} ${p.user?.lastname}`)
+            .join(", "),
+        PlayersCount: m.players?.length || 0,
+        CreatedBy: m.createdBy
+            ? `${m.createdBy.name} ${m.createdBy.lastname}`
+            : "",
+        Price: m.price,
+    }));
+};
+
     /* -------------------------------------------------- */
     /* TABLE COLUMNS                                      */
     /* -------------------------------------------------- */
@@ -254,7 +276,7 @@ const MatchesTable = () => {
             <Title level={3}>All matches</Title>
             <Text type="secondary">View all matches and manage status</Text>
 
-            <ExportToExcel fileName="matches.xlsx" data={matches} />
+            <ExportToExcel fileName="matches.xlsx" data={flattenMatchesForExcel(matches)} />
 
             <Table
                 columns={columns}
