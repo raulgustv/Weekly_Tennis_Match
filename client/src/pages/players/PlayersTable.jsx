@@ -62,6 +62,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
         } catch (error) {
             console.log(error);
+            toast.error( error?.response?.data?.message ||'There was an issue toggling player account')
         }
     };
 
@@ -72,7 +73,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             fetchPlayers();
         } catch (error) {
             console.log(error);
-            toast.error(error?.response?.data?.message);
+            toast.error(error?.response?.data?.message || 'There was an issue toggling user status');
         }
     };
 
