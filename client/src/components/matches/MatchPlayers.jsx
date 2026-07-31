@@ -137,7 +137,7 @@ const MatchPlayers = () => {
       {isReady ? (
         <Row gutter={[24, 24]}>
           {match.generatedMatches.map((m, index) => (
-            <Col key={index} xs={24} sm={12} lg={6}>
+            <Col key={index} xs={24} sm={12} lg={12}>
               <MatchDetails match={m} />
             </Col>
           ))}
