@@ -50,7 +50,7 @@ const NTRPHistory = ({ ntrpHistory }) => {
                                         <br />
                                         <Text strong type={isUp ? "success" : "warning"}>
                                             {isUp ? "+" : ""}
-                                            {item.totalChange}
+                                            {item.totalChange.toFixed(2)}
                                         </Text>
                                     </div>
                                 ),
