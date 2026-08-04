@@ -65,7 +65,7 @@ const MainLayout = () => {
             key: "/manage-courts",
             icon: <CompassFilled style={{ color: "#13C2C2" }} />,
             label: "Manage courts",
-            children: [{ key: "/admin/add-court", label: "Add courts" }],
+            children: [{ key: "/admin/add-court", label: "Add & manage courts" }],
           },
           {
             key: "/admin-matches",
