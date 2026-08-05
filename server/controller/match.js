@@ -99,6 +99,7 @@ export const newMatch = async (req, res) => {
           isActive:true,
           fcmToken: {
             $exists: true,
+            _id: { $ne: userId },
             $ne: null
           }
         }).select("fcmToken");
@@ -514,10 +515,23 @@ export const joinMatch = async (req, res) => {
 
       await session.commitTransaction();
 
+      /* Push notification */
+      const usersNotice = await User.find({
+        isActive: true,
+        _id: { $ne: userId },
+        fcmToken: { $exists: true, $ne: null }
+      }).select("fcmToken");
+
+      const tokens = usersNotice.map(u => u.fcmToken).filter(Boolean);
+
+      if (tokens.length > 0) {
+        await sendJoinMatchNotification(tokens, user.name);
+      }
+
       return res.status(200).json({
         role: "player",
         match: updatedMatch
-      });
+      });    
     }
 
     /* ===================================================== */

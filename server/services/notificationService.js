@@ -36,3 +36,15 @@ export const sendNewMatchNotification = async (tokens, locationName) => {
         }
     );
 };
+
+
+export const sendJoinMatchNotification = async (tokens, playerName, locationName) => {
+    return sendNotification(
+        tokens,
+        "🎾 New Player Joined",
+        `${playerName} just joined your match at ${locationName}.`,
+        {
+            type: "PLAYER_JOINED"
+        }
+    );
+};
