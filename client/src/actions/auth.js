@@ -9,6 +9,15 @@ export const login = async (values) => {
 
 }
 
+export const getNotificationToken = async(token) =>{
+    const data = await axiosInstance.post('/notification/token', {token})
+
+    console.log(data)
+
+    return data
+
+}
+
 export const checkEmailValidity = async(email) =>{
     const {data} = await axiosInstance.get('/user/validate', {
         params: {email}

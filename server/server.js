@@ -14,6 +14,7 @@ import skillRoutes from './routes/skill.js';
 import adminRoutes from './routes/admin.js';
 import walletRoutes from './routes/wallet.js';
 import feedbackRoutes from './routes/feedback.js'
+import notificationRoutes from './routes/notification.js'
 import './jobs/matchStatus.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
@@ -63,6 +64,7 @@ app.use('/api/profile', profileRoutes)
 app.use('/api/vote', skillRoutes)
 app.use('/api/wallet', walletRoutes)
 app.use('/api/feedback', feedbackRoutes)
+app.use('/api/notification', notificationRoutes)
 
 //Conexión
 const PORT = process.env.PORT || 7000;

@@ -1,5 +1,8 @@
 import { useContext, useState, createContext, useEffect } from "react";
-import { getUserAuth } from "../actions/auth";
+import { getNotificationToken, getUserAuth } from "../actions/auth";
+import { getToken } from "firebase/messaging";
+//import { toast } from "react-toastify";
+import { messaging } from "../config/firebase";
 
 export const AuthContext = createContext();
 
@@ -46,6 +49,32 @@ export const AuthProvider = ({ children }) => {
 
     }, []);
 
+
+
+    useEffect(() => {
+        if (!user) return;
+
+        const regsiterFCM = async () => {
+            try {
+
+                const token = await getToken(messaging, {
+                    vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY
+                })
+
+                const response = await getNotificationToken(token)
+
+                console.log(response)
+
+            } catch (error) {
+                console.log(error)
+                //toast.error('Error generating FCM token')
+            }
+        }
+
+        regsiterFCM()
+
+    }, [user])
+
     // login / refresh session
     const setSession = async (token) => {
 
@@ -61,8 +90,9 @@ export const AuthProvider = ({ children }) => {
 
         localStorage.removeItem("token");
         setUser(null);
-
     };
+
+
 
     return (
         <AuthContext.Provider

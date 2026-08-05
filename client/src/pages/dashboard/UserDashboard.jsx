@@ -16,6 +16,8 @@ const UserDashboard = () => {
     (match) => match.status !== "Played"
   );
 
+
+
   return (
     <>
       <Space
@@ -72,8 +74,6 @@ const UserDashboard = () => {
           fetchMatches={fetchOpenMatches}
         />
       </Spin>
-
-
     </>
   );
 };
