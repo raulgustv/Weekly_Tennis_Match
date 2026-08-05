@@ -10,11 +10,10 @@ export const login = async (values) => {
 }
 
 export const getNotificationToken = async(token) =>{
-    const data = await axiosInstance.post('/notification/token', {token})
+    await axiosInstance.post('/notification/token', {token})
+    //console.log(data)
 
-    console.log(data)
-
-    return data
+    //return data
 
 }
 
