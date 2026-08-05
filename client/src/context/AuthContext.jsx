@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
 
                 const response = await getNotificationToken(token)
 
-                console.log(response)
+                //console.log(response)
 
             } catch (error) {
                 console.log(error)
