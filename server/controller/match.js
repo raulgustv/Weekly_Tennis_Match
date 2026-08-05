@@ -17,7 +17,7 @@ import {
 } from '../utils/backups.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { sendNewMatchNotification, sendNotification } from '../services/notificationService.js';
+import { notifyOtherPlayersOfJoin, sendJoinMatchNotification, sendNewMatchNotification, sendNotification } from '../services/notificationService.js';
 
 
 
@@ -513,20 +513,13 @@ export const joinMatch = async (req, res) => {
         await updatedMatch.save({ session });
       }
 
-      await session.commitTransaction();
+      await session.commitTransaction(); 
 
-      /* Push notification */
-      const usersNotice = await User.find({
-        isActive: true,
-        _id: { $ne: userId },
-        fcmToken: { $exists: true, $ne: null }
-      }).select("fcmToken");
-
-      const tokens = usersNotice.map(u => u.fcmToken).filter(Boolean);
-
-      if (tokens.length > 0) {
-        await sendJoinMatchNotification(tokens, user.name);
-      }
+      try {
+        await notifyOtherPlayersOfJoin(userId, user.name);
+      } catch (notifError) {
+        console.error("Error sending join notification:", notifError);
+}
 
       return res.status(200).json({
         role: "player",
@@ -572,6 +565,13 @@ export const joinMatch = async (req, res) => {
       }
 
       await session.commitTransaction();
+
+
+      try {
+        await notifyOtherPlayersOfJoin(userId, user.name);
+      } catch (notifError) {
+        console.error("Error sending join notification:", notifError);
+}
 
       return res.status(200).json({
         role: "player",
