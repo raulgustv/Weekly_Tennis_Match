@@ -11,3 +11,15 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  console.log('[firebase-messaging-sw.js] Mensaje recibido en background:', payload);
+
+  const notificationTitle = payload.notification?.title || 'Nueva notificación';
+  const notificationOptions = {
+    body: payload.notification?.body || '',
+    icon: '/logo192.png', // pon aquí el path a tu icono real
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
