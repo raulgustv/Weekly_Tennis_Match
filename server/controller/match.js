@@ -17,6 +17,7 @@ import {
 } from '../utils/backups.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import { sendNewMatchNotification, sendNotification } from '../services/notificationService.js';
 
 
 
@@ -92,6 +93,19 @@ export const newMatch = async (req, res) => {
             maxPlayers,
             paymentMethods: finalPaymentMethods
         });
+
+        /* PUSH NOTIFICATION */   
+        const usersNotice = await User.find({
+          isActive:true,
+          fcmToken: {
+            $exists: true,
+            $ne: null
+          }
+        }).select("fcmToken");
+
+        const tokens = usersNotice.map(user => user.fcmToken).filter(Boolean);
+
+        await sendNewMatchNotification(tokens, location.name)
 
         return res.status(201).json(match);
 
