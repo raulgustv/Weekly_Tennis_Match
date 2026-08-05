@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import serviceAccount from '../weeklytennis-firebase-adminsdk-fbsvc-240ec5aa4c.json' with { type: "json" }
+//import serviceAccount from '../weeklytennis-firebase-adminsdk-fbsvc-240ec5aa4c.json' with { type: "json" }
 import dotenv from 'dotenv'
 
 dotenv.config();
