@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
                     vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY
                 })
 
-                const response = await getNotificationToken(token)
+                await getNotificationToken(token)
 
                 //console.log(response)
 
