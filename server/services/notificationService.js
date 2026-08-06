@@ -2,7 +2,7 @@ import admin from "../config/firebase.js";
 import User from '../models/user.js'
 
 
-export const notifyOtherPlayersOfJoin = async (userId, playerName) => {
+export const notifyOtherPlayersOfJoin = async (userId, playerName, location) => {
   const usersNotice = await User.find({
     isActive: true,
     _id: { $ne: userId },
@@ -12,7 +12,7 @@ export const notifyOtherPlayersOfJoin = async (userId, playerName) => {
   const tokens = usersNotice.map(u => u.fcmToken).filter(Boolean);
 
   if (tokens.length > 0) {
-    await sendJoinMatchNotification(tokens, playerName);
+    await sendJoinMatchNotification(tokens, playerName, location);
   }
 };
 
