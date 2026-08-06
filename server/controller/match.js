@@ -17,7 +17,7 @@ import {
 } from '../utils/backups.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { notifyOtherPlayersOfJoin, sendJoinMatchNotification, sendNewMatchNotification, sendNotification } from '../services/notificationService.js';
+import { notifyOtherPlayersOfJoin, sendNewMatchNotification, sendNotification } from '../services/notificationService.js';
 
 
 
@@ -434,7 +434,8 @@ export const joinMatch = async (req, res) => {
       throw new Error("Payment method required");
     }
 
-    const match = await Match.findById(id).session(session);
+    const match = await Match.findById(id).session(session).populate('location', 'name')
+
 
     if (!match) {
       throw new Error("Match does not exist");
@@ -516,7 +517,7 @@ export const joinMatch = async (req, res) => {
       await session.commitTransaction(); 
 
       try {
-        await notifyOtherPlayersOfJoin(userId, user.name);
+        await notifyOtherPlayersOfJoin(userId, user.name, match.location.name);
       } catch (notifError) {
         console.error("Error sending join notification:", notifError);
 }
@@ -568,7 +569,7 @@ export const joinMatch = async (req, res) => {
 
 
       try {
-        await notifyOtherPlayersOfJoin(userId, user.name);
+        await notifyOtherPlayersOfJoin(userId, user.name, match.location.name);
       } catch (notifError) {
         console.error("Error sending join notification:", notifError);
 }
