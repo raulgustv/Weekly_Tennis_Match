@@ -96,17 +96,19 @@ export const newMatch = async (req, res) => {
 
         /* PUSH NOTIFICATION */   
         const usersNotice = await User.find({
-          isActive:true,
+          isActive: true,
+          _id: { $ne: req.user._id },
           fcmToken: {
             $exists: true,
-            _id: { $ne: userId },
             $ne: null
           }
         }).select("fcmToken");
 
-        const tokens = usersNotice.map(user => user.fcmToken).filter(Boolean);
+        const tokens = usersNotice
+          .map(user => user.fcmToken)
+          .filter(Boolean);
 
-        await sendNewMatchNotification(tokens, location.name)
+        await sendNewMatchNotification(tokens, location.name);
 
         return res.status(201).json(match);
 

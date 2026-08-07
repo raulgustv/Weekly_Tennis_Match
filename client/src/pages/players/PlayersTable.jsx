@@ -25,7 +25,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
     const { countries } = useCountries();
 
-   
+
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const { Text } = Typography;
     const navigate = useNavigate();
@@ -77,19 +77,20 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
         }
     };
 
-    const columns = [
+    // ------------------------------------------------------------------
+    // DESKTOP COLUMNS (comportamiento original, sin cambios de lógica)
+    // ------------------------------------------------------------------
+    const desktopColumns = [
         {
             title: "Player name",
             key: "name",
             render: (p) => (
                 <Flex
-                    vertical={screens.xs} // 🔥 clave mobile
-                    align={screens.xs ? "stretch" : "center"}
+                    align="center"
                     justify="space-between"
                     gap={8}
                     style={{ width: "100%" }}
                 >
-                    {/* LEFT SIDE */}
                     <Tooltip title="Click on player to view profile">
                         <Flex
                             align="center"
@@ -97,7 +98,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                             style={{
                                 minWidth: 0,
                                 overflow: "hidden",
-                                flex: screens.xs ? "unset" : 1,
+                                flex: 1,
                                 cursor: "pointer"
                             }}
                             onClick={(e) => {
@@ -115,7 +116,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                             <span
                                 style={{
                                     fontWeight: 500,
-                                    whiteSpace: screens.xs ? "normal" : "nowrap",
+                                    whiteSpace: "nowrap",
                                     overflow: "hidden",
                                     textOverflow: "ellipsis"
                                 }}
@@ -125,17 +126,15 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                         </Flex>
                     </Tooltip>
 
-                    {/* RIGHT SIDE */}
                     <Button
-                        type={screens.xs ? "primary" : "text"}
+                        type="text"
                         size="small"
-                        block={screens.xs}
                         onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/admin/player/${p._id}`);
                         }}
                     >
-                        {screens.xs ? "View profile" : "View"}
+                        View
                     </Button>
                 </Flex>
             ),
@@ -166,16 +165,11 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             title: "Country",
             key: "country",
             render: (p) => (
-                <Flex
-                    justify="space-between"
-                    align="center"
-                    gap="small"
-                    vertical={screens.xs}
-                >
+                <Flex justify="space-between" align="center" gap="small">
                     <span>{p?.country}</span>
                     <Image
                         preview={false}
-                        width={screens.xs ? 18 : 25}
+                        width={25}
                         alt={`${p?.country} flag`}
                         src={p?.countryFlag}
                     />
@@ -186,18 +180,12 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             title: "NTRP Level",
             key: "ntrplvl",
             render: (p) => (
-                <Flex
-                    justify="center"
-                    align="center"
-                    gap="middle"
-                    vertical={screens.xs}
-                >
+                <Flex justify="center" align="center" gap="middle">
                     <span>{p?.ntrplvl.toFixed(1)}</span>
                     <Button
                         size="small"
                         type="primary"
                         onClick={() => setSelectedPlayer(p)}
-                        block={screens.xs}
                     >
                         Adjust
                     </Button>
@@ -225,12 +213,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             title: 'Role',
             key: 'role',
             render: (p) => (
-                <Flex
-                    vertical={screens.xs}
-                    align="center"
-                    gap="small"
-                    style={{ width: "100%" }}
-                >
+                <Flex align="center" gap="small" style={{ width: "100%" }}>
                     <Text type="secondary" style={{ whiteSpace: "nowrap" }}>
                         {p?.role}
                     </Text>
@@ -239,7 +222,6 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                         size="small"
                         type="primary"
                         onClick={() => toggleAdminRole(p?._id)}
-                        block={screens.xs}
                     >
                         Toggle role
                     </Button>
@@ -248,9 +230,124 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
         }
     ];
 
+    // ------------------------------------------------------------------
+    // MOBILE COLUMNS: una sola columna "card" que agrupa todo
+    // ------------------------------------------------------------------
+    const mobileColumns = [
+        {
+            title: "Player",
+            key: "player-mobile",
+            render: (p) => (
+                <Flex vertical gap={8} style={{ width: "100%" }}>
+                    {/* Header: foto + nombre + botón view */}
+                    <Flex align="center" justify="space-between" gap={8}>
+                        <Flex
+                            align="center"
+                            gap={8}
+                            style={{ minWidth: 0, cursor: "pointer" }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/player/${p._id}`);
+                            }}
+                        >
+                            <ProfilePicture
+                                profilePicture={p?.profilePicture?.url}
+                                user={p}
+                                size={32}
+                                editable={false}
+                            />
+                            <span
+                                style={{
+                                    fontWeight: 600,
+                                    whiteSpace: "normal",
+                                    wordBreak: "break-word"
+                                }}
+                            >
+                                {p?.name} {p?.lastname}
+                            </span>
+                        </Flex>
+
+                        <Button
+                            type="primary"
+                            size="small"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/player/${p._id}`);
+                            }}
+                        >
+                            View profile
+                        </Button>
+                    </Flex>
+
+                    {/* Email + phone */}
+                    <Flex vertical gap={0}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            {p?.email}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            {p?.phone}
+                        </Text>
+                    </Flex>
+
+                    {/* País + NTRP (con Adjust) */}
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
+                        <Flex align="center" gap={6}>
+                            <Image
+                                preview={false}
+                                width={18}
+                                alt={`${p?.country} flag`}
+                                src={p?.countryFlag}
+                            />
+                            <span>{p?.country}</span>
+                        </Flex>
+
+                        <Flex align="center" gap={6}>
+                            <span>NTRP {p?.ntrplvl.toFixed(1)}</span>
+                            <Button
+                                size="small"
+                                type="primary"
+                                onClick={() => setSelectedPlayer(p)}
+                            >
+                                Adjust
+                            </Button>
+                        </Flex>
+                    </Flex>
+
+                    {/* Active + Role */}
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
+                        <Popconfirm
+                            title={p?.isActive ? "Deactivate player?" : 'Activate player?'}
+                            description={p?.isActive ? "This player will no longer be active" : "This player will be activated"}
+                            okText="Yes"
+                            cancelText="No"
+                            onConfirm={() => toggleActivation(p?._id)}
+                        >
+                            <Checkbox checked={p?.isActive}>
+                                Active
+                            </Checkbox>
+                        </Popconfirm>
+
+                        <Flex align="center" gap={6}>
+                            <Text type="secondary" style={{ whiteSpace: "nowrap" }}>
+                                {p?.role}
+                            </Text>
+                            <Button
+                                size="small"
+                                onClick={() => toggleAdminRole(p?._id)}
+                            >
+                                Toggle role
+                            </Button>
+                        </Flex>
+                    </Flex>
+                </Flex>
+            )
+        }
+    ];
+
+    const columns = screens.xs ? mobileColumns : desktopColumns;
+
     return (
         <>
-
             <Flex gap={4}>
                 <ExportToExcel
                     data={playersWithCountry}
@@ -264,6 +361,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                 loading={loading}
                 rowKey="_id"
                 scroll={{ x: "max-content" }}
+                showHeader={!screens.xs}
             />
 
             <NTRPModal
