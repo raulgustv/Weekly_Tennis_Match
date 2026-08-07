@@ -23,6 +23,7 @@ import Contact from '../pages/auth/Contact'
 import ProfileViewAdmin from '../pages/profile/ProfileViewAdmin'
 import Wallet from '../pages/wallet/Wallet'
 import WalletAdmin from '../pages/wallet/WalletAdmin'
+import Help from '../pages/information/Help'
 
 const AppRouter = () => {
   return (
@@ -36,6 +37,8 @@ const AppRouter = () => {
             <Route path='/terms-and-conditions' element={<TermsAndConditions />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/help" element={<Help />} />
+
 
             <Route path='/match/details/:matchId/accept' element={<MatchInviteAccept />} />
             <Route path='/match/details/:matchId/decline' element={<MatchDeclineInvite />} />
