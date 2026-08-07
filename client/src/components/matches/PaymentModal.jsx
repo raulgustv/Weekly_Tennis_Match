@@ -53,7 +53,7 @@ const PaymentModal = ({
                 style={{ width: "100%" }}
             >
                 <Space
-                    direction="vertical"
+                    orientation="vertical"
                     style={{ width: "100%" }}
                     size="middle"
                 >
