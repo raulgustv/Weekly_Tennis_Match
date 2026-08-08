@@ -5,10 +5,10 @@ import {
     Button
 } from "antd";
 
-import { HolderOutlined } from "@ant-design/icons";
+import { HolderOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getMatch, updateGeneratedMatch } from "../../actions/matches";
 import LoadingSpinner from "../../components/utils/LoadingSpinner";
 import { toast } from "react-toastify";
@@ -17,6 +17,7 @@ import {
     DndContext,
     closestCenter,
     PointerSensor,
+    TouchSensor,
     useSensor,
     useSensors
 } from "@dnd-kit/core";
@@ -60,7 +61,8 @@ const PlayerCard = ({ player }) => (
                 style={{
                     fontSize: 14,
                     color: "#bfbfbf",
-                    cursor: "grab"
+                    cursor: "grab",
+                    touchAction: "none"
                 }}
             />
 
@@ -92,7 +94,10 @@ const SortablePlayer = ({ id, player }) => {
         transition,
         marginBottom: 6,
         cursor: "grab",
-        opacity: isDragging ? 0.4 : 1
+        opacity: isDragging ? 0.4 : 1,
+        // Clave para Android: evita que el navegador capture el gesto
+        // como scroll antes de que dnd-kit lo reconozca como drag.
+        touchAction: "none"
     };
 
     return (
@@ -106,6 +111,7 @@ const SortablePlayer = ({ id, player }) => {
 
 const EditMatch = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
 
     const [generatedMatches, setGeneratedMatches] = useState([]);
     const [pageLoading, setPageLoading] = useState(false);
@@ -113,6 +119,12 @@ const EditMatch = () => {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: { distance: 4 }
+        }),
+        // Sensor dedicado para touch (Android). El delay evita que
+        // un scroll normal dispare el drag, sin afectar iOS/desktop
+        // porque PointerSensor sigue manejando esos casos igual que antes.
+        useSensor(TouchSensor, {
+            activationConstraint: { delay: 150, tolerance: 5 }
         })
     );
 
@@ -203,9 +215,25 @@ const EditMatch = () => {
 
     return (
         <>
-            <Title level={3} style={{ marginBottom: 20 }}>
-                Edit Matches
-            </Title>
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 20
+                }}
+            >
+                <Button
+                    icon={<ArrowLeftOutlined />}
+                    onClick={() => navigate(-1)}
+                >
+                    Back
+                </Button>
+
+                <Title level={3} style={{ margin: 0 }}>
+                    Edit Matches
+                </Title>
+            </div>
 
             <DndContext
                 sensors={sensors}
