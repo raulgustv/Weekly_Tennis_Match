@@ -1,5 +1,6 @@
 import {
     Button,
+    DatePicker,
     Flex,
     Select,
     Statistic,
@@ -37,6 +38,7 @@ const MatchesTable = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [openMessageModal, setOpenMessageModal] = useState(false)
+    const [filterDate, setFilterDate] = useState(null);
 
     // Orden por defecto: más reciente primero. El sorter de la columna
     // "Date" en desktop sigue funcionando igual (permite alternar asc/desc),
@@ -47,6 +49,13 @@ const MatchesTable = () => {
             (a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
         );
     }, [matches]);
+
+    // Filtro por fecha exacta (sin hora). Funciona igual en desktop y mobile,
+    // ya que filtra el dataSource antes de llegar a la tabla.
+    const displayedMatches = useMemo(() => {
+        if (!filterDate) return sortedMatches;
+        return sortedMatches.filter((m) => dayjs(m.date).isSame(filterDate, "day"));
+    }, [sortedMatches, filterDate]);
 
     const statusOptions = [
         { value: "Open", label: "Open" },
@@ -428,11 +437,22 @@ const MatchesTable = () => {
             <Title level={3}>All matches</Title>
             <Text type="secondary">View all matches and manage status</Text>
 
-            <ExportToExcel fileName="matches.xlsx" data={flattenMatchesForExcel(sortedMatches)} />
+            <Flex gap={12} wrap="wrap" align="center" style={{ margin: "12px 0" }}>
+                <DatePicker
+                    placeholder="Filtrar por fecha"
+                    allowClear
+                    value={filterDate}
+                    onChange={(date) => setFilterDate(date)}
+                    format="DD/MM/YYYY"
+                    style={{ width: "100%", maxWidth: 220 }}
+                />
+
+                <ExportToExcel fileName="matches.xlsx" data={flattenMatchesForExcel(displayedMatches)} />
+            </Flex>
 
             <Table
                 columns={columns}
-                dataSource={sortedMatches}
+                dataSource={displayedMatches}
                 rowKey="_id"
                 loading={loadMatches}
                 scroll={screens.xs ? undefined : { x: "max-content" }}

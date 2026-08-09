@@ -2,6 +2,7 @@ import { Button, Timeline, Typography } from "antd";
 import {
     ArrowDownOutlined,
     ArrowUpOutlined,
+    MinusOutlined,
 } from "@ant-design/icons";
 import { useState } from "react";
 
@@ -16,17 +17,14 @@ const NTRPHistory = ({ ntrpHistory }) => {
     const hasMore = ntrpHistory.length > visibleCount;
 
     const handleShowMore = () => {
-        setVisibleCount((prev) => prev + step)
+        setVisibleCount((prev) => prev + step);
     };
 
     const handleShowLess = () => {
-        setVisibleCount(step)
-    }
+        setVisibleCount(step);
+    };
 
-    const visibleItems = ntrpHistory.slice(0, visibleCount)
-
-
-
+    const visibleItems = ntrpHistory.slice(0, visibleCount);
 
     return (
         <>
@@ -35,20 +33,42 @@ const NTRPHistory = ({ ntrpHistory }) => {
             {ntrpHistory.length === 0 ? (
                 <Text type="secondary">No NTRP Adjustments</Text>
             ) : (
-
                 <>
                     <Timeline
                         items={visibleItems.map((item) => {
                             const isUp = item.totalChange > 0;
+                            const isDown = item.totalChange < 0;
 
                             return {
-                                color: isUp ? "green" : "red",
-                                icon: isUp ? <ArrowUpOutlined /> : <ArrowDownOutlined />,
+                                color: isUp
+                                    ? "green"
+                                    : isDown
+                                        ? "red"
+                                        : "gold",
+
+                                icon: isUp ? (
+                                    <ArrowUpOutlined />
+                                ) : isDown ? (
+                                    <ArrowDownOutlined />
+                                ) : (
+                                    <MinusOutlined />
+                                ),
+
                                 content: (
                                     <div>
                                         <small>{item.date}</small>
                                         <br />
-                                        <Text strong type={isUp ? "success" : "warning"}>
+
+                                        <Text
+                                            strong
+                                            type={
+                                                isUp
+                                                    ? "success"
+                                                    : isDown
+                                                        ? "danger"
+                                                        : "warning"
+                                            }
+                                        >
                                             {isUp ? "+" : ""}
                                             {item.totalChange.toFixed(2)}
                                         </Text>
@@ -57,6 +77,7 @@ const NTRPHistory = ({ ntrpHistory }) => {
                             };
                         })}
                     />
+
                     {hasMore && (
                         <Button type="link" onClick={handleShowMore}>
                             Show more
@@ -69,12 +90,9 @@ const NTRPHistory = ({ ntrpHistory }) => {
                         </Button>
                     )}
                 </>
-
-
-
             )}
         </>
-    )
-}
+    );
+};
 
-export default NTRPHistory 
+export default NTRPHistory;

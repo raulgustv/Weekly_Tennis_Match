@@ -68,8 +68,8 @@ const MatchPlayers = () => {
       const updated = await getMatch(id)
       setMatch(updated)
 
-    } catch ({response}) {
-      console.log({response})
+    } catch ({ response }) {
+      console.log({ response })
       toast.error(response?.data?.message || 'Error setting user payment')
       setLoading(false)
     } finally { setLoading(false) }
@@ -103,7 +103,7 @@ const MatchPlayers = () => {
 
 
 
-        {(user?.role === 'admin' && match.generatedMatches.length > 0) && (
+        {(user?.role === 'admin' && match.generatedMatches?.length > 0) && (
           <Col xs={24} md={4} style={{ textAlign: "right", marginTop: 12 }}>
             <Button
               icon={<EditOutlined />}
@@ -136,7 +136,7 @@ const MatchPlayers = () => {
       {/* READY STATE */}
       {isReady ? (
         <Row gutter={[24, 24]}>
-          {match.generatedMatches.map((m, index) => (
+          {match.generatedMatches?.map((m, index) => (
             <Col key={index} xs={24} sm={12} lg={12}>
               <MatchDetails match={m} />
             </Col>
@@ -152,7 +152,7 @@ const MatchPlayers = () => {
                 <Empty description="No players signed up yet" />
               ) : (
                 <Flex vertical gap={12}>
-                  {match.players.map((p, index) => (
+                  {match.players?.map((p, index) => (
                     <Card
                       key={p?.user?._id || index}
                       size="small"
@@ -214,7 +214,7 @@ const MatchPlayers = () => {
           {/* BACKUPS */}
           <Col xs={24} lg={12}>
             <Card title="Backups" variant="outlined">
-              {match?.backUps?.length === 0 ? (
+              {!match?.backUps?.length ? (
                 <Empty description="No backups signed up yet" />
               ) : (
                 <Flex vertical gap={12}>
