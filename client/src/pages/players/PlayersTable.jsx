@@ -3,6 +3,7 @@ import {
     Checkbox,
     Flex,
     Image,
+    Input,
     Popconfirm,
     Table,
     Typography,
@@ -27,6 +28,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
 
     const [selectedPlayer, setSelectedPlayer] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
     const { Text } = Typography;
     const navigate = useNavigate();
 
@@ -49,6 +51,17 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             };
         });
     }, [players, countriesMap]);
+
+    // Filtro de búsqueda por nombre y apellido (funciona igual en desktop y mobile,
+    // ya que filtra el dataSource antes de llegar a la tabla)
+    const filteredPlayers = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return playersWithCountry;
+
+        return playersWithCountry.filter((p) =>
+            `${p?.name ?? ""} ${p?.lastname ?? ""}`.toLowerCase().includes(term)
+        );
+    }, [playersWithCountry, searchTerm]);
 
     const toggleActivation = async (id) => {
         try {
@@ -348,7 +361,15 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
     return (
         <>
-            <Flex gap={4}>
+            <Flex gap={12} wrap="wrap" align="center" style={{ marginBottom: 12 }}>
+                <Input.Search
+                    placeholder="Buscar jugador por nombre o apellido"
+                    allowClear
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ maxWidth: 320, width: "100%" }}
+                />
+
                 <ExportToExcel
                     data={playersWithCountry}
                     fileName="players.xlsx"
@@ -356,12 +377,13 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             </Flex>
 
             <Table
-                dataSource={playersWithCountry}
+                dataSource={filteredPlayers}
                 columns={columns}
                 loading={loading}
                 rowKey="_id"
-                scroll={{ x: "max-content" }}
+                scroll={screens.xs ? undefined : { x: "max-content" }}
                 showHeader={!screens.xs}
+                tableLayout={screens.xs ? "fixed" : "auto"}
             />
 
             <NTRPModal
