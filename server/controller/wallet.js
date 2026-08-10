@@ -349,7 +349,7 @@ export const userDeposits = async(req, res) =>{
     }
 }
 
-export const refundAdjustments = async(req, res) =>{
+export const refundAdjustments = async (req, res) => {
 
     const session = await mongoose.startSession();
 
@@ -359,7 +359,7 @@ export const refundAdjustments = async(req, res) =>{
 
         const adminId = req.user._id;
 
-        const {userId, amount, type, note} = req.body;
+        const { userId, amount, type, note } = req.body;
 
         const amountNumber = Number(amount);
 
@@ -369,35 +369,30 @@ export const refundAdjustments = async(req, res) =>{
                 ok: false,
                 message: 'User, amount and type are required'
             });
-        }        
-
-        if(!userId || !amountNumber || !type){
-            await session.abortTransaction();
-            return res.status(400).json({
-                ok: false,
-                message: 'User amount and type are required'
-            })
         }
 
-        if(!['refund', 'adjustment'].includes(type)){
+        if (!['refund', 'adjustment'].includes(type)) {
             await session.abortTransaction();
             return res.status(400).json({
                 ok: false,
                 message: 'Please select a valid type (refund or adjustment)'
-            })
+            });
         }
 
         const user = await User.findById(userId).session(session);
 
-        if(!user){
+        if (!user) {
             await session.abortTransaction();
             return res.status(400).json({
                 ok: false,
                 message: 'User not found'
-            })
+            });
         }
 
-         /*
+        // Importe firmado: refund suma, adjustment resta
+        const signedAmount = type === 'refund' ? amountNumber : -amountNumber;
+
+        /*
         ==========================================
         CREATE TRANSACTION
         ==========================================
@@ -405,13 +400,13 @@ export const refundAdjustments = async(req, res) =>{
 
         const transaction = await WalletTransaction.create([{
             user: userId,
-            amount: amountNumber,
+            amount: signedAmount,
             type,
             status: 'confirmed',
             reviewedBy: adminId,
             reviewedAt: new Date(),
             note
-        }], {session});
+        }], { session });
 
         /*
         ==========================================
@@ -419,63 +414,62 @@ export const refundAdjustments = async(req, res) =>{
         ==========================================
         */
 
-        let balanceUpdate = 0;
-
-        if(type === 'refund'){
-            balanceUpdate = amountNumber;
-        }
-
-        if(type === 'adjustment'){
-            balanceUpdate = -amountNumber;
-        }
-
         await User.findByIdAndUpdate(
             userId,
-            {$inc: {walletBalance: balanceUpdate}},
-            {session}
+            { $inc: { walletBalance: signedAmount } },
+            { session }
         );
 
         await session.commitTransaction();
-        
-        session.endSession();
 
-         /*
+        /*
         ==========================================
         EMAIL
         ==========================================
         */
 
-        const resend = getResend();
+        try {
+            const resend = getResend();
 
-        const refUrl = `${process.env.FRONTEND_URL}/wallet`;
+            const refUrl = `${process.env.FRONTEND_URL}/wallet`;
 
-        await resend.emails.send({
-            from: process.env.FROM_EMAIL,
-            to: user.email,
-            subject: `MTC - ${type === 'refund' ? 'Refund processed' : 'Balance adjustment'}`,
-            html: `
-                <h2>Hello ${user.name},</h2>
-                <p>A${type === 'adjustment' && 'n'} ${type} has been applied to your wallet</p>
-                <p>Reason: ${note} || 'No details'</p>
-                <p><a href="${refUrl}">Check your wallet</a></p>
-                <p>Best regards,</p>
-            `
-        });
+            await resend.emails.send({
+                from: process.env.FROM_EMAIL,
+                to: user.email,
+                subject: `MTC - ${type === 'refund' ? 'Refund processed' : 'Balance adjustment'}`,
+                html: `
+                    <h2>Hello ${user.name},</h2>
+                    <p>A${type === 'adjustment' ? 'n' : ''} ${type} has been applied to your wallet</p>
+                    <p>Reason: ${note || 'No details'}</p>
+                    <p><a href="${refUrl}">Check your wallet</a></p>
+                    <p>Best regards,</p>
+                `
+            });
+        } catch (emailError) {
+            // La operación de wallet ya se confirmó; un fallo de email no debe
+            // reportarse como error de la operación principal.
+            console.log('Error sending refund/adjustment email:', emailError);
+        }
 
         return res.status(200).json({
+            ok: true,
             message: `${type} has been processed`,
-            transaction: transaction[0]        })        
+            transaction: transaction[0]
+        });
 
-
-        
     } catch (error) {
-        console.log(error)
-         return res.status(400).json({
-                ok: false,
-                message: 'Internal error refunding/adjusting user'
-        })
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        console.log(error);
+        return res.status(400).json({
+            ok: false,
+            message: 'Internal error refunding/adjusting user'
+        });
+    } finally {
+        session.endSession();
     }
-}
+};
 
 export const addFundsUser = async(req, res) =>{
     const session = await mongoose.startSession();
