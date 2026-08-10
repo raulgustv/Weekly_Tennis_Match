@@ -22,6 +22,7 @@ import {
   PlusOutlined,
   StarFilled,
   TrophyFilled,
+  QuestionCircleOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -169,7 +170,14 @@ const CreateMatchForm = ({ refreshMatches }) => {
                   <Col key={cn} md={3}>
                     <Form.Item
                       name={["courtPrices", cn]}
-                      label={`Court ${cn} price (€)`}
+                      label={
+                        <Space size={4}>
+                          <span>Court {cn} price (€)</span>
+                          <Tooltip title="Enter the total price of the court. This amount will be automatically divided by 4 players.">
+                            <span style={{ cursor: "help", color: "#999" }}><QuestionCircleOutlined /></span>
+                          </Tooltip>
+                        </Space>
+                      }
                       rules={[{ required: true }]}
                     >
                       <InputNumber
