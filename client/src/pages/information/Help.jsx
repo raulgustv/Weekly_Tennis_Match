@@ -319,42 +319,44 @@ const Help = () => {
                     {activeArticle?.readTime}
                 </Paragraph>
 
-                {activeArticle?.sections?.map((section, index) => (
-                    <div
-                        key={index}
-                        style={{
-                            marginBottom: 32,
-                        }}
-                    >
-                        <Title level={4}>{section.title}</Title>
+                {activeArticle?.component ? (
+                    <activeArticle.component />
+                ) : (
+                    activeArticle?.sections?.map((section, index) => (
+                        <div
+                            key={index}
+                            style={{
+                                marginBottom: 32,
+                            }}
+                        >
+                            <Title level={4}>{section.title}</Title>
 
-                        <Paragraph>{section.text}</Paragraph>
+                            <Paragraph>{section.text}</Paragraph>
 
-                        {section.image && (
-                            <div
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    margin: "20px 0",
-                                }}
-                            >
-                                <Image
-                                    src={section.image}
-                                    alt={section.title}
+                            {section.image && (
+                                <div
                                     style={{
-                                        maxWidth: "100%",
-                                        maxHeight: 350,
-                                        objectFit: "contain",
-                                        borderRadius: 12,
-                                        border: "1px solid #f0f0f0",
-                                        boxShadow:
-                                            "0 4px 12px rgba(0,0,0,0.08)",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        margin: "20px 0",
                                     }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                ))}
+                                >
+                                    <Image
+                                        src={section.image}
+                                        alt={section.title}
+                                        style={{
+                                            maxWidth: "100%",
+                                            maxHeight: 350,
+                                            objectFit: "contain",
+                                            borderRadius: 12,
+                                            border: "1px solid #f0f0f0",
+                                        }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
             </Modal>
         </div>
     );

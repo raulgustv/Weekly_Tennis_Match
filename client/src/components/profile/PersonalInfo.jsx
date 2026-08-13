@@ -141,25 +141,25 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange, addFundsBu
                     </Space>
                 </Descriptions.Item>
 
-                {addFundsButton && (
-                    <Descriptions.Item
-                        label={
-                            <Space>
-                                💰 Wallet Balance
+                <Descriptions.Item
+                    label={
+                        <Space>
+                            💰 Wallet Balance
 
-                                <Tooltip title="Wallet information">
-                                    <Link href="/wallet">
-                                        <InfoCircleOutlined />
-                                    </Link>
-                                </Tooltip>
-                            </Space>
-                        }
-                    >
-                        <Space align="center">
-                            <Text strong style={{ fontSize: 16 }}>
-                                {user?.walletBalance.toFixed(2)}€
-                            </Text>
+                            <Tooltip title="Wallet information">
+                                <Link href="/wallet">
+                                    <InfoCircleOutlined />
+                                </Link>
+                            </Tooltip>
+                        </Space>
+                    }
+                >
+                    <Space align="center">
+                        <Text strong style={{ fontSize: 16 }}>
+                            {Number(user?.walletBalance ?? 0).toFixed(2)}€
+                        </Text>
 
+                        {addFundsButton && (
                             <Tooltip title="Add funds">
                                 <Button
                                     type="primary"
@@ -169,9 +169,9 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange, addFundsBu
                                     onClick={addFunds}
                                 />
                             </Tooltip>
-                        </Space>
-                    </Descriptions.Item>
-                )}
+                        )}
+                    </Space>
+                </Descriptions.Item>
             </Descriptions>
 
             <AdminAddFundsModal openModal={openFundModal} setOpenModal={setOpenFundModal} id={user?._id} name={user?.name} />

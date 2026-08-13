@@ -8,14 +8,14 @@ import {
   FolderOpenOutlined,
   CheckSquareOutlined
 } from "@ant-design/icons";
-import HelpJoinMatch from "../helpCenter/HelpJoinMatch";
-import HelpWallet from "../helpCenter/HelpWallet";
-import HelpNTRP from "../helpCenter/HelpNTRP";
-import HelpProfile from "../helpCenter/HelpProfile";
-import HelpNotifications from "../helpCenter/HelpNotifications";
-import HelpComingSoon from "../helpCenter/HelpComingSoon";
-import HelpMatchDetail from "../helpCenter/HelpMatchDetail";
-import HelpMatchGenerated from "../helpCenter/HelpMatchGenerated";
+import HelpJoinMatch from "../helpCenter/categories/HelpJoinMatch";
+import HelpWallet from "../helpCenter/categories/HelpWallet";
+import HelpNTRP from "../helpCenter/categories/HelpNTRP";
+import HelpProfile from "../helpCenter/categories/HelpProfile";
+import HelpNotifications from "../helpCenter/categories/HelpNotifications";
+import HelpComingSoon from "../helpCenter/categories/HelpComingSoon";
+import HelpMatchDetail from "../helpCenter/categories/HelpMatchDetail";
+import HelpMatchGenerated from "../helpCenter/categories/HelpMatchGenerated";
 
 
 export const categories = [
