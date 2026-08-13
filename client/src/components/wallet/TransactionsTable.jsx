@@ -7,6 +7,9 @@ import {
     Typography,
     Tooltip,
     Grid,
+    Card,
+    Empty,
+    Spin,
 } from "antd";
 import dayjs from "dayjs";
 import RefundAdjustModal from "../modals/RefundAdjustModal";
@@ -19,14 +22,12 @@ import {
 import ExportToExcel from "../common/ExportExcel";
 
 const TransactionsTable = ({
-    transactions,
-    isMobile,
-    loading,
-    isAdmin,
+    transactions = [],
+    loading = false,
+    isAdmin = false,
     refresh,
 }) => {
     const { Text, Title } = Typography;
-
     const { useBreakpoint } = Grid;
     const screens = useBreakpoint();
 
@@ -52,7 +53,9 @@ const TransactionsTable = ({
             transactions.map((t) => [
                 t?.user?._id,
                 {
-                    text: `${t?.user?.name} ${t?.user?.lastname}`,
+                    text: `${t?.user?.name ?? ""} ${
+                        t?.user?.lastname ?? ""
+                    }`,
                     value: t?.user?._id,
                 },
             ])
@@ -60,7 +63,7 @@ const TransactionsTable = ({
     );
 
     // --------------------------------------------------
-    // SEARCH BY USER
+    // SEARCH - ADMIN ONLY
     // --------------------------------------------------
 
     const filteredTransactions = useMemo(() => {
@@ -82,7 +85,7 @@ const TransactionsTable = ({
     }, [transactions, searchUser]);
 
     // --------------------------------------------------
-    // OPEN REFUND / ADJUST
+    // REFUND / ADJUST - ADMIN ONLY
     // --------------------------------------------------
 
     const handleRefundAdjust = (transaction) => {
@@ -114,17 +117,13 @@ const TransactionsTable = ({
             key: "user",
             width: 150,
             hidden: !isAdmin,
-            render: (p) => (
+            render: (transaction) => (
                 <Text
                     type="secondary"
-                    style={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "block",
-                    }}
+                    ellipsis
                 >
-                    {p?.user?.name} {p?.user?.lastname}
+                    {transaction?.user?.name}{" "}
+                    {transaction?.user?.lastname}
                 </Text>
             ),
             filterSearch: true,
@@ -139,7 +138,7 @@ const TransactionsTable = ({
             key: "type",
             render: (type) => (
                 <Tag color={typeColor[type]}>
-                    {type.toUpperCase()}
+                    {type?.replace("_", " ").toUpperCase()}
                 </Tag>
             ),
             filters: [
@@ -155,6 +154,10 @@ const TransactionsTable = ({
                     text: "Adjustment",
                     value: "adjustment",
                 },
+                {
+                    text: "Match Payment",
+                    value: "match_payment",
+                },
             ],
             onFilter: (val, record) =>
                 record.type === val,
@@ -165,9 +168,9 @@ const TransactionsTable = ({
             dataIndex: "amount",
             key: "amount",
             align: "right",
-            render: (amt) => (
+            render: (amount) => (
                 <Text strong>
-                    €{amt.toFixed(2)}
+                    €{Number(amount ?? 0).toFixed(2)}
                 </Text>
             ),
             sorter: (a, b) =>
@@ -178,9 +181,9 @@ const TransactionsTable = ({
             title: "Status",
             dataIndex: "status",
             key: "status",
-            render: (s) => (
-                <Tag color={statusColor[s]}>
-                    {s}
+            render: (status) => (
+                <Tag color={statusColor[status]}>
+                    {status}
                 </Tag>
             ),
             filters: [
@@ -205,13 +208,13 @@ const TransactionsTable = ({
             title: "Method",
             dataIndex: "method",
             key: "method",
+            render: (method) => method || "-",
         },
 
         {
             title: "Note",
             dataIndex: "note",
             key: "note",
-            align: "right",
             render: (note) =>
                 note || (
                     <Text type="secondary">
@@ -230,9 +233,7 @@ const TransactionsTable = ({
                     size="small"
                     type="primary"
                     onClick={() =>
-                        handleRefundAdjust(
-                            transaction
-                        )
+                        handleRefundAdjust(transaction)
                     }
                 >
                     Refund / Adjust
@@ -242,32 +243,41 @@ const TransactionsTable = ({
     ];
 
     // --------------------------------------------------
-    // MOBILE COLUMNS
-    // ONE COLUMN / CARD PER TRANSACTION
+    // MOBILE TRANSACTION CARD
     // --------------------------------------------------
 
-    const mobileColumns = [
-        {
-            title: "Transaction",
-            key: "transaction-mobile",
-            render: (transaction) => (
+    const MobileTransaction = ({ transaction }) => {
+        const amount = Number(
+            transaction?.amount ?? 0
+        );
+
+        return (
+            <Card
+                size="small"
+                style={{
+                    width: "100%",
+                    marginBottom: 10,
+                }}
+                styles={{
+                    body: {
+                        padding: 14,
+                    },
+                }}
+            >
                 <Flex
                     vertical
-                    gap={10}
-                    style={{
-                        width: "100%",
-                    }}
+                    gap={12}
                 >
-                    {/* USER + AMOUNT */}
+                    {/* TOP */}
 
                     <Flex
                         justify="space-between"
-                        align="center"
-                        gap={8}
+                        align="flex-start"
+                        gap={12}
                     >
                         <Flex
                             vertical
-                            gap={2}
+                            gap={4}
                             style={{
                                 minWidth: 0,
                                 flex: 1,
@@ -276,14 +286,7 @@ const TransactionsTable = ({
                             {isAdmin && (
                                 <Text
                                     strong
-                                    style={{
-                                        overflow:
-                                            "hidden",
-                                        textOverflow:
-                                            "ellipsis",
-                                        whiteSpace:
-                                            "nowrap",
-                                    }}
+                                    ellipsis
                                 >
                                     {
                                         transaction
@@ -305,9 +308,9 @@ const TransactionsTable = ({
                                 }}
                             >
                                 {dayjs(
-                                    transaction.createdAt
+                                    transaction?.createdAt
                                 ).format(
-                                    "DD/MM/YYYY HH:mm"
+                                    "DD/MM/YYYY · HH:mm"
                                 )}
                             </Text>
                         </Flex>
@@ -315,43 +318,45 @@ const TransactionsTable = ({
                         <Text
                             strong
                             style={{
-                                fontSize: 16,
-                                whiteSpace: "nowrap",
+                                fontSize: 17,
+                                whiteSpace:
+                                    "nowrap",
                             }}
                         >
                             €
-                            {transaction.amount.toFixed(
-                                2
-                            )}
+                            {amount.toFixed(2)}
                         </Text>
                     </Flex>
 
-                    {/* TYPE + STATUS */}
+                    {/* TYPE / STATUS */}
 
                     <Flex
-                        justify="space-between"
-                        align="center"
+                        gap={6}
                         wrap="wrap"
-                        gap={8}
                     >
                         <Tag
                             color={
                                 typeColor[
-                                    transaction.type
+                                    transaction?.type
                                 ]
                             }
                         >
-                            {transaction.type.toUpperCase()}
+                            {transaction?.type
+                                ?.replace(
+                                    "_",
+                                    " "
+                                )
+                                .toUpperCase()}
                         </Tag>
 
                         <Tag
                             color={
                                 statusColor[
-                                    transaction.status
+                                    transaction?.status
                                 ]
                             }
                         >
-                            {transaction.status}
+                            {transaction?.status}
                         </Tag>
                     </Flex>
 
@@ -360,7 +365,7 @@ const TransactionsTable = ({
                     <Flex
                         justify="space-between"
                         align="center"
-                        gap={8}
+                        gap={12}
                     >
                         <Text
                             type="secondary"
@@ -371,79 +376,124 @@ const TransactionsTable = ({
                             Method
                         </Text>
 
-                        <Text>
-                            {transaction.method ||
+                        <Text
+                            style={{
+                                textAlign: "right",
+                            }}
+                        >
+                            {transaction?.method ||
                                 "-"}
                         </Text>
                     </Flex>
 
                     {/* NOTE */}
 
-                    <Flex
-                        vertical
-                        gap={2}
-                    >
-                        <Text
-                            type="secondary"
-                            style={{
-                                fontSize: 12,
-                                fontWeight: 600,
-                            }}
-                        >
-                            Note
-                        </Text>
-
-                        <Text>
-                            {transaction.note ||
-                                "-"}
-                        </Text>
-                    </Flex>
-
-                    {/* REFUND / ADJUST */}
-
-                    {isAdmin && (
+                    {transaction?.note && (
                         <Flex
-                            justify="flex-end"
-                            style={{
-                                marginTop: 2,
-                            }}
+                            vertical
+                            gap={3}
                         >
-                            <Button
-                                size="small"
-                                type="primary"
-                                onClick={() =>
-                                    handleRefundAdjust(
-                                        transaction
-                                    )
-                                }
+                            <Text
+                                type="secondary"
+                                style={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                }}
                             >
-                                Refund / Adjust
-                            </Button>
+                                Note
+                            </Text>
+
+                            <Text
+                                style={{
+                                    wordBreak:
+                                        "break-word",
+                                }}
+                            >
+                                {transaction.note}
+                            </Text>
                         </Flex>
                     )}
-                </Flex>
-            ),
-        },
-    ];
 
-    const columns = screens.xs
-        ? mobileColumns
-        : desktopColumns;
+                    {/* ADMIN ACTION */}
+
+                    {isAdmin && (
+                        <Button
+                            block
+                            size="small"
+                            type="primary"
+                            onClick={() =>
+                                handleRefundAdjust(
+                                    transaction
+                                )
+                            }
+                        >
+                            Refund / Adjust
+                        </Button>
+                    )}
+                </Flex>
+            </Card>
+        );
+    };
+
+    // --------------------------------------------------
+    // MOBILE CONTENT
+    // --------------------------------------------------
+
+    const mobileContent = (
+        <Flex
+            vertical
+            style={{
+                width: "100%",
+            }}
+        >
+            {loading ? (
+                <Flex
+                    justify="center"
+                    align="center"
+                    style={{
+                        minHeight: 220,
+                    }}
+                >
+                    <Spin size="large" />
+                </Flex>
+            ) : filteredTransactions.length ===
+              0 ? (
+                <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="No transactions found"
+                    style={{
+                        padding: "32px 0",
+                    }}
+                />
+            ) : (
+                filteredTransactions.map(
+                    (transaction) => (
+                        <MobileTransaction
+                            key={transaction._id}
+                            transaction={transaction}
+                        />
+                    )
+                )
+            )}
+        </Flex>
+    );
+
+    // --------------------------------------------------
+    // HEADER
+    // --------------------------------------------------
 
     return (
         <>
-            {/* --------------------------------------------------
-                HEADER
-            -------------------------------------------------- */}
-
             <Flex
-                vertical={screens.xs}
-                gap={10}
+                vertical
+                gap={12}
                 style={{
                     width: "100%",
-                    marginBottom: 12,
+                    marginBottom: 14,
                 }}
             >
+                {/* TITLE */}
+
                 <Flex
                     justify="space-between"
                     align="center"
@@ -455,21 +505,52 @@ const TransactionsTable = ({
                             margin: 0,
                         }}
                     >
-                        Transactions:{" "}
-                        {filteredTransactions?.length}
+                        Transactions{" "}
+                        {!loading &&
+                            `: ${filteredTransactions.length}`}
                     </Title>
 
-                    {isAdmin && (
-                        <Tooltip title="Refund or adjust transactions">
-                            <InfoCircleOutlined
-                                style={{
-                                    cursor: "pointer",
-                                    opacity: 0.7,
-                                }}
-                            />
-                        </Tooltip>
-                    )}
+                    <Flex
+                        align="center"
+                        gap={6}
+                    >
+                        {isAdmin && (
+                            <Tooltip
+                                title="Refund or adjust transactions"
+                            >
+                                <InfoCircleOutlined
+                                    style={{
+                                        cursor:
+                                            "pointer",
+                                        opacity: 0.7,
+                                    }}
+                                />
+                            </Tooltip>
+                        )}
+
+                        {typeof refresh ===
+                            "function" && (
+                            <Tooltip title="Refresh transactions">
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    icon={
+                                        <ReloadOutlined />
+                                    }
+                                    loading={
+                                        loading
+                                    }
+                                    onClick={
+                                        refresh
+                                    }
+                                    aria-label="Refresh transactions"
+                                />
+                            </Tooltip>
+                        )}
+                    </Flex>
                 </Flex>
+
+                {/* ADMIN SEARCH */}
 
                 {isAdmin && (
                     <Input
@@ -486,93 +567,55 @@ const TransactionsTable = ({
                         }
                         style={{
                             width: "100%",
-                            maxWidth: 320,
+                            maxWidth: screens.sm
+                                ? 320
+                                : undefined,
                         }}
                     />
                 )}
-            </Flex>
 
-            {/* --------------------------------------------------
-                EXPORT
-            -------------------------------------------------- */}
+                {/* EXPORT */}
 
-            <div
-                style={{
-                    marginBottom: 12,
-                }}
-            >
-                <ExportToExcel
-                    fileName="transactions.xlsx"
-                    data={filteredTransactions}
-                />
-            </div>
-
-            {/* --------------------------------------------------
-                TABLE HEADER
-            -------------------------------------------------- */}
-
-            <Flex
-                justify="space-between"
-                align="center"
-                style={{
-                    width: "100%",
-                    marginBottom: 8,
-                }}
-            >
-                <Text
-                    type="secondary"
-                    style={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                    }}
+                <Flex
+                    justify={
+                        screens.xs
+                            ? "stretch"
+                            : "flex-start"
+                    }
                 >
-                    Transactions
-                </Text>
-
-                <Tooltip title="Refresh transactions">
-                    <Button
-                        type="text"
-                        size="small"
-                        icon={
-                            <ReloadOutlined
-                                spin={loading}
-                            />
+                    <ExportToExcel
+                        fileName="transactions.xlsx"
+                        data={
+                            filteredTransactions
                         }
-                        loading={loading}
-                        onClick={refresh}
-                        aria-label="Refresh transactions"
                     />
-                </Tooltip>
+                </Flex>
             </Flex>
 
-            {/* --------------------------------------------------
-                TABLE
-            -------------------------------------------------- */}
+            {/* CONTENT */}
 
-            <Table
-                rowKey="_id"
-                columns={columns}
-                dataSource={filteredTransactions}
-                pagination={{
-                    pageSize: 6,
-                }}
-                loading={loading}
-                scroll={
-                    screens.xs
-                        ? undefined
-                        : { x: 1000 }
-                }
-                showHeader={!screens.xs}
-                tableLayout={
-                    screens.xs
-                        ? "fixed"
-                        : "auto"
-                }
-            />
+            {screens.xs ? (
+                mobileContent
+            ) : (
+                <Table
+                    rowKey="_id"
+                    columns={desktopColumns}
+                    dataSource={
+                        filteredTransactions
+                    }
+                    pagination={{
+                        pageSize: 8,
+                        showSizeChanger: false,
+                    }}
+                    loading={loading}
+                    scroll={{
+                        x: 1000,
+                    }}
+                    tableLayout="auto"
+                />
+            )}
 
-            {/* --------------------------------------------------
-                REFUND / ADJUST MODAL
-            -------------------------------------------------- */}
+            {/* MODAL */}
 
             <RefundAdjustModal
                 user={user}

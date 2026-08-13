@@ -101,3 +101,34 @@ export const useAllTransactions = () =>{
    
 }
 
+export const useWalletBalance = () => {
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [loadWallet, setLoadWallet] = useState(false);
+
+    const fetchWalletBalance = async () => {
+        try {
+            setLoadWallet(true);
+
+            const { data } = await axiosInstance.get("/profile/wallet-balance");
+
+            setWalletBalance(data.walletBalance ?? data.balance ?? 0);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoadWallet(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchWalletBalance();
+    }, []);
+
+    return {
+        walletBalance,
+        loadWallet,
+        fetchWalletBalance,
+        setWalletBalance,
+        setLoadWallet,
+    };
+};
+
