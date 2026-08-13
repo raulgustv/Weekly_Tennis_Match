@@ -267,3 +267,20 @@ export const uploadProfilePicture = async (req, res) => {
         })
     }
 }
+
+export const getTotalFunds = async(req, res) =>{
+    try {
+        const userId = req.user._id
+
+        const walletBalance = await User.findById(userId).select("walletBalance")
+
+        return res.status(200).json(walletBalance)
+
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({
+                ok: false,
+                message: 'Internal error refunding/adjusting user'
+        })
+    }
+}
