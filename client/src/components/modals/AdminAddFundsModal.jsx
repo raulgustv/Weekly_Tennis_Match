@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import { PlusCircleOutlined } from "@ant-design/icons";
 import { paymentMethods } from "../utils/paymentMethods";
 import { addFundsUserWallet } from "../../actions/wallet";
+import { useWalletBalance } from "../../hooks/useTransactions";
 
 const quickAmounts = [5, 10, 20, 50];
 
@@ -20,6 +21,8 @@ const AdminAddFundsModal = ({ openModal, setOpenModal, id, name }) => {
     const [form] = Form.useForm();
 
     const amount = Form.useWatch("amount", form);
+
+     const {fetchWalletBalance} = useWalletBalance();
 
     const handleClose = () => {
         form.resetFields();
@@ -34,11 +37,16 @@ const AdminAddFundsModal = ({ openModal, setOpenModal, id, name }) => {
                 `Funds added successfully: ${res?.data?.transaction?.amount}€`
             );
 
+            fetchWalletBalance()
+
             handleClose();
         } catch (error) {
             toast.error("There was an error adding funds");
         }
     };
+
+    
+   
 
     return (
         <Modal

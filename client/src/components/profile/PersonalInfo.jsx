@@ -24,7 +24,7 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange, addFundsBu
 
     const resetCooldown = useCountdown({
         duration: total_cooldown
-    })
+    })    
 
     //console.log(user)
 
@@ -49,8 +49,6 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange, addFundsBu
     const addFunds = () => {
         setOpenFundModal(true)
     }
-
-
 
     return (
         <>
@@ -174,7 +172,7 @@ const PersonalInfo = ({ user, handleSendReset = null, passwordChange, addFundsBu
                 </Descriptions.Item>
             </Descriptions>
 
-            <AdminAddFundsModal openModal={openFundModal} setOpenModal={setOpenFundModal} id={user?._id} name={user?.name} />
+            <AdminAddFundsModal openModal={openFundModal} setOpenModal={setOpenFundModal} id={user?._id} name={user?.name}  />
         </>
     )
 }
