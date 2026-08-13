@@ -271,16 +271,10 @@ export const togglePaymentStatus = async(req, res) =>{
         }
 
         const player = match?.players[0];
-        const paymentMethod = player.payment.method || "unknown";
-        const amount = player.payment.amount;
-
-         const formattedDate = new Date(match.date).toLocaleDateString("es-ES");     
-
         const currentStatus = player.payment.status;
+        const newStatus = currentStatus === "paid" ? "unpaid" : "paid";
 
-        const newStatus = currentStatus === "paid" ? "unpaid" : "paid"
-
-        //update atómico
+        // update atómico — solo cambia el status, nada de wallet
         const updatedMatch = await Match.findOneAndUpdate(
             {_id: matchId, "players.user": userId},
             {
@@ -289,47 +283,6 @@ export const togglePaymentStatus = async(req, res) =>{
                 }
             }, {new: true}
         )
-
-         if (newStatus === "paid"){        
-
-            const existingTx = await WalletTransaction.findOne({
-                user: userId,
-                match: matchId,
-                type: "match_payment"
-            });
-
-            if (!existingTx) {
-
-                //actualizar transactions
-                    const newTransaction = new WalletTransaction({
-                    user: userId,
-                    amount,
-                    type: 'match_payment',
-                    status: 'confirmed',
-                    method: paymentMethod,
-                    assignedAdmin: req.user._id,
-                    reviewedBy: req.user._id,
-                    reviewedAt: new Date(),
-                    note: `Match join on ${formattedDate}`,
-                    match: match._id
-
-                });
-
-                await newTransaction.save();
-            }
-         }
-
-         if (newStatus === "unpaid") {
-
-        await WalletTransaction.findOneAndDelete({
-            user: userId,
-            match: matchId,
-            type: "match_payment"
-        });
-
-}
-
-        
 
         return res.status(200).json({
             message: "Payment status updated",
@@ -344,7 +297,6 @@ export const togglePaymentStatus = async(req, res) =>{
         })
     }
 }
-
 export const getAdmins = async(req, res) =>{
     try {
 
