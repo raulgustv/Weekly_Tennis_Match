@@ -465,8 +465,6 @@ export const userNotes = async(req, res) =>{
     }
 }
 
-
-
 export const suspendUser = async(req, res) =>{
     try {
 
@@ -510,10 +508,3 @@ export const suspendUser = async(req, res) =>{
         })
     }
 }
-
-
-
-
-
-
-
