@@ -143,7 +143,7 @@ const AdminAddFundsModal = ({ openModal, setOpenModal, id, name }) => {
                     ]}
                 >
                     <Radio.Group style={{ width: "100%" }}>
-                        <Space direction="vertical">
+                        <Space orientation="vertical">
                             {paymentMethods.map((mtd) => (
                                 <Radio
                                     key={mtd.value}

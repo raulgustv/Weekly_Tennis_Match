@@ -10,6 +10,7 @@ import {
     Grid,
     Tooltip
 } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import { useCountries } from "../../hooks/useCountries";
 import { useMemo, useState } from "react";
 import { togglePlayerActive, toggleUserRole } from "../../actions/admin";
@@ -25,7 +26,6 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
     const screens = useBreakpoint();
 
     const { countries } = useCountries();
-
 
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -52,14 +52,15 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
         });
     }, [players, countriesMap]);
 
-    // Filtro de búsqueda por nombre y apellido (funciona igual en desktop y mobile,
-    // ya que filtra el dataSource antes de llegar a la tabla)
+    // Filtro de búsqueda por nombre y apellido
     const filteredPlayers = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
         if (!term) return playersWithCountry;
 
         return playersWithCountry.filter((p) =>
-            `${p?.name ?? ""} ${p?.lastname ?? ""}`.toLowerCase().includes(term)
+            `${p?.name ?? ""} ${p?.lastname ?? ""}`
+                .toLowerCase()
+                .includes(term)
         );
     }, [playersWithCountry, searchTerm]);
 
@@ -68,30 +69,46 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             const res = await togglePlayerActive(id);
             const { user, active } = res;
 
-            if (!user) return toast.error('User was not found');
+            if (!user) return toast.error("User was not found");
 
-            toast.success(`${user?.name} ${user?.lastname} has been ${active ? 'activated' : 'de-activated'}`);
+            toast.success(
+                `${user?.name} ${user?.lastname} has been ${
+                    active ? "activated" : "de-activated"
+                }`
+            );
+
             fetchPlayers();
 
         } catch (error) {
             console.log(error);
-            toast.error( error?.response?.data?.message ||'There was an issue toggling player account')
+            toast.error(
+                error?.response?.data?.message ||
+                "There was an issue toggling player account"
+            );
         }
     };
 
     const toggleAdminRole = async (id) => {
         try {
             const res = await toggleUserRole(id);
-            toast.success(`User successfully changed role to ${res?.user?.role}`);
+
+            toast.success(
+                `User successfully changed role to ${res?.user?.role}`
+            );
+
             fetchPlayers();
+
         } catch (error) {
             console.log(error);
-            toast.error(error?.response?.data?.message || 'There was an issue toggling user status');
+            toast.error(
+                error?.response?.data?.message ||
+                "There was an issue toggling user status"
+            );
         }
     };
 
     // ------------------------------------------------------------------
-    // DESKTOP COLUMNS (comportamiento original, sin cambios de lógica)
+    // DESKTOP COLUMNS
     // ------------------------------------------------------------------
     const desktopColumns = [
         {
@@ -158,8 +175,11 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             filterSearch: true,
             onFilter: (value, record) => record?._id === value,
             sorter: (a, b) => {
-                const nameA = `${a?.name} ${a?.lastname}`.toLowerCase();
-                const nameB = `${b?.name} ${b?.lastname}`.toLowerCase();
+                const nameA =
+                    `${a?.name} ${a?.lastname}`.toLowerCase();
+                const nameB =
+                    `${b?.name} ${b?.lastname}`.toLowerCase();
+
                 return nameA.localeCompare(nameB);
             },
             sortDirections: ["ascend", "descend"],
@@ -180,6 +200,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             render: (p) => (
                 <Flex justify="space-between" align="center" gap="small">
                     <span>{p?.country}</span>
+
                     <Image
                         preview={false}
                         width={25}
@@ -195,6 +216,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             render: (p) => (
                 <Flex justify="center" align="center" gap="middle">
                     <span>{p?.ntrplvl.toFixed(1)}</span>
+
                     <Button
                         size="small"
                         type="primary"
@@ -210,8 +232,16 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             key: "active",
             render: (p) => (
                 <Popconfirm
-                    title={p?.isActive ? "Deactivate player?" : 'Activate player?'}
-                    description={p?.isActive ? "This player will no longer be active" : "This player will be activated"}
+                    title={
+                        p?.isActive
+                            ? "Deactivate player?"
+                            : "Activate player?"
+                    }
+                    description={
+                        p?.isActive
+                            ? "This player will no longer be active"
+                            : "This player will be activated"
+                    }
                     okText="Yes"
                     cancelText="No"
                     onConfirm={() => toggleActivation(p?._id)}
@@ -223,11 +253,18 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             )
         },
         {
-            title: 'Role',
-            key: 'role',
+            title: "Role",
+            key: "role",
             render: (p) => (
-                <Flex align="center" gap="small" style={{ width: "100%" }}>
-                    <Text type="secondary" style={{ whiteSpace: "nowrap" }}>
+                <Flex
+                    align="center"
+                    gap="small"
+                    style={{ width: "100%" }}
+                >
+                    <Text
+                        type="secondary"
+                        style={{ whiteSpace: "nowrap" }}
+                    >
                         {p?.role}
                     </Text>
 
@@ -244,7 +281,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
     ];
 
     // ------------------------------------------------------------------
-    // MOBILE COLUMNS: una sola columna "card" que agrupa todo
+    // MOBILE COLUMNS
     // ------------------------------------------------------------------
     const mobileColumns = [
         {
@@ -252,12 +289,19 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             key: "player-mobile",
             render: (p) => (
                 <Flex vertical gap={8} style={{ width: "100%" }}>
-                    {/* Header: foto + nombre + botón view */}
-                    <Flex align="center" justify="space-between" gap={8}>
+
+                    <Flex
+                        align="center"
+                        justify="space-between"
+                        gap={8}
+                    >
                         <Flex
                             align="center"
                             gap={8}
-                            style={{ minWidth: 0, cursor: "pointer" }}
+                            style={{
+                                minWidth: 0,
+                                cursor: "pointer"
+                            }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(`/admin/player/${p._id}`);
@@ -269,6 +313,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                                 size={32}
                                 editable={false}
                             />
+
                             <span
                                 style={{
                                     fontWeight: 600,
@@ -292,18 +337,28 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                         </Button>
                     </Flex>
 
-                    {/* Email + phone */}
                     <Flex vertical gap={0}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
+                        <Text
+                            type="secondary"
+                            style={{ fontSize: 12 }}
+                        >
                             {p?.email}
                         </Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
+
+                        <Text
+                            type="secondary"
+                            style={{ fontSize: 12 }}
+                        >
                             {p?.phone}
                         </Text>
                     </Flex>
 
-                    {/* País + NTRP (con Adjust) */}
-                    <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
+                    <Flex
+                        justify="space-between"
+                        align="center"
+                        wrap="wrap"
+                        gap={8}
+                    >
                         <Flex align="center" gap={6}>
                             <Image
                                 preview={false}
@@ -311,29 +366,49 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                                 alt={`${p?.country} flag`}
                                 src={p?.countryFlag}
                             />
+
                             <span>{p?.country}</span>
                         </Flex>
 
                         <Flex align="center" gap={6}>
-                            <span>NTRP {p?.ntrplvl.toFixed(1)}</span>
+                            <span>
+                                NTRP {p?.ntrplvl.toFixed(1)}
+                            </span>
+
                             <Button
                                 size="small"
                                 type="primary"
-                                onClick={() => setSelectedPlayer(p)}
+                                onClick={() =>
+                                    setSelectedPlayer(p)
+                                }
                             >
                                 Adjust
                             </Button>
                         </Flex>
                     </Flex>
 
-                    {/* Active + Role */}
-                    <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
+                    <Flex
+                        justify="space-between"
+                        align="center"
+                        wrap="wrap"
+                        gap={8}
+                    >
                         <Popconfirm
-                            title={p?.isActive ? "Deactivate player?" : 'Activate player?'}
-                            description={p?.isActive ? "This player will no longer be active" : "This player will be activated"}
+                            title={
+                                p?.isActive
+                                    ? "Deactivate player?"
+                                    : "Activate player?"
+                            }
+                            description={
+                                p?.isActive
+                                    ? "This player will no longer be active"
+                                    : "This player will be activated"
+                            }
                             okText="Yes"
                             cancelText="No"
-                            onConfirm={() => toggleActivation(p?._id)}
+                            onConfirm={() =>
+                                toggleActivation(p?._id)
+                            }
                         >
                             <Checkbox checked={p?.isActive}>
                                 Active
@@ -341,33 +416,54 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                         </Popconfirm>
 
                         <Flex align="center" gap={6}>
-                            <Text type="secondary" style={{ whiteSpace: "nowrap" }}>
+                            <Text
+                                type="secondary"
+                                style={{
+                                    whiteSpace: "nowrap"
+                                }}
+                            >
                                 {p?.role}
                             </Text>
+
                             <Button
                                 size="small"
-                                onClick={() => toggleAdminRole(p?._id)}
+                                onClick={() =>
+                                    toggleAdminRole(p?._id)
+                                }
                             >
                                 Toggle role
                             </Button>
                         </Flex>
                     </Flex>
+
                 </Flex>
             )
         }
     ];
 
-    const columns = screens.xs ? mobileColumns : desktopColumns;
+    const columns = screens.xs
+        ? mobileColumns
+        : desktopColumns;
 
     return (
         <>
-            <Flex gap={12} wrap="wrap" align="center" style={{ marginBottom: 12 }}>
+            <Flex
+                gap={12}
+                wrap="wrap"
+                align="center"
+                style={{ marginBottom: 12 }}
+            >
                 <Input.Search
                     placeholder="Buscar jugador por nombre o apellido"
                     allowClear
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ maxWidth: 320, width: "100%" }}
+                    onChange={(e) =>
+                        setSearchTerm(e.target.value)
+                    }
+                    style={{
+                        maxWidth: 320,
+                        width: "100%"
+                    }}
                 />
 
                 <ExportToExcel
@@ -376,14 +472,53 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                 />
             </Flex>
 
+            {/* Table header / refresh */}
+            <Flex
+                justify="space-between"
+                align="center"
+                style={{
+                    width: "100%",
+                    marginBottom: 8,
+                }}
+            >
+                <Text
+                    type="secondary"
+                    style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                    }}
+                >
+                    Players
+                </Text>
+
+                <Tooltip title="Refresh players">
+                    <Button
+                        type="text"
+                        size="small"
+                        icon={
+                            <ReloadOutlined spin={loading} />
+                        }
+                        loading={loading}
+                        onClick={fetchPlayers}
+                        aria-label="Refresh players"
+                    />
+                </Tooltip>
+            </Flex>
+
             <Table
                 dataSource={filteredPlayers}
                 columns={columns}
                 loading={loading}
                 rowKey="_id"
-                scroll={screens.xs ? undefined : { x: "max-content" }}
+                scroll={
+                    screens.xs
+                        ? undefined
+                        : { x: "max-content" }
+                }
                 showHeader={!screens.xs}
-                tableLayout={screens.xs ? "fixed" : "auto"}
+                tableLayout={
+                    screens.xs ? "fixed" : "auto"
+                }
             />
 
             <NTRPModal

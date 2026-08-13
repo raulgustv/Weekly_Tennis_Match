@@ -10,6 +10,7 @@ import {
     Typography,
     Grid,
 } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import { useMatches } from "../../context/MatchContext";
 import dayjs from "dayjs";
 import {
@@ -37,24 +38,23 @@ const MatchesTable = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMatch, setSelectedMatch] = useState(null);
-    const [openMessageModal, setOpenMessageModal] = useState(false)
+    const [openMessageModal, setOpenMessageModal] = useState(false);
     const [filterDate, setFilterDate] = useState(null);
 
-    // Orden por defecto: más reciente primero. El sorter de la columna
-    // "Date" en desktop sigue funcionando igual (permite alternar asc/desc),
-    // esto solo define el orden inicial, necesario porque en mobile no
-    // existe la columna "Date" de la que depende defaultSortOrder.
+    // Orden por defecto: más reciente primero
     const sortedMatches = useMemo(() => {
         return [...matches].sort(
             (a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
         );
     }, [matches]);
 
-    // Filtro por fecha exacta (sin hora). Funciona igual en desktop y mobile,
-    // ya que filtra el dataSource antes de llegar a la tabla.
+    // Filtro por fecha exacta
     const displayedMatches = useMemo(() => {
         if (!filterDate) return sortedMatches;
-        return sortedMatches.filter((m) => dayjs(m.date).isSame(filterDate, "day"));
+
+        return sortedMatches.filter((m) =>
+            dayjs(m.date).isSame(filterDate, "day")
+        );
     }, [sortedMatches, filterDate]);
 
     const statusOptions = [
@@ -86,7 +86,7 @@ const MatchesTable = () => {
         try {
             await generateMatch(id);
             toast.success("Match successfully generated");
-            fetchMatches()
+            fetchMatches();
         } catch (error) {
             toast.error("Error generating match");
         }
@@ -104,7 +104,11 @@ const MatchesTable = () => {
 
     const handleRemoveCourt = async (matchId, courtNumber) => {
         try {
-            const { removedCourt } = await removeMatchCourt(matchId, courtNumber);
+            const { removedCourt } = await removeMatchCourt(
+                matchId,
+                courtNumber
+            );
+
             toast.success(`Court #${removedCourt} removed`);
             fetchMatches();
         } catch (error) {
@@ -116,7 +120,6 @@ const MatchesTable = () => {
     /* ADD COURTS FLOW                                    */
     /* -------------------------------------------------- */
 
-
     const openAddCourts = (match) => {
         setSelectedMatch(match);
         setIsModalOpen(true);
@@ -124,10 +127,12 @@ const MatchesTable = () => {
 
     const handleAddCourts = async (courts) => {
         try {
+            const { message } = await addMatchCourts(
+                courts,
+                selectedMatch?._id
+            );
 
-            const {message} = await addMatchCourts(courts, selectedMatch?._id)
-
-            toast.success(message)
+            toast.success(message);
 
             setIsModalOpen(false);
             setSelectedMatch(null);
@@ -137,30 +142,34 @@ const MatchesTable = () => {
         }
     };
 
-
-    //export to excel
+    // Export to Excel
     const flattenMatchesForExcel = (matches) => {
-    return matches.map((m) => ({
-        Date: dayjs(m.date).format("DD/MM/YYYY"),
-        StartTime: m.startTime,
-        EndTime: m.endTime,
-        Location: m?.location?.name || "",
-        Address: m?.location?.address || "",
-        Status: m.status,
-        Courts: m.courts?.map((c) => `Court ${c.courtNumber}`).join(", "),
-        Players: m.players
-            ?.map((p) => `${p.user?.name} ${p.user?.lastname}`)
-            .join(", "),
-        PlayersCount: m.players?.length || 0,
-        CreatedBy: m.createdBy
-            ? `${m.createdBy.name} ${m.createdBy.lastname}`
-            : "",
-        Price: m.price,
-    }));
-};
+        return matches.map((m) => ({
+            Date: dayjs(m.date).format("DD/MM/YYYY"),
+            StartTime: m.startTime,
+            EndTime: m.endTime,
+            Location: m?.location?.name || "",
+            Address: m?.location?.address || "",
+            Status: m.status,
+            Courts: m.courts
+                ?.map((c) => `Court ${c.courtNumber}`)
+                .join(", "),
+            Players: m.players
+                ?.map(
+                    (p) =>
+                        `${p.user?.name} ${p.user?.lastname}`
+                )
+                .join(", "),
+            PlayersCount: m.players?.length || 0,
+            CreatedBy: m.createdBy
+                ? `${m.createdBy.name} ${m.createdBy.lastname}`
+                : "",
+            Price: m.price,
+        }));
+    };
 
     /* -------------------------------------------------- */
-    /* DESKTOP COLUMNS (comportamiento original, sin cambios de lógica) */
+    /* DESKTOP COLUMNS                                    */
     /* -------------------------------------------------- */
 
     const desktopColumns = [
@@ -168,21 +177,34 @@ const MatchesTable = () => {
             title: "Date",
             key: "date",
             render: (m) => dayjs(m.date).format("DD/MM/YYYY"),
-            sorter: (a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf(),
+            sorter: (a, b) =>
+                dayjs(a.date).valueOf() - dayjs(b.date).valueOf(),
             defaultSortOrder: "descend",
         },
         {
             title: "Days until match",
             key: "daysToMatch",
             render: (m) => {
-                if (!m?.date || !m?.startTime || m.status === "Cancelled") return "N/A";
+                if (
+                    !m?.date ||
+                    !m?.startTime ||
+                    m.status === "Cancelled"
+                ) {
+                    return "N/A";
+                }
 
                 const [h, min] = m.startTime.split(":");
+
                 const target = dayjs(m.date)
                     .hour(Number(h))
                     .minute(Number(min));
 
-                if (!target.isValid() || target.valueOf() <= Date.now()) return "N/A";
+                if (
+                    !target.isValid() ||
+                    target.valueOf() <= Date.now()
+                ) {
+                    return "N/A";
+                }
 
                 return (
                     <Timer
@@ -196,7 +218,8 @@ const MatchesTable = () => {
         {
             title: "Time",
             key: "time",
-            render: (m) => `${m.startTime} - ${m.endTime}`,
+            render: (m) =>
+                `${m.startTime} - ${m.endTime}`,
         },
         {
             title: "Location",
@@ -207,14 +230,22 @@ const MatchesTable = () => {
             title: "Status",
             key: "status",
             render: (m) =>
-                m.status === "Played" || m.status === "Closed" ? (
-                    <Tag color={statusColors[m.status]}>{m.status}</Tag>
+                m.status === "Played" ||
+                m.status === "Closed" ? (
+                    <Tag color={statusColors[m.status]}>
+                        {m.status}
+                    </Tag>
                 ) : (
                     <Select
                         size="small"
                         value={m.status}
                         options={statusOptions}
-                        onChange={(status) => handleStatusChange(m._id, status)}
+                        onChange={(status) =>
+                            handleStatusChange(
+                                m._id,
+                                status
+                            )
+                        }
                     />
                 ),
         },
@@ -222,24 +253,44 @@ const MatchesTable = () => {
             title: "Courts",
             key: "courts",
             render: (_, r) => (
-                <Flex gap="small" align="center" wrap>
+                <Flex
+                    gap="small"
+                    align="center"
+                    wrap
+                >
                     {r.courts.map((cn) => (
                         <Tag
                             key={cn.courtNumber}
-                            color={surfaceColors[cn?.surface]}
+                            color={
+                                surfaceColors[
+                                    cn?.surface
+                                ]
+                            }
                             closable={r.status === "Open"}
-                            onClose={() => handleRemoveCourt(r._id, cn.courtNumber)}
+                            onClose={() =>
+                                handleRemoveCourt(
+                                    r._id,
+                                    cn.courtNumber
+                                )
+                            }
                         >
                             Court {cn.courtNumber}
                         </Tag>
                     ))}
 
-                    {(r.status === "Open" || r.status === "Full") && (
+                    {(r.status === "Open" ||
+                        r.status === "Full") && (
                         <Tooltip title="Add courts">
                             <Tag
                                 color="cyan"
-                                style={{ cursor: "pointer", borderStyle: "dashed" }}
-                                onClick={() => openAddCourts(r)}
+                                style={{
+                                    cursor: "pointer",
+                                    borderStyle:
+                                        "dashed",
+                                }}
+                                onClick={() =>
+                                    openAddCourts(r)
+                                }
                             >
                                 + Add Courts
                             </Tag>
@@ -257,10 +308,19 @@ const MatchesTable = () => {
                         <Tag
                             key={p._id}
                             color="green"
-                            closable={r.status !== "Played" && r.status !== "Full"}
-                            onClose={() => handleRemovePlayer(r._id, p.user._id)}
+                            closable={
+                                r.status !== "Played" &&
+                                r.status !== "Full"
+                            }
+                            onClose={() =>
+                                handleRemovePlayer(
+                                    r._id,
+                                    p.user._id
+                                )
+                            }
                         >
-                            {p.user.name} {p.user.lastname}
+                            {p.user.name}{" "}
+                            {p.user.lastname}
                         </Tag>
                     ))}
                 </Flex>
@@ -270,11 +330,19 @@ const MatchesTable = () => {
             title: "Generate Match",
             key: "generateMatch",
             render: (r) =>
-                (r.status === "Open" || r.status === "Full") &&
+                (r.status === "Open" ||
+                    r.status === "Full") &&
                 r.players.length >= 4 && (
                     <Button
-                        style={{ backgroundColor: colors.yellow }}
-                        onClick={() => handleGenerateMatch(r._id)}
+                        style={{
+                            backgroundColor:
+                                colors.yellow,
+                        }}
+                        onClick={() =>
+                            handleGenerateMatch(
+                                r._id
+                            )
+                        }
                     >
                         Generate match
                     </Button>
@@ -284,13 +352,18 @@ const MatchesTable = () => {
             title: "Generate whatsapp message",
             key: "generateMessage",
             render: (r) =>
-                (r.status === "Open" || r.status === "Full") &&
-                (
+                (r.status === "Open" ||
+                    r.status === "Full") && (
                     <Button
-                        style={{ backgroundColor: colors.blue }}
+                        style={{
+                            backgroundColor:
+                                colors.blue,
+                        }}
                         onClick={() => {
-                            setOpenMessageModal(true)
-                            setSelectedMatch(r)
+                            setOpenMessageModal(
+                                true
+                            );
+                            setSelectedMatch(r);
                         }}
                     >
                         Generate message
@@ -300,8 +373,7 @@ const MatchesTable = () => {
     ];
 
     /* -------------------------------------------------- */
-    /* MOBILE COLUMNS: una sola columna "card" que agrupa todo   */
-    /* Prioriza Generate match / Generate message arriba          */
+    /* MOBILE COLUMNS                                    */
     /* -------------------------------------------------- */
 
     const mobileColumns = [
@@ -310,51 +382,116 @@ const MatchesTable = () => {
             key: "match-mobile",
             render: (r) => {
                 const canGenerateMatch =
-                    (r.status === "Open" || r.status === "Full") &&
+                    (r.status === "Open" ||
+                        r.status === "Full") &&
                     r.players.length >= 4;
 
                 const canGenerateMessage =
-                    r.status === "Open" || r.status === "Full";
+                    r.status === "Open" ||
+                    r.status === "Full";
 
                 return (
-                    <Flex vertical gap={10} style={{ width: "100%" }}>
-                        {/* Header: fecha + hora + status */}
-                        <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
-                            <Flex vertical gap={0}>
-                                <span style={{ fontWeight: 600 }}>
-                                    {dayjs(r.date).format("DD/MM/YYYY")}
+                    <Flex
+                        vertical
+                        gap={10}
+                        style={{
+                            width: "100%",
+                        }}
+                    >
+                        {/* Header */}
+                        <Flex
+                            justify="space-between"
+                            align="center"
+                            wrap="wrap"
+                            gap={8}
+                        >
+                            <Flex
+                                vertical
+                                gap={0}
+                            >
+                                <span
+                                    style={{
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    {dayjs(
+                                        r.date
+                                    ).format(
+                                        "DD/MM/YYYY"
+                                    )}
                                 </span>
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                    {r.startTime} - {r.endTime}
+
+                                <Text
+                                    type="secondary"
+                                    style={{
+                                        fontSize: 12,
+                                    }}
+                                >
+                                    {r.startTime} -{" "}
+                                    {r.endTime}
                                 </Text>
                             </Flex>
 
-                            {r.status === "Played" || r.status === "Closed" ? (
-                                <Tag color={statusColors[r.status]}>{r.status}</Tag>
+                            {r.status === "Played" ||
+                            r.status === "Closed" ? (
+                                <Tag
+                                    color={
+                                        statusColors[
+                                            r.status
+                                        ]
+                                    }
+                                >
+                                    {r.status}
+                                </Tag>
                             ) : (
                                 <Select
                                     size="small"
                                     value={r.status}
-                                    options={statusOptions}
-                                    onChange={(status) => handleStatusChange(r._id, status)}
-                                    style={{ minWidth: 100 }}
+                                    options={
+                                        statusOptions
+                                    }
+                                    onChange={(status) =>
+                                        handleStatusChange(
+                                            r._id,
+                                            status
+                                        )
+                                    }
+                                    style={{
+                                        minWidth: 100,
+                                    }}
                                 />
                             )}
                         </Flex>
 
                         {/* Location */}
-                        <Text type="secondary" style={{ fontSize: 12 }}>
+                        <Text
+                            type="secondary"
+                            style={{
+                                fontSize: 12,
+                            }}
+                        >
                             📍 {r?.location?.name}
                         </Text>
 
-                        {/* Acciones cruciales: generate match / message */}
-                        {(canGenerateMatch || canGenerateMessage) && (
-                            <Flex gap={8} wrap="wrap">
+                        {/* Actions */}
+                        {(canGenerateMatch ||
+                            canGenerateMessage) && (
+                            <Flex
+                                gap={8}
+                                wrap="wrap"
+                            >
                                 {canGenerateMatch && (
                                     <Button
                                         block
-                                        style={{ backgroundColor: colors.yellow }}
-                                        onClick={() => handleGenerateMatch(r._id)}
+                                        style={{
+                                            backgroundColor:
+                                                colors.yellow,
+                                        }}
+                                        onClick={() =>
+                                            handleGenerateMatch(
+                                                r._id
+                                            )
+                                        }
                                     >
                                         Generate match
                                     </Button>
@@ -363,10 +500,17 @@ const MatchesTable = () => {
                                 {canGenerateMessage && (
                                     <Button
                                         block
-                                        style={{ backgroundColor: colors.blue }}
+                                        style={{
+                                            backgroundColor:
+                                                colors.blue,
+                                        }}
                                         onClick={() => {
-                                            setOpenMessageModal(true);
-                                            setSelectedMatch(r);
+                                            setOpenMessageModal(
+                                                true
+                                            );
+                                            setSelectedMatch(
+                                                r
+                                            );
                                         }}
                                     >
                                         Generate message
@@ -376,27 +520,68 @@ const MatchesTable = () => {
                         )}
 
                         {/* Courts */}
-                        <Flex vertical gap={4}>
-                            <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
+                        <Flex
+                            vertical
+                            gap={4}
+                        >
+                            <Text
+                                type="secondary"
+                                style={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                }}
+                            >
                                 Courts
                             </Text>
-                            <Flex gap="small" align="center" wrap>
+
+                            <Flex
+                                gap="small"
+                                align="center"
+                                wrap
+                            >
                                 {r.courts.map((cn) => (
                                     <Tag
-                                        key={cn.courtNumber}
-                                        color={surfaceColors[cn?.surface]}
-                                        closable={r.status === "Open"}
-                                        onClose={() => handleRemoveCourt(r._id, cn.courtNumber)}
+                                        key={
+                                            cn.courtNumber
+                                        }
+                                        color={
+                                            surfaceColors[
+                                                cn?.surface
+                                            ]
+                                        }
+                                        closable={
+                                            r.status ===
+                                            "Open"
+                                        }
+                                        onClose={() =>
+                                            handleRemoveCourt(
+                                                r._id,
+                                                cn.courtNumber
+                                            )
+                                        }
                                     >
-                                        Court {cn.courtNumber}
+                                        Court{" "}
+                                        {
+                                            cn.courtNumber
+                                        }
                                     </Tag>
                                 ))}
 
-                                {(r.status === "Open" || r.status === "Full") && (
+                                {(r.status === "Open" ||
+                                    r.status ===
+                                        "Full") && (
                                     <Tag
                                         color="cyan"
-                                        style={{ cursor: "pointer", borderStyle: "dashed" }}
-                                        onClick={() => openAddCourts(r)}
+                                        style={{
+                                            cursor: "pointer",
+                                            borderStyle:
+                                                "dashed",
+                                        }}
+                                        onClick={() =>
+                                            openAddCourts(
+                                                r
+                                            )
+                                        }
                                     >
                                         + Add Courts
                                     </Tag>
@@ -405,19 +590,44 @@ const MatchesTable = () => {
                         </Flex>
 
                         {/* Players */}
-                        <Flex vertical gap={4}>
-                            <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
-                                Players ({r.players.length})
+                        <Flex
+                            vertical
+                            gap={4}
+                        >
+                            <Text
+                                type="secondary"
+                                style={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                }}
+                            >
+                                Players (
+                                {r.players.length})
                             </Text>
-                            <Flex gap="small" wrap>
+
+                            <Flex
+                                gap="small"
+                                wrap
+                            >
                                 {r.players.map((p) => (
                                     <Tag
                                         key={p._id}
                                         color="green"
-                                        closable={r.status !== "Played" && r.status !== "Full"}
-                                        onClose={() => handleRemovePlayer(r._id, p.user._id)}
+                                        closable={
+                                            r.status !==
+                                                "Played" &&
+                                            r.status !==
+                                                "Full"
+                                        }
+                                        onClose={() =>
+                                            handleRemovePlayer(
+                                                r._id,
+                                                p.user._id
+                                            )
+                                        }
                                     >
-                                        {p.user.name} {p.user.lastname}
+                                        {p.user.name}{" "}
+                                        {p.user.lastname}
                                     </Tag>
                                 ))}
                             </Flex>
@@ -428,26 +638,81 @@ const MatchesTable = () => {
         },
     ];
 
-    const columns = screens.xs ? mobileColumns : desktopColumns;
+    const columns = screens.xs
+        ? mobileColumns
+        : desktopColumns;
 
     const { Title, Text } = Typography;
 
     return (
         <>
             <Title level={3}>All matches</Title>
-            <Text type="secondary">View all matches and manage status</Text>
 
-            <Flex gap={12} wrap="wrap" align="center" style={{ margin: "12px 0" }}>
+            <Text type="secondary">
+                View all matches and manage status
+            </Text>
+
+            <Flex
+                gap={12}
+                wrap="wrap"
+                align="center"
+                style={{ margin: "12px 0" }}
+            >
                 <DatePicker
                     placeholder="Filtrar por fecha"
                     allowClear
                     value={filterDate}
-                    onChange={(date) => setFilterDate(date)}
+                    onChange={(date) =>
+                        setFilterDate(date)
+                    }
                     format="DD/MM/YYYY"
-                    style={{ width: "100%", maxWidth: 220 }}
+                    style={{
+                        width: "100%",
+                        maxWidth: 220,
+                    }}
                 />
 
-                <ExportToExcel fileName="matches.xlsx" data={flattenMatchesForExcel(displayedMatches)} />
+                <ExportToExcel
+                    fileName="matches.xlsx"
+                    data={flattenMatchesForExcel(
+                        displayedMatches
+                    )}
+                />
+            </Flex>
+
+            {/* Table header / refresh */}
+            <Flex
+                justify="space-between"
+                align="center"
+                style={{
+                    width: "100%",
+                    marginBottom: 8,
+                }}
+            >
+                <Text
+                    type="secondary"
+                    style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                    }}
+                >
+                    Matches
+                </Text>
+
+                <Tooltip title="Refresh matches">
+                    <Button
+                        type="text"
+                        size="small"
+                        icon={
+                            <ReloadOutlined
+                                spin={loadMatches}
+                            />
+                        }
+                        loading={loadMatches}
+                        onClick={() => fetchMatches()}
+                        aria-label="Refresh matches"
+                    />
+                </Tooltip>
             </Flex>
 
             <Table
@@ -455,12 +720,19 @@ const MatchesTable = () => {
                 dataSource={displayedMatches}
                 rowKey="_id"
                 loading={loadMatches}
-                scroll={screens.xs ? undefined : { x: "max-content" }}
+                scroll={
+                    screens.xs
+                        ? undefined
+                        : { x: "max-content" }
+                }
                 showHeader={!screens.xs}
-                tableLayout={screens.xs ? "fixed" : "auto"}
+                tableLayout={
+                    screens.xs
+                        ? "fixed"
+                        : "auto"
+                }
             />
 
-            {/* ✅ MODAL */}
             <AddNewCourtsModal
                 openModal={isModalOpen}
                 onCancel={() => {
@@ -474,7 +746,9 @@ const MatchesTable = () => {
             <WhatsappMessage
                 open={openMessageModal}
                 match={selectedMatch}
-                setOpenMessage={setOpenMessageModal}
+                setOpenMessage={
+                    setOpenMessageModal
+                }
             />
         </>
     );
