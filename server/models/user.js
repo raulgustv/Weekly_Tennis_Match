@@ -84,7 +84,7 @@
             type: Number,
             //required: true,
             min: 1,
-            max: 7
+            max: 5
         },
         adjustmentHistory:{
             type: [adjustmentHistorySchema],
