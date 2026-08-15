@@ -6,7 +6,8 @@ import {
   UserOutlined,
   ToolOutlined,
   FolderOpenOutlined,
-  CheckSquareOutlined
+  CheckSquareOutlined,
+  LikeOutlined
 } from "@ant-design/icons";
 import HelpJoinMatch from "../helpCenter/categories/HelpJoinMatch";
 import HelpWallet from "../helpCenter/categories/HelpWallet";
@@ -16,6 +17,7 @@ import HelpNotifications from "../helpCenter/categories/HelpNotifications";
 import HelpComingSoon from "../helpCenter/categories/HelpComingSoon";
 import HelpMatchDetail from "../helpCenter/categories/HelpMatchDetail";
 import HelpMatchGenerated from "../helpCenter/categories/HelpMatchGenerated";
+import HelpMatchVoting from "../helpCenter/categories/HelpMatchVoting";
 
 
 export const categories = [
@@ -74,6 +76,14 @@ export const categories = [
     icon: <NotificationOutlined />,
     color: "#eb2f96",
     content: (onClose) => <HelpNotifications onClose={onClose} />,
+  },
+  {
+    key: "voting",
+    title: "Match Voting",
+    description: "Learn how match voting works and share your feedback.",
+    icon: <LikeOutlined />,
+    color: "#2f54eb",
+    content: (onClose) => <HelpMatchVoting onClose={onClose} />,
   },
   {
     key: "coming-soon",
