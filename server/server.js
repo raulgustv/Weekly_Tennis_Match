@@ -33,7 +33,8 @@ app.set('trust_proxy', 1)
 app.use(globalLimiter)
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://weekly-tennis-match.vercel.app"
+  "https://weekly-tennis-match.vercel.app",
+  "https://www.madridtenniscommunity.es"
 ];
 
 app.use(cors({
