@@ -6,8 +6,12 @@ import {
   Typography,
   Button,
   Spin,
+  Alert,
 } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import {
+  ReloadOutlined,
+  InfoCircleOutlined,
+} from "@ant-design/icons";
 
 import { useAuth } from "../../context";
 import { useMatches } from "../../context/MatchContext";
@@ -17,7 +21,7 @@ import VoteCard from "../../components/matches/VoteCard";
 import EmptyVote from "../../components/matches/EmptyVote";
 import TennisLoader from "../../components/Animations/TennisLoader";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const MatchVote = () => {
   const {
@@ -72,7 +76,8 @@ const MatchVote = () => {
           onClick={() => fetchMatches()}
           size="large"
           style={{
-            background: "linear-gradient(135deg, #7CB342 0%, #43A047 100%)",
+            background:
+              "linear-gradient(135deg, #7CB342 0%, #43A047 100%)",
             border: "none",
             borderRadius: 999,
             fontWeight: 700,
@@ -95,6 +100,51 @@ const MatchVote = () => {
         </Button>
       </Space>
 
+      {/* VOTING INFORMATION */}
+      <Alert
+        type="info"
+        showIcon
+        icon={<InfoCircleOutlined />}
+        title="How skill voting works"
+        description={
+          <Space
+            orientation="vertical"
+            size={4}
+            style={{ width: "100%" }}
+          >
+            <Text>
+              Rate the players you played with based on their performance
+              in this match.
+            </Text>
+
+            <Text>
+              <strong>−1</strong> → Below your level&nbsp;&nbsp;·&nbsp;&nbsp;
+              <strong>0</strong> → Similar level&nbsp;&nbsp;·&nbsp;&nbsp;
+              <strong>+1</strong> → Above your level
+            </Text>
+
+            <Text>
+              Your vote is <strong>anonymous</strong> and contributes to the
+              player's skill rating. Votes from higher-rated players have
+              slightly more influence, helping keep the rating accurate.
+            </Text>
+
+            <Text>
+              A player's rating can change by <strong>no more than 0.15
+                points</strong> from a single match.
+            </Text>
+
+            <Text type="secondary">
+              Please vote based on what you actually saw on court and be fair.
+            </Text>
+          </Space>
+        }
+        style={{
+          marginBottom: 20,
+          borderRadius: 10,
+        }}
+      />
+
       <Spin
         spinning={loadMatches}
         indicator={<TennisLoader />}
@@ -104,7 +154,13 @@ const MatchVote = () => {
         ) : (
           <Row gutter={[16, 16]}>
             {voteMatches.map((m) => (
-              <Col key={m._id} lg={12} md={16} sm={24} xs={24}>
+              <Col
+                key={m._id}
+                lg={12}
+                md={16}
+                sm={24}
+                xs={24}
+              >
                 <VoteCard
                   match={m}
                   loadMatches={loadMatches}

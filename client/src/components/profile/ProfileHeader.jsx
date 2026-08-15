@@ -1,55 +1,125 @@
-import { Row, Col, Typography, Tag, Space, Statistic } from "antd"
-import ProfilePicture from "../uploads/ProfilePicture"
+import {
+    Row,
+    Col,
+    Typography,
+    Tag,
+    Space,
+    Statistic,
+} from "antd";
+import ProfilePicture from "../uploads/ProfilePicture";
 import dayjs from "dayjs";
 
-
+const { Text, Title } = Typography;
+const { Timer } = Statistic;
 
 const ProfileHeader = ({ user, editable }) => {
 
-    const { Text, Title } = Typography;
-
-    const isSuspended = user?.suspendedUntil && new Date(user.suspendedUntil) > new Date()
-
-    const { Timer } = Statistic;
+    const isSuspended =
+        user?.suspendedUntil &&
+        new Date(user.suspendedUntil) > new Date();
 
     return (
-        <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} sm={8} md={6} style={{ textAlign: "center" }}>
-                <ProfilePicture user={user} profilePicture={user?.profilePicture?.url} editable={editable} />
+        <Row
+            align="middle"
+            gutter={[20, 16]}
+            style={{
+                width: "100%",
+            }}
+        >
+            {/* PROFILE PICTURE */}
+            <Col
+                flex="0 0 110px"
+                style={{
+                    display: "flex",
+                    justifyContent: "center",
+                }}
+            >
+                <ProfilePicture
+                    user={user}
+                    profilePicture={user?.profilePicture?.url}
+                    editable={editable}
+                />
             </Col>
 
-            <Col xs={24} sm={16} md={18}>
-                <Title level={3} style={{ marginBottom: 8 }}>
+            {/* PROFILE INFO */}
+            <Col
+                flex="1"
+                style={{
+                    minWidth: 0,
+                }}
+            >
+                <Title
+                    level={3}
+                    style={{
+                        margin: 0,
+                        marginBottom: 8,
+                        wordBreak: "break-word",
+                    }}
+                >
                     {user?.name} {user?.lastname}
                 </Title>
 
-                <Space wrap size="middle">
-                    <Tag color={user?.isActive ? "green" : "red"}>
-                        {user?.isActive ? "Active user" : "Inactive user"}
+                <Space
+                    wrap
+                    size={[8, 8]}
+                    style={{
+                        maxWidth: "100%",
+                    }}
+                >
+                    <Tag
+                        color={
+                            user?.isActive
+                                ? "green"
+                                : "red"
+                        }
+                    >
+                        {user?.isActive
+                            ? "Active user"
+                            : "Inactive user"}
                     </Tag>
 
                     <Tag color="gold">
-                        NTRP Level: {user?.ntrplvl.toFixed(1)}
+                        NTRP Level:{" "}
+                        {user?.ntrplvl?.toFixed(1)}
                     </Tag>
 
                     {isSuspended && (
-                        <Tag color='volcano' style={{ fontSize: 14, padding: "4px 12px" }}>
+                        <Tag
+                            color="volcano"
+                            style={{
+                                fontSize: 14,
+                                padding: "4px 12px",
+                            }}
+                        >
                             Temporarily Suspended
                         </Tag>
                     )}
                 </Space>
 
-                <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
-                    Member since {dayjs(user?.createdAt).format("DD-MM-YYYY")}
+                <Text
+                    type="secondary"
+                    style={{
+                        display: "block",
+                        marginTop: 8,
+                    }}
+                >
+                    Member since{" "}
+                    {dayjs(user?.createdAt).format(
+                        "DD-MM-YYYY"
+                    )}
                 </Text>
 
                 {isSuspended && (
                     <div style={{ marginTop: 16 }}>
                         <Timer
-                            title='Suspension ends in'
+                            title="Suspension ends in"
                             type="countdown"
-                            value={new Date(user.suspendedUntil).getTime()}
-                            format="D [days] H [hours] m [minutes] s [seconds]"
+                            value={
+                                new Date(
+                                    user.suspendedUntil
+                                ).getTime()
+                            }
+                            format="D [days] H [hours] m [minutes] s"
                             onFinish={() => {
                                 window.location.reload();
                             }}
@@ -58,7 +128,7 @@ const ProfileHeader = ({ user, editable }) => {
                 )}
             </Col>
         </Row>
-    )
-}
+    );
+};
 
-export default ProfileHeader
+export default ProfileHeader;
