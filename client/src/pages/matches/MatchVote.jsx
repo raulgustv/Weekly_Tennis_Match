@@ -16,10 +16,10 @@ import {
 import { useAuth } from "../../context";
 import { useMatches } from "../../context/MatchContext";
 import { useFeedback } from "../../context/FeedbackContext";
-
 import VoteCard from "../../components/matches/VoteCard";
 import EmptyVote from "../../components/matches/EmptyVote";
 import TennisLoader from "../../components/Animations/TennisLoader";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
@@ -32,6 +32,7 @@ const MatchVote = () => {
 
   const { user } = useAuth();
   const { triggerFeedbackCheck } = useFeedback();
+  const navigate = useNavigate();
 
   const voteMatches = matches
     .filter(
@@ -100,12 +101,12 @@ const MatchVote = () => {
         </Button>
       </Space>
 
-      {/* VOTING INFORMATION */}
+
       <Alert
         type="info"
         showIcon
         icon={<InfoCircleOutlined />}
-        title="How skill voting works"
+        title="How Match Voting works"
         description={
           <Space
             orientation="vertical"
@@ -113,30 +114,29 @@ const MatchVote = () => {
             style={{ width: "100%" }}
           >
             <Text>
-              Rate the players you played with based on their performance
-              in this match.
+              After a match, anonymously rate the players you played with as{" "}
+              <strong>Lower</strong>, <strong>Correct</strong>, or{" "}
+              <strong>Higher</strong> compared with their current NTRP.
             </Text>
 
             <Text>
-              <strong>−1</strong> → Below your level&nbsp;&nbsp;·&nbsp;&nbsp;
-              <strong>0</strong> → Similar level&nbsp;&nbsp;·&nbsp;&nbsp;
-              <strong>+1</strong> → Above your level
+              Each vote is combined with feedback from other players and
+              weighted according to the voter's level. Ratings are adjusted
+              gradually, so a single vote cannot cause a large change.
             </Text>
 
-            <Text>
-              Your vote is <strong>anonymous</strong> and contributes to the
-              player's skill rating. Votes from higher-rated players have
-              slightly more influence, helping keep the rating accurate.
-            </Text>
-
-            <Text>
-              A player's rating can change by <strong>no more than 0.15
-                points</strong> from a single match.
-            </Text>
-
-            <Text type="secondary">
-              Please vote based on what you actually saw on court and be fair.
-            </Text>
+            <Button
+              type="link"
+              onClick={() => navigate("/help")}
+              style={{
+                padding: 0,
+                height: "auto",
+                width: "fit-content",
+                fontWeight: 600,
+              }}
+            >
+              Learn more about Match Voting →
+            </Button>
           </Space>
         }
         style={{
