@@ -1,8 +1,12 @@
-    import mongoose from "mongoose";
+import mongoose from "mongoose";
     import bcrypt  from 'bcryptjs';
 
 
     const adjustmentHistorySchema = new mongoose.Schema({
+        match: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Match"
+        },
         change:{
             type: Number,
             required: true

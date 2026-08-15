@@ -145,8 +145,19 @@ export const voteSkillLevel = async (req, res) => {
             Math.min(MAX_DELTA_PER_MATCH, Math.max(-MAX_DELTA_PER_MATCH, rawDelta)).toFixed(2)
         );
 
-        const oldNTRP = votedUser.ntrplvl || 4;
-        const newNTRP = Number((oldNTRP + delta).toFixed(2));
+        // buscar si ya existe un ajuste previo para este partido
+        // (para usar el NTRP ORIGINAL (previo al partido) como base, y no el
+        // NTRP ya modificado por votos anteriores de este mismo partido —
+        // si no, el delta se acumula voto tras voto y el clamp deja de proteger
+        // el impacto total del partido)
+        const existingAdjustment = votedUser.adjustmentHistory.find(
+            h => h.match?.toString() === matchId
+        );
+        const baselineNTRP = existingAdjustment
+            ? existingAdjustment.previousNTRP
+            : (votedUser.ntrplvl || 4);
+
+        const newNTRP = Number((baselineNTRP + delta).toFixed(2));
 
         votedUser.ntrplvl = newNTRP;
 
@@ -155,13 +166,13 @@ export const voteSkillLevel = async (req, res) => {
             h => h.match?.toString() !== matchId
         );
 
-        // guardar ajuste CONSENSO
+        // guardar ajuste CONSENSO (siempre referenciado al NTRP previo al partido)
         votedUser.adjustmentHistory.push({
             match: matchId,
-            previousNTRP: oldNTRP,
+            previousNTRP: baselineNTRP,
             change: delta,
             currentNTRP: newNTRP,
-            reason: "Match-average",
+            reason: "Match-average-weighted",
             at: new Date()
         });
 
