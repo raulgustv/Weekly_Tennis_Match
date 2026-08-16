@@ -21,11 +21,11 @@ export const sendNotification = async(tokens, title, body, data) =>{
 
     try {
         const message = {
-            notification: {
+            data:{
                 title,
-                body
+                body,
+                ...data
             },
-            data,
             tokens
         }
 
