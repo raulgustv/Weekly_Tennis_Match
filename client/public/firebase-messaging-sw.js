@@ -18,7 +18,7 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage(function (payload) {
   const notificationTitle = payload.notification?.title || "Weekly Tennis";
   const notificationOptions = {
-    body: payload.notification?.body || "",
+    body: payload.data?.body || "",
     icon: "/tenis-logo.png", // opcional, pon el que tengas
     data: {
       url: payload.data?.url || "https://weekly-tennis-match.vercel.app/games"
