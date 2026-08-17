@@ -188,6 +188,11 @@ import mongoose from "mongoose";
         fcmToken: {
             type: String,
             default: null
+        },
+        seenNotificationIds: {
+             type: [mongoose.Schema.Types.ObjectId],
+             ref: "Notification",
+             default: []
         }
     }, {
         timestamps: true
