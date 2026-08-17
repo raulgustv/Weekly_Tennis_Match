@@ -1,10 +1,13 @@
 import { Typography, Card, Flex, Divider, Button } from "antd";
 import { useFeedback } from "../../context/FeedbackContext";
+import { useAuth } from "../../context";
+import { Link } from "react-router-dom";
 
 const { Title, Paragraph, Text } = Typography;
 
 const Contact = () => {
 
+  const {user} = useAuth();
   const {triggerFeedbackCheck} = useFeedback();
 
   const handleFeedbackClick = ()=>{
@@ -96,9 +99,13 @@ const Contact = () => {
             Have thoughts on how to improve? Let us know.
           </Paragraph>
 
-          <Button type="primary" onClick={handleFeedbackClick}>
+          {!user ? (
+              <Link to='/auth'>Login to provide feedback</Link>
+          ) : (
+            <Button type="primary" onClick={handleFeedbackClick}>
              Give feedback 
           </Button>
+          )}
         </Card>
 
       </div>
