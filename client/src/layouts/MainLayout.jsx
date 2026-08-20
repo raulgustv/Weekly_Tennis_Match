@@ -1,4 +1,12 @@
-import { Layout, Menu, Button, Grid, Dropdown, Drawer } from "antd";
+import {
+  Layout,
+  Menu,
+  Button,
+  Grid,
+  Dropdown,
+  Drawer,
+} from "antd";
+
 import {
   MenuOutlined,
   UserOutlined,
@@ -10,151 +18,242 @@ import {
   HomeOutlined,
   DribbbleOutlined,
   WalletOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+
+import {
+  Outlet,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+
 import { useAuth } from "../context";
 import { useEffect, useState } from "react";
+
 import "../styles/menu.css";
+
 import AppFooter from "./AppFooter";
 import { useFeedback } from "../context/FeedbackContext";
+import Notifications from "../components/notifications/Notifications";
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
+
   const navigate = useNavigate();
   const location = useLocation();
-  const screens = useBreakpoint();
 
+  const screens = useBreakpoint();
   const isMobile = !screens.md;
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const {triggerFeedbackCheck} = useFeedback()
+  const { triggerFeedbackCheck } = useFeedback();
 
-  useEffect(() =>{
-    if(user) {
-      triggerFeedbackCheck('usage_milestone', {}, 'app', 'How is the experience so far?')
+  useEffect(() => {
+    if (user) {
+      triggerFeedbackCheck(
+        "usage_milestone",
+        {},
+        "app",
+        "How is the experience so far?"
+      );
     }
-  }, [user, triggerFeedbackCheck])
+  }, [user, triggerFeedbackCheck]);
 
   const isAdmin = user?.role === "admin";
   const isBooker = user?.role === "booker";
 
-  const menuItems =
-    isAdmin
-      ? [
-          {
-            key: "/admin/dashboard",
-            icon: <HomeOutlined style={{ color: "#4DA3FF" }} />,
-            label: "Admin dashboard",
-          },
-          {
-            key: "/games",
-            icon: <DribbbleOutlined style={{ color: "#52C41A" }} />,
-            label: "Games",
-          },
-          {
-            key: "/vote",
-            icon: <FlagOutlined style={{ color: "#1677FF" }} />,
-            label: "Vote matches",
-          },
-          {
-            key: "/manage-courts",
-            icon: <CompassFilled style={{ color: "#13C2C2" }} />,
-            label: "Manage courts",
-            children: [{ key: "/admin/add-court", label: "Add & manage courts" }],
-          },
-          {
-            key: "/admin-matches",
-            icon: <TrophyFilled style={{ color: "#FADB14" }} />,
-            label: "Match administration",
-            children: [
-              { key: "/admin/matches", label: "New match" },
-              { key: "/admin/view-matches", label: "View matches" },
-            ],
-          },
-          {
-            key: "/admin-players",
-            icon: <ContactsOutlined style={{ color: "#FF7875" }} />,
-            label: "User administration",
-            children: [
-              { key: "/admin/players", label: "Players" },
-              { key: "/profile", label: "View admin profile" },
-            ],
-          },
-          {
-            key: "/admin-wallet",
-            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
-            label: "Wallet administration",
-            children: [
-              { key: "/admin/transactions", label: "Transaction admin" },
-              { key: "/wallet", label: "View wallet" },
-            ],
-          },
-        ]
-      : isBooker
-      ? [
-          {
-            key: "/games",
-            icon: <DribbbleOutlined style={{ color: "#52C41A" }} />,
-            label: "Games",
-          },
-          {
-            key: "/vote",
-            icon: <FlagOutlined style={{ color: "#1677FF" }} />,
-            label: "Vote matches",
-          },
-          {
-            key: "/admin-matches",
-            icon: <TrophyFilled style={{ color: "#FADB14" }} />,
-            label: "Match administration",
-            children: [
-              { key: "/admin/matches", label: "New match" },
-              { key: "/admin/view-matches", label: "View matches" },
-            ],
-          },
-          {
-            key: "/profile",
-            icon: <UserOutlined style={{ color: "#9254DE" }} />,
-            label: "User Profile",
-          },
+  const menuItems = isAdmin
+    ? [
+        {
+          key: "/admin/dashboard",
+          icon: (
+            <HomeOutlined style={{ color: "#4DA3FF" }} />
+          ),
+          label: "Admin dashboard",
+        },
+        {
+          key: "/games",
+          icon: (
+            <DribbbleOutlined style={{ color: "#52C41A" }} />
+          ),
+          label: "Games",
+        },
+        {
+          key: "/vote",
+          icon: (
+            <FlagOutlined style={{ color: "#1677FF" }} />
+          ),
+          label: "Vote matches",
+        },
+        {
+          key: "/manage-courts",
+          icon: (
+            <CompassFilled style={{ color: "#13C2C2" }} />
+          ),
+          label: "Manage courts",
+          children: [
             {
-            key: "/wallet",
-            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
-            label: "Wallet administration",
-            }
-        ]
-      : [
-          {
-            key: "/games",
-            icon: <DribbbleOutlined style={{ color: "#52C41A" }} />,
-            label: "Games",
-          },
-          {
-            key: "/vote",
-            icon: <FlagOutlined style={{ color: "#1677FF" }} />,
-            label: "Vote matches",
-          },
-          {
-            key: "/profile",
-            icon: <UserOutlined style={{ color: "#9254DE" }} />,
-            label: "User Profile",
-          },
-          {
-            key: "/wallet",
-            icon: <WalletOutlined style={{ color: "#e7eb6d" }} />,
-            label: "Wallet administration",
-            }
-        ];
+              key: "/admin/add-court",
+              label: "Add & manage courts",
+            },
+          ],
+        },
+        {
+          key: "/admin-matches",
+          icon: (
+            <TrophyFilled style={{ color: "#FADB14" }} />
+          ),
+          label: "Match administration",
+          children: [
+            {
+              key: "/admin/matches",
+              label: "New match",
+            },
+            {
+              key: "/admin/view-matches",
+              label: "View matches",
+            },
+          ],
+        },
+        {
+          key: "/admin-players",
+          icon: (
+            <ContactsOutlined style={{ color: "#FF7875" }} />
+          ),
+          label: "User administration",
+          children: [
+            {
+              key: "/admin/players",
+              label: "Players",
+            },
+            {
+              key: "/profile",
+              label: "View admin profile",
+            },
+          ],
+        },
+        {
+          key: "/admin-wallet",
+          icon: (
+            <WalletOutlined style={{ color: "#e7eb6d" }} />
+          ),
+          label: "Wallet administration",
+          children: [
+            {
+              key: "/admin/transactions",
+              label: "Transaction admin",
+            },
+            {
+              key: "/wallet",
+              label: "View wallet",
+            },
+          ],
+        },
+        {
+          key: "/notifications",
+          icon: (
+            <BellOutlined style={{ color: "#8B5CF6" }} />
+          ),
+          label: "Manage Notifications",
+          children: [
+            {
+              key: "/admin/notifications",
+              label: "Create a notification",
+            },
+          ],
+        },
+      ]
+    : isBooker
+    ? [
+        {
+          key: "/games",
+          icon: (
+            <DribbbleOutlined style={{ color: "#52C41A" }} />
+          ),
+          label: "Games",
+        },
+        {
+          key: "/vote",
+          icon: (
+            <FlagOutlined style={{ color: "#1677FF" }} />
+          ),
+          label: "Vote matches",
+        },
+        {
+          key: "/admin-matches",
+          icon: (
+            <TrophyFilled style={{ color: "#FADB14" }} />
+          ),
+          label: "Match administration",
+          children: [
+            {
+              key: "/admin/matches",
+              label: "New match",
+            },
+            {
+              key: "/admin/view-matches",
+              label: "View matches",
+            },
+          ],
+        },
+        {
+          key: "/profile",
+          icon: (
+            <UserOutlined style={{ color: "#9254DE" }} />
+          ),
+          label: "User Profile",
+        },
+        {
+          key: "/wallet",
+          icon: (
+            <WalletOutlined style={{ color: "#e7eb6d" }} />
+          ),
+          label: "Wallet administration",
+        },
+      ]
+    : [
+        {
+          key: "/games",
+          icon: (
+            <DribbbleOutlined style={{ color: "#52C41A" }} />
+          ),
+          label: "Games",
+        },
+        {
+          key: "/vote",
+          icon: (
+            <FlagOutlined style={{ color: "#1677FF" }} />
+          ),
+          label: "Vote matches",
+        },
+        {
+          key: "/profile",
+          icon: (
+            <UserOutlined style={{ color: "#9254DE" }} />
+          ),
+          label: "User Profile",
+        },
+        {
+          key: "/wallet",
+          icon: (
+            <WalletOutlined style={{ color: "#e7eb6d" }} />
+          ),
+          label: "Wallet administration",
+        },
+      ];
 
   const userMenu = {
     items: [
       {
         key: "logout",
-        icon: <LogoutOutlined style={{ color: "#FF4D4F" }} />,
+        icon: (
+          <LogoutOutlined style={{ color: "#FF4D4F" }} />
+        ),
         label: "Logout",
         onClick: () => {
           logout();
@@ -166,19 +265,30 @@ const MainLayout = () => {
 
   const handleNavigate = (key) => {
     navigate(key);
-    if (isMobile) setMobileOpen(false);
+
+    if (isMobile) {
+      setMobileOpen(false);
+    }
   };
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "#F5F7FA" }}>
-      {/* ===== SIDEBAR ===== */}
+    <Layout
+      style={{
+        minHeight: "100vh",
+        background: "#F5F7FA",
+      }}
+    >
+      {/* ================= SIDEBAR ================= */}
+
       {!isMobile && (
         <Sider
           collapsible
           collapsed={collapsed}
           onCollapse={setCollapsed}
           width={220}
-          style={{ background: "#0B2C3D" }}
+          style={{
+            background: "#0B2C3D",
+          }}
         >
           <div
             style={{
@@ -197,21 +307,27 @@ const MainLayout = () => {
             theme="dark"
             mode="inline"
             selectedKeys={[location.pathname]}
-            style={{ background: "#0B2C3D" }}
+            style={{
+              background: "#0B2C3D",
+            }}
             items={menuItems}
             onClick={({ key }) => handleNavigate(key)}
           />
         </Sider>
       )}
 
-      {/* ===== MOBILE DRAWER ===== */}
+      {/* ================= MOBILE DRAWER ================= */}
+
       {isMobile && (
         <Drawer
           placement="left"
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
           styles={{
-            body: { padding: 0, background: "#0B2C3D" },
+            body: {
+              padding: 0,
+              background: "#0B2C3D",
+            },
           }}
         >
           <div
@@ -231,47 +347,128 @@ const MainLayout = () => {
             theme="dark"
             mode="inline"
             selectedKeys={[location.pathname]}
-            style={{ background: "#0B2C3D" }}
+            style={{
+              background: "#0B2C3D",
+            }}
             items={menuItems}
             onClick={({ key }) => handleNavigate(key)}
           />
         </Drawer>
       )}
 
-      {/* ===== MAIN ===== */}
-      <Layout style={{ display: "flex", flexDirection: "column" }}>
-        {/* HEADER */}
+      {/* ================= MAIN ================= */}
+
+      <Layout
+        style={{
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* ================= HEADER ================= */}
+
         <Header
           style={{
-            padding: "0 16px",
+            padding: isMobile ? "0 12px" : "0 20px",
             display: "flex",
-            justifyContent: "space-between",
             alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
             background:
               "linear-gradient(90deg, #0B2C3D 0%, #1E7F43 100%)",
             color: "#fff",
           }}
         >
-          {isMobile && (
-            <Button
-              type="text"
-              icon={<MenuOutlined style={{ color: "#fff" }} />}
-              onClick={() => setMobileOpen(true)}
-            />
-          )}
+          {/* LEFT */}
 
-          <div style={{ fontWeight: "bold" }}>
-            Madrid Tennis Community
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              minWidth: 0,
+            }}
+          >
+            {isMobile && (
+              <Button
+                type="text"
+                icon={
+                  <MenuOutlined
+                    style={{
+                      color: "#fff",
+                      fontSize: 18,
+                    }}
+                  />
+                }
+                onClick={() => setMobileOpen(true)}
+                style={{
+                  width: 38,
+                  height: 38,
+                  padding: 0,
+                }}
+              />
+            )}
+
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: isMobile ? 14 : 15,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              Madrid Tennis Community
+            </div>
           </div>
 
-          <Dropdown menu={userMenu} placement="bottomRight" trigger={["click"]}>
-            <Button type="text" style={{ color: "#fff" }}>
-              <UserOutlined /> {user?.name} {user?.lastname?.[0]}
-            </Button>
-          </Dropdown>
+          {/* RIGHT ACTIONS */}
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flexShrink: 0,
+            }}
+          >
+            <Notifications
+              user={user}
+              isMobile={isMobile}
+            />
+
+            <Dropdown
+              menu={userMenu}
+              placement="bottomRight"
+              trigger={["click"]}
+            >
+              <Button
+                type="text"
+                style={{
+                  height: 38,
+                  color: "#fff",
+                  borderRadius: 10,
+                  padding: isMobile
+                    ? "0 8px"
+                    : "0 12px",
+                  background:
+                    "rgba(255,255,255,0.08)",
+                }}
+              >
+                <UserOutlined />
+
+                {!isMobile && (
+                  <span>
+                    {user?.name}{" "}
+                    {user?.lastname?.[0]}
+                  </span>
+                )}
+              </Button>
+            </Dropdown>
+          </div>
         </Header>
 
-        {/* CONTENT */}
+        {/* ================= CONTENT ================= */}
+
         <Content
           style={{
             flex: 1,
@@ -285,7 +482,8 @@ const MainLayout = () => {
           <Outlet />
         </Content>
 
-        {/* FOOTER */}
+        {/* ================= FOOTER ================= */}
+
         <AppFooter />
       </Layout>
     </Layout>
