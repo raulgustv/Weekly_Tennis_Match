@@ -255,7 +255,7 @@ const Notifications = ({ user, isMobile = false }) => {
                     lineHeight: 1.2,
                   }}
                 >
-                  Novedades
+                  What's new?
                 </Title>
 
                 <Text
@@ -276,7 +276,7 @@ const Notifications = ({ user, isMobile = false }) => {
                 onClick={clearAll}
                 style={{ padding: 0 }}
               >
-                Marcar todo como leído
+                Mark as read
               </Button>
             )}
           </Space>
@@ -292,7 +292,7 @@ const Notifications = ({ user, isMobile = false }) => {
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <Text type="secondary">
-                  No hay novedades por ahora
+                  There are no new messages for you
                 </Text>
               }
             />
