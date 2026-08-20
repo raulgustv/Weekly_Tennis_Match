@@ -24,6 +24,7 @@ import ProfileViewAdmin from '../pages/profile/ProfileViewAdmin'
 import Wallet from '../pages/wallet/Wallet'
 import WalletAdmin from '../pages/wallet/WalletAdmin'
 import Help from '../pages/information/Help'
+import NotificationsPage from '../pages/notifications/NotificationsPage'
 
 const AppRouter = () => {
   return (
@@ -70,6 +71,7 @@ const AppRouter = () => {
                 <Route path='transactions' element={<WalletAdmin />} />
                 <Route path='match/edit/:id' element={<EditMatch />} />
                 <Route path='player/:id' element={<ProfileViewAdmin />} />
+                <Route path='notifications' element={<NotificationsPage />} />
               </Route>
             </Route>
           </Route>
