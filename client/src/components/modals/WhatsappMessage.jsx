@@ -53,7 +53,7 @@ const WhatsappMessage = ({ open, setOpenMessage, match }) => {
 
 *No need to add your name to list*
 *Only for visibility please join using the link*
-https://weekly-tennis-match.vercel.app/games
+https://www.madridtenniscommunity.es/games
 
 DEADLINE: ${deadline.format("H[h]")} - ${deadline.format("dddd, MMM D, YYYY")}
 Date:  ${matchDateTime.format("dddd, MMM D, YYYY HH[h]")}
@@ -69,9 +69,8 @@ Payment: ${(match.price/match.maxPlayers).toFixed(2)}€
 ${match.paymentMethods.map((pm) => `${pm.type}: ${pm.value}`).join("\n")}
 
 TO JOIN:  
-- Visit: https://weekly-tennis-match.vercel.app/games and join the match
-- Pay (backup list doesn’t require payment).-
-- Add your name; eg. John Doe (bizum)
+- Visit: https://www.madridtenniscommunity.es/games and join the match
+- Payment methods depend on the match
 `;
 
         setText(message);

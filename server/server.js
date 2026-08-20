@@ -19,6 +19,7 @@ import userNotificationRoutes from './routes/userNotification.js'
 import './jobs/matchStatus.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
+import cookieParser from 'cookie-parser';
 
 
 
@@ -33,11 +34,11 @@ app.set('trust_proxy', 1)
 //Middleware
 app.use(globalLimiter)
 const allowedOrigins = [
-  "http://localhost:3000",
-  "https://weekly-tennis-match.vercel.app",
-  "https://www.madridtenniscommunity.es"
+  process.env.ALOWED_ORIGIN_LOCAL,
+  process.env.ALOWED_ORIGIN_MAIN
 ];
 
+app.use(cookieParser())
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true); // permite Postman / mobile
