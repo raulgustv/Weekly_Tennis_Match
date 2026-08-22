@@ -42,6 +42,8 @@ const { useBreakpoint } = Grid;
 const MainLayout = () => {
   const { user, logout } = useAuth();
 
+  console.log(user)
+
   const navigate = useNavigate();
   const location = useLocation();
 

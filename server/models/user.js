@@ -113,7 +113,7 @@ import mongoose from "mongoose";
             select: false
         },
         resetPasswordExpire:{
-            type: String,
+            type: Date,
             default: null,
             select: false
         },
@@ -193,6 +193,16 @@ import mongoose from "mongoose";
              type: [mongoose.Schema.Types.ObjectId],
              ref: "Notification",
              default: []
+        },
+        refreshTokenHash: {
+            type: String,
+            default: null,
+            select: false
+        },
+        refreshTokenExpires: {
+            type: Date,
+            default: null,
+            select: false
         }
     }, {
         timestamps: true
@@ -200,15 +210,28 @@ import mongoose from "mongoose";
 
 
     //pass encrypt
-    userSchema.pre("save", async function(next){
-        if(!this.isModified("password") || !this.password) return;
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-    });
-
-    //comparar pass para el login
-    userSchema.methods.comparePassword = async function(password){
-        return bcrypt.compare(password, this.password)
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) {
+        return;
     }
 
-    export default mongoose.model("User", userSchema);
+    if (!this.password) {
+        throw new Error("Password cannot be empty");
+    }
+
+    this.password = await bcrypt.hash(this.password, 10);
+});
+
+userSchema.methods.comparePassword = async function (password) {
+    if (typeof password !== "string") {
+        return false;
+    }
+
+    if (typeof this.password !== "string" || !this.password) {
+        return false;
+    }
+
+    return bcrypt.compare(password, this.password);
+};
+
+export default mongoose.model("User", userSchema);
