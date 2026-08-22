@@ -15,12 +15,9 @@ export const AuthProvider = ({ children }) => {
     // trae los datos del usuario asumiendo que el access token ya está seteado en memoria
     const loadUser = async () => {
         try {
-
             const res = await getUserAuth();
-            setUser(res.data);
-
+            setUser(res.data.user);   // ✅ ahora el backend manda { ok, user }
         } catch (error) {
-
             setAccessToken(null);
             setUser(null);
         }
