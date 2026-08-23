@@ -32,30 +32,29 @@ const Login = () => {
       : <Navigate to='/games' replace />
   }
 
-  const handleLogin = async (values) => {
+const handleLogin = async (values) => {
     setLoading(true);
 
     try {
-      const data = await login(values);
+        const data = await login(values);
 
-      await setSession(data?.token)
+        await setSession(data?.accessToken)   // ✅
 
-      toast.success(`Welcome ${data?.user?.name}`);
+        toast.success(`Welcome ${data?.user?.name}`);
 
-      if (data?.user?.role === 'admin') {
-        navigate('/admin/dashboard')
-      } else {
-        navigate('/games')
-      }
+        if (data?.user?.role === 'admin') {
+            navigate('/admin/dashboard')
+        } else {
+            navigate('/games')
+        }
 
     } catch (error) {
-      //console.log(error)
-      setLoading(false)
-      return toast.error(error?.response?.data?.message || 'There was an error logging in')
+        setLoading(false)
+        return toast.error(error?.response?.data?.message || 'There was an error logging in')
     } finally {
-      setLoading(false)
+        setLoading(false)
     }
-  };
+};
 
   // const handleGoogleLogin = async () => {
   //   setLoading(true);

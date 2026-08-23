@@ -32,7 +32,6 @@ app.set('trust_proxy', 1)
 
 
 //Middleware
-app.use(globalLimiter)
 const allowedOrigins = [
   process.env.ALOWED_ORIGIN_LOCAL,
   process.env.ALOWED_ORIGIN_MAIN
@@ -50,9 +49,10 @@ app.use(cors({
   },
   credentials: true
 }));
+app.use(globalLimiter)
 app.use(express.json());
 app.use(morgan("dev"));
-app.use(helmet())
+app.use(helmet());
 
 
 //DB

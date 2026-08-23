@@ -1,59 +1,56 @@
 import jwt from 'jsonwebtoken';
 import User from "../models/user.js";
+import { PUBLIC_USER_FIELDS } from '../utils/userProjections.js';
 
-export const protect = async(req, res, next) =>{
+
+export const protect = async (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
 
-        if(!token) return res.status(401).json({
+        if (!token) return res.status(401).json({
             ok: false,
             message: 'Auth token not provided'
         });
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        req.user = await User.findById(decoded.id)
-                                .select("name lastname email role isActive ntrplvl adjustmentHistory profilePicture country walletBalance phone suspendedUntil")
-        if(!req.user) return res.status(401).json({
+        req.user = await User.findById(decoded.id).select(PUBLIC_USER_FIELDS);
+
+        if (!req.user) return res.status(401).json({
             ok: false,
             message: "User no longer exists"
-        })
+        });
 
         next();
 
-
     } catch (error) {
-        //console.log(error)
         res.status(401).json({
             ok: false,
             message: 'Invalid or expired token'
-        })
+        });
     }
-}
+};
 
-export const verifyAdmin = async(req, res, next) =>{
-   
+export const verifyAdmin = async (req, res, next) => {
     try {
-
         const user = await User.findById(req.user._id).select("role");
 
-        if(user.role !== 'admin'){
+        if (!user || user.role !== 'admin') {
             return res.status(403).json({
                 ok: false,
                 message: 'Only admin can access this resource'
-            })
+            });
         }
         next();
-        
+
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.status(500).json({
-                ok: false,
-                message: 'Internal error verifying admin credentials'
-            })
+            ok: false,
+            message: 'Internal error verifying admin credentials'
+        });
     }
-   
-}
+};
 
 export const verifyBookerOrAdmin = async (req, res, next) => {
     try {
@@ -66,7 +63,7 @@ export const verifyBookerOrAdmin = async (req, res, next) => {
             });
         }
 
-        next(); 
+        next();
 
     } catch (error) {
         console.log(error);

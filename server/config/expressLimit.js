@@ -85,6 +85,19 @@ export const authLimiter = rateLimit({
     }
 });
 
+// config/expressLimit.js
+export const refreshLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20, // el refresh se llama seguido (bootstrap, retries de 401), dale más margen que login
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        ok: false,
+        message: "Too many refresh attempts, please try again later"
+    }
+    // sin keyGenerator custom -> usa IP por defecto, que es lo correcto aquí
+});
+
 export const registerLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, //1hr
     max: 5,
