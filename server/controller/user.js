@@ -70,11 +70,23 @@ export const register = async (req, res) => {
             termsAndConditions
         });
 
+        // generamos el refresh token igual que en login, para que quede logueado tras registrarse
+        const accessToken = generateToken(user);
+
+        const rawRefresh = generateRefreshToken();
+        const refreshExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        user.refreshTokenHash = hashToken(rawRefresh);
+        user.refreshTokenExpires = refreshExpires;
+        await user.save();
+
+        setRefreshCookie(res, rawRefresh, refreshExpires);
+
         const safeUser = await User.findById(user._id).select(PUBLIC_USER_FIELDS);
 
         res.status(201).json({
             ok: true,
-            token: generateToken(user),
+            accessToken,
             user: safeUser
         });
 
