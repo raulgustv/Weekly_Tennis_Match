@@ -1,8 +1,9 @@
 //import admin from "../config/firebase.js";
 import User from "../models/user.js";
 import { sendResetPasswordEmail } from "../utils/emailService.js";
-import { generateToken } from "../utils/generateToken.js";
+import { generateToken, generateRefreshToken, setRefreshCookie, hashToken } from "../utils/generateToken.js";
 import crypto from 'crypto'
+import { PUBLIC_USER_FIELDS } from "../utils/userProjections.js";
 
 export const validateEmail = async(req, res) =>{
     try {
@@ -33,23 +34,29 @@ export const validateEmail = async(req, res) =>{
     }
 }
 
-export const register =  async(req, res) =>{
+export const register = async (req, res) => {
     try {
+        const { name, lastname, email, password, phone, ntrplvl, gender, country, termsAndConditions } = req.body;
 
-
-        const {name, lastname, email, password, phone, ntrplvl, gender, country, termsAndConditions} = req.body;
-
-        //check if exists
-        const exists = await User.findOne({email: req.body.email})
-
-        if(exists){
-            return res.status(409).json({message: 'Email already registered'})
+        if (!password || typeof password !== 'string' || password.length < 6) {
+            return res.status(400).json({
+                ok: false,
+                message: "Valid password is required (min 6 characters)"
+            });
         }
 
-        if(!termsAndConditions) return res.status(400).json({
-            ok: false,
-            message: 'Terms and conditions have not been accepted'
-        })
+        const exists = await User.findOne({ email });
+
+        if (exists) {
+            return res.status(409).json({ ok: false, message: 'Email already registered' });
+        }
+
+        if (!termsAndConditions) {
+            return res.status(400).json({
+                ok: false,
+                message: 'Terms and conditions have not been accepted'
+            });
+        }
 
         const user = await User.create({
             name,
@@ -61,98 +68,169 @@ export const register =  async(req, res) =>{
             gender,
             country,
             termsAndConditions
-            
         });
 
-        const userObj = user.toObject();
+        // generamos el refresh token igual que en login, para que quede logueado tras registrarse
+        const accessToken = generateToken(user);
 
-        delete userObj.resetPasswordToken;
-        delete userObj.password;
-        delete userObj.resetPasswordExpire;
-        
+        const rawRefresh = generateRefreshToken();
+        const refreshExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        user.refreshTokenHash = hashToken(rawRefresh);
+        user.refreshTokenExpires = refreshExpires;
+        await user.save();
+
+        setRefreshCookie(res, rawRefresh, refreshExpires);
+
+        const safeUser = await User.findById(user._id).select(PUBLIC_USER_FIELDS);
+
         res.status(201).json({
-            token: generateToken(user),
-            user: userObj
-        })
-        
+            ok: true,
+            accessToken,
+            user: safeUser
+        });
+
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({
             ok: false,
-            error: 'Internal server error on registration', error
-        })
+            message: 'Internal server error on registration'
+        });
     }
-}
+};
 
-export const login = async(req, res) =>{
-
+export const login = async (req, res) => {
     try {
-        
-        const {email, password} = req.body;
+        const { email, password } = req.body;
 
-        const user = await User.findOne({email}).select('+password -resetPasswordToken -resetPasswordExpire');    
+        const user = await User.findOne({ email }).select('+password -resetPasswordToken -resetPasswordExpire');
 
-        if(user?.isActive === false) return res.status(400).json({
-            ok: false,
-            message: 'This account is inactive'
-        })
+        if (!user) {
+            return res.status(401).json({ ok: false, message: "Invalid credentials" });
+        }
 
+        if (user.isActive === false) {
+            return res.status(400).json({ ok: false, message: 'This account is inactive' });
+        }
 
-        if(user?.provider === 'google') return res.status(400).json({
-            ok: false,
-            message: "User registered with external provider (Google, Facebook, X)"
-        })
+        if (user.provider === 'google') {
+            return res.status(400).json({
+                ok: false,
+                message: "User registered with external provider (Google, Facebook, X)"
+            });
+        }
 
-        if(!user){
-            return res.status(401).json({message: "Invalid credentials"})
-        }  
-
-        if(user.lockUntil || user.lockUntil > Date.now()){
+        if (user.lockUntil && user.lockUntil > Date.now()) {
             return res.status(401).json({
                 ok: false,
                 message: "Account is locked due to multiple login failed attempts"
-            })
+            });
+        }
+
+        if (!user.password) {
+            console.error(`Local user ${user.email} has no password stored`);
+            return res.status(401).json({ ok: false, message: "Invalid credentials" });
         }
 
         const isMatch = await user.comparePassword(password);
 
-        if(!isMatch){
-
+        if (!isMatch) {
             user.loginAttempts += 1;
 
-            if(user.loginAttempts >= 5){
-                user.lockUntil = Date.now() + (30*60*1000)
+            if (user.loginAttempts >= 5) {
+                user.lockUntil = Date.now() + (30 * 60 * 1000);
             }
 
-            await user.save()
+            await user.save();
 
-            return res.status(401).json({
-                ok: false,
-                message: "Invalid credentials"
-            })
+            return res.status(401).json({ ok: false, message: "Invalid credentials" });
         }
 
         user.loginAttempts = 0;
         user.lockUntil = null;
         user.successfulLoginCount = (user.successfulLoginCount || 0) + 1;
 
-        await user.save()
-        
-        user.password = undefined;      
+        const accessToken = generateToken(user);
 
-        res.json({
-            token: generateToken(user),
-            user,
-        })
-        
+        const rawRefresh = generateRefreshToken();
+        const refreshExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        user.refreshTokenHash = hashToken(rawRefresh);
+        user.refreshTokenExpires = refreshExpires;
+
+        await user.save(); // un único save con todo lo pendiente
+
+        setRefreshCookie(res, rawRefresh, refreshExpires);
+
+        // shape consistente con register y /user/auth
+        const safeUser = await User.findById(user._id).select(PUBLIC_USER_FIELDS);
+
+        return res.json({ ok: true, accessToken, user: safeUser });
+
     } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            ok: false,
-            error: 'Internal login server error'
-        })
+        console.log(error);
+        res.status(500).json({ ok: false, message: 'Internal login server error' });
     }
-}
+};
+
+export const refresh = async (req, res) => {
+    try {
+        const raw = req.cookies?.refreshToken;
+        if (!raw) {
+            return res.status(401).json({ ok: false, message: "No refresh token" });
+        }
+
+        const tokenHash = hashToken(raw);
+
+        const user = await User.findOne({
+            refreshTokenHash: tokenHash,
+            refreshTokenExpires: { $gt: new Date() }
+        }).select("+refreshTokenHash +refreshTokenExpires");
+
+        if (!user) {
+            res.clearCookie("refreshToken", { path: "/api/user" }); // ✅ coincide con setRefreshCookie
+            return res.status(401).json({ ok: false, message: "Invalid refresh token" });
+        }
+
+        if (!user.isActive) {
+            res.clearCookie("refreshToken", { path: "/api/user" }); // ✅
+            return res.status(401).json({ ok: false, message: "Invalid user" });
+        }
+
+        const newRaw = generateRefreshToken();
+        const newExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        user.refreshTokenHash = hashToken(newRaw);
+        user.refreshTokenExpires = newExpires;
+        await user.save();
+
+        setRefreshCookie(res, newRaw, newExpires);
+
+        const accessToken = generateToken(user);
+        return res.json({ ok: true, accessToken });
+
+    } catch (error) {
+        console.error("REFRESH ERROR:", error);
+        return res.status(500).json({ ok: false, message: "Internal server error" });
+    }
+};
+
+export const logout = async (req, res) => {
+    try {
+        const raw = req.cookies?.refreshToken;
+        if (raw) {
+            await User.updateOne(
+                { refreshTokenHash: hashToken(raw) },
+                { refreshTokenHash: null, refreshTokenExpires: null }
+            );
+        }
+        res.clearCookie("refreshToken", { path: "/api/auth" });
+        return res.json({ ok: true });
+    } catch (error) {
+        console.error("LOGOUT ERROR:", error);
+        return res.status(500).json({ ok: false });
+    }
+};
 
 // export const googleAuth = async(req, res) =>{
 //     try {
@@ -242,97 +320,92 @@ export const viewUser = async(req, res) =>{
     }
 }
 
-export const resetPasswordEmail = async(req, res) =>{
+export const resetPasswordEmail = async (req, res) => {
     try {
+        const { email } = req.body;
 
-        const email = req.body;
+        if (!email || typeof email !== 'string') {
+            return res.status(400).json({ ok: false, message: "Email is required" });
+        }
 
-        const user = await User.findOne(email);
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
 
-        console.log(user)
-
-        if(!user || user.provider !== 'local'){
+        if (!user || user.provider !== 'local') {
             return res.status(400).json({
                 ok: false,
                 message: "User not found or email provider is not local"
             });
-        };
+        }
 
         const resetToken = crypto.randomBytes(32).toString("hex");
 
         user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-
-        user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+        user.resetPasswordExpire = new Date(Date.now() + 15 * 60 * 1000);
 
         await user.save();
 
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-        
 
-        await sendResetPasswordEmail(user.email, resetUrl)
+        await sendResetPasswordEmail(user.email, resetUrl);
 
-        res.status(200).json({
-            message: 'Reset password email sent'
-        })
+        return res.status(200).json({ ok: true, message: 'Reset password email sent' });
 
-
-        
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.status(500).json({
             ok: false,
             message: 'Internal server error, cannot reset password'
-        })
+        });
     }
-}
+};
 
-export const resetPassword = async(req, res) =>{
+export const resetPassword = async (req, res) => {
     try {
-        
-        const password = req.body;
+        const { password } = req.body;   // ✅ destructurar el campo
 
-        if(!password){
+        if (!password || typeof password !== 'string' || password.trim().length === 0) {
             return res.status(400).json({
                 ok: false,
                 message: "Password is required"
-            })
+            });
         }
 
         const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
 
         const user = await User.findOne({
             resetPasswordToken: hashedToken,
-            resetPasswordExpire: {$gt: Date.now()}
+            resetPasswordExpire: { $gt: Date.now() }
         }).select('+password');
 
-        if(!user){
+        if (!user) {
             return res.status(400).json({
                 ok: false,
                 message: "Invalid or expired token"
-            })
+            });
         }
 
-        //new pass
+        // new pass
         user.password = password;
 
-        //clean tokens 
+        // clean tokens
         user.resetPasswordToken = null;
         user.resetPasswordExpire = null;
 
         await user.save();
 
         return res.status(200).json({
+            ok: true,
             message: "Password reset successfully"
-        })
-        
+        });
+
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.status(500).json({
             ok: false,
             message: "Internal error reseting password"
-        })
+        });
     }
-}
+};
 
 
 export const completeProfile = async (req, res) => {
@@ -387,19 +460,20 @@ export const completeOnboarding = async(req, res) =>{
     }
 }
 
-export const getMeAuth = async(req, res) =>{
+export const getMeAuth = async (req, res) => {
     try {
-        const user = req.user;
-
-        return res.status(200).json(user)
+        return res.status(200).json({
+            ok: true,
+            user: req.user   // ya viene con PUBLIC_USER_FIELDS desde protect
+        });
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.status(500).json({
             ok: false,
             message: "Server error obtaining user"
-        })
+        });
     }
-}
+};
 
 export const adminNote = async(req, res) =>{
     const {id} = req.params;

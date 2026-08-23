@@ -1,0 +1,101 @@
+name: Daily MongoDB Backup
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install MongoDB Database Tools
+        run: |
+          wget -q https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.12.2.deb
+          sudo dpkg -i mongodb-database-tools-ubuntu2204-x86_64-100.12.2.deb
+
+      - name: Install rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Create backup
+        run: |
+          mkdir -p backup
+
+          FILE="weekly-tennis-$(date +'%Y-%m-%d_%H-%M-%S').archive.gz"
+
+          mongodump \
+            --uri="${{ secrets.MONGO_URI }}" \
+            --gzip \
+            --archive="backup/$FILE"
+
+      - name: Check backup file
+        run: |
+          echo "=== Backup folder ==="
+          ls -lah backup
+
+      - name: Configure rclone
+        run: |
+          mkdir -p ~/.config/rclone
+
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [r2]
+          type = s3
+          provider = Cloudflare
+
+          access_key_id = ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret_access_key = ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
+          endpoint = https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+
+          acl = private
+          no_check_bucket = true
+          force_path_style = true
+          EOF
+
+      - name: Debug rclone configuration
+        run: |
+          echo "=== Rclone remotes ==="
+          rclone listremotes
+
+          echo ""
+
+      - name: Debug rclone configuration
+        run: |
+          echo "=== Rclone remotes ==="
+          rclone listremotes
+
+          echo ""
+          echo "=== Current bucket objects before upload ==="
+          rclone ls r2:${{ secrets.R2_BUCKET }} || true
+
+          echo ""
+          echo "=== Current bucket objects before upload ==="
+          rclone ls r2:${{ secrets.R2_BUCKET }} || true
+
+      - name: Upload backup
+        run: |
+          echo "Uploading to bucket: ${{ secrets.R2_BUCKET }}"
+
+          rclone copy backup r2:${{ secrets.R2_BUCKET }} \
+            --progress \
+            -vv
+
+      - name: Verify upload
+        run: |
+          echo "=== Objects after upload ==="
+
+          rclone ls r2:${{ secrets.R2_BUCKET }} -vv
+
+      - name: Verify upload
+        run: |
+          echo "=== Objects after upload ==="
+          rclone ls r2:${{ secrets.R2_BUCKET }} -vv
+
+      - name: Delete backups older than 30 days
+        run: |
+          rclone delete r2:${{ secrets.R2_BUCKET }} --min-age 30d || true

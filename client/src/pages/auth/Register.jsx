@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Checkbox, Form, Input, Select, Space, Steps, Typography, Image} from "antd";
+import { Button, Checkbox, Form, Input, Select, Space, Steps, Typography, Image } from "antd";
 import { CheckOutlined, CloseOutlined, LoadingOutlined } from "@ant-design/icons";
 import NTRPLevel from "../../components/utils/NTRPLevel";
 import { register, checkEmailValidity } from "../../actions/auth";
@@ -87,7 +87,7 @@ const Register = () => {
               key: `${c.iso2} -${index}`,
               value: c.phoneCode,
               search: `${c.name} ${c.phoneCode}`,
-              label: ( 
+              label: (
                 <Space size={4}>
                   <Image
                     src={c.flag}
@@ -177,7 +177,7 @@ const Register = () => {
     try {
       const data = await register(payload);
 
-      setSession(data?.token);
+      await setSession(data?.accessToken);   // ✅ await + nombre unificado
 
       toast.success(`Registration complete, welcome ${data?.user?.name}`);
 

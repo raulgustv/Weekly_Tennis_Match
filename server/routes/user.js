@@ -1,9 +1,9 @@
 import {Router} from 'express';
-import {  login, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote, userNotes, suspendUser } from '../controller/user.js';
+import { refresh, login, logout, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote, userNotes, suspendUser } from '../controller/user.js';
 import { googleValidator, loginValidator, noteValidator, registerValidator } from '../validator/userValidator.js';
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 import { protect, verifyAdmin } from '../middlewares/auth.js';
-import { adminLimiter, authLimiter, changePasswordLimiter, readLimiter, registerLimiter } from '../config/expressLimit.js';
+import { adminLimiter, authLimiter, changePasswordLimiter, readLimiter, refreshLimiter, registerLimiter } from '../config/expressLimit.js';
 //import { verify } from 'crypto';
 
 
@@ -12,6 +12,8 @@ const router = Router();
 router.post("/register", registerLimiter, registerValidator, validateFields, register)
 router.post("/login", authLimiter, loginValidator, validateFields, login)
 router.get('/auth', protect,  getMeAuth)
+router.post('/refresh', refreshLimiter, refresh)
+router.post('/logout', logout)
 //router.post("/google", googleValidator, validateFields, googleAuth)
 router.get("/validate", validateEmail)
 
