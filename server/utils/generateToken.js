@@ -20,8 +20,8 @@ export const setRefreshCookie = (res, raw, expiresAt) => {
     res.cookie("refreshToken", raw, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        path: "/api/user", // <- coincide con tu prefix real
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+        path: "/api/user",
         expires: expiresAt
     });
 };
