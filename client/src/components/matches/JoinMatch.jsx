@@ -22,11 +22,12 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
   const {user, loadUser} = useAuth();
 
   const balance = user?.walletBalance;
-  const walletPaymentAllowed = user?.walletPaymentAllowed
 
   // 🔵 AÑADIDO
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [paymentModal, setPaymentModal] = useState(false);
+
+  const walletPaymentAllowed = selectedMatch?.createdBy?.walletPaymentAllowed === true
 
 
   const handleJoin = async (id, backup = false, paymentMethod = null) => {

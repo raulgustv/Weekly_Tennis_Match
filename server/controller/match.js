@@ -127,7 +127,7 @@ export const getAllMatches = async (req, res) => {
             .populate('location', 'name address courts')
             .populate('players.user', 'name lastname ntrplvl profilePicture')
             .populate('backUps.user', 'name lastname ntrplvl profilePicture')
-            .populate('createdBy', 'name lastname')
+            .populate('createdBy', 'name lastname walletPaymentAllowed')
             .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl profilePicture')
@@ -172,7 +172,7 @@ export const getMatch = async (req, res) => {
             .populate('location', 'name address courts')
             .populate('players.user', 'name lastname ntrplvl profilePicture')
             .populate('backUps.user', 'name lastname ntrplvl profilePicture')
-            .populate('createdBy', 'name lastname')
+            .populate('createdBy', 'name lastname walletPaymentAllowed')
             .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl profilePicture')
@@ -222,7 +222,7 @@ export const getOpenMatch = async (req, res) => {
             .populate('location', 'name address courts')
             .populate('players.user', 'name lastname ntrplvl profilePicture')
             .populate('backUps.user', 'name lastname ntrplvl profilePicture')
-            .populate('createdBy', 'name lastname')
+            .populate('createdBy', 'name lastname walletPaymentAllowed')
             .populate('generatedMatches.teamA.player1', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamA.player2', 'name lastname ntrplvl profilePicture')
             .populate('generatedMatches.teamB.player1', 'name lastname ntrplvl profilePicture')
@@ -436,7 +436,9 @@ export const joinMatch = async (req, res) => {
       throw new Error("Payment method required");
     }
 
-    const match = await Match.findById(id).session(session).populate('location', 'name')
+    const match = await Match.findById(id).session(session)
+                  .populate('location', 'name')
+                  .populate('createdBy', 'walletPaymentAllowed');
 
 
     if (!match) {
@@ -458,7 +460,7 @@ export const joinMatch = async (req, res) => {
     if (paymentMethod === "wallet") {
 
       //wallet for allowed only
-      if(!user.walletPaymentAllowed){
+      if(!match.createdBy?.walletPaymentAllowed){
         throw new Error("Wallet payment not available for this user")
       }
 
