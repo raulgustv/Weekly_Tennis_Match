@@ -1,6 +1,13 @@
 import mongoose from "mongoose";
 import bcrypt from 'bcryptjs';
 
+const sessionSchema = new mongoose.Schema({
+    refreshTokenHash: { type: String, required: true },
+    expiresAt: { type: Date, required: true },
+    userAgent: String,
+    createdAt: { type: Date, default: Date.now }
+}, { _id: true }); // el _id de cada sesión nos sirve para logout individual
+
 const adjustmentHistorySchema = new mongoose.Schema({
     match: {
         type: mongoose.Schema.Types.ObjectId,
@@ -40,6 +47,8 @@ const noteHistorySchema = new mongoose.Schema({
         default: Date.now
     }
 }, { _id: true })
+
+
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -192,16 +201,12 @@ const userSchema = new mongoose.Schema({
         ref: "Notification",
         default: []
     },
-    refreshTokenHash: {
-        type: String,
-        default: null,
-        select: false
-    },
-    refreshTokenExpires: {
-        type: Date,
-        default: null,
-        select: false
+    sessions: {
+    type: [sessionSchema],
+    default: [],
+    select: false
     }
+
 }, {
     timestamps: true
 });

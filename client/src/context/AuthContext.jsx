@@ -1,4 +1,4 @@
-import { useContext, useState, createContext, useEffect } from "react";
+import { useContext, useState, createContext, useEffect, useCallback } from "react";
 import { getNotificationToken, getUserAuth } from "../actions/auth";
 import { getToken } from "firebase/messaging";
 //import { toast } from "react-toastify";
@@ -13,42 +13,51 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     // trae los datos del usuario asumiendo que el access token ya está seteado en memoria
-    const loadUser = async () => {
+    const loadUser = useCallback(async () => {
         try {
             const res = await getUserAuth();
-            setUser(res.data.user);   // ✅ ahora el backend manda { ok, user }
+            setUser(res.data.user);   // ✅ backend manda { ok, user }
         } catch (error) {
             setAccessToken(null);
             setUser(null);
         }
-    };
+    }, []);
 
-    // al montar la app: intenta recuperar sesión vía refresh token (cookie httpOnly)
-    // TODO: por ahora esta ruta no existe en el backend todavía, cuando esté lista
-    // esto va a levantar la sesión sola al recargar la página
+    // intenta recuperar sesión vía refresh token (cookie httpOnly)
+    const tryRestoreSession = useCallback(async () => {
+        try {
+            const { data } = await axiosInstance.post("/user/refresh");
+            setAccessToken(data.accessToken);
+            await loadUser();
+            return true;
+        } catch (error) {
+            setAccessToken(null);
+            setUser(null);
+            return false;
+        }
+    }, [loadUser]);
+
+    // al montar la app
     useEffect(() => {
-
         const bootstrap = async () => {
-            try {
-
-                const { data } = await axiosInstance.post("/user/refresh");
-                setAccessToken(data.accessToken);
-                await loadUser();
-
-            } catch (error) {
-
-                // no había sesión válida (no logueado, o refresh token expirado/inválido)
-                setAccessToken(null);
-                setUser(null);
-
-            } finally {
-                setLoading(false);
-            }
+            await tryRestoreSession();
+            setLoading(false);
         };
 
         bootstrap();
+    }, [tryRestoreSession]);
 
-    }, []);
+    // al volver del segundo plano (clave para iOS PWA / app añadida a inicio)
+    useEffect(() => {
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === "visible") {
+                await tryRestoreSession();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }, [tryRestoreSession]);
 
     useEffect(() => {
         if (!user) return;
@@ -83,7 +92,6 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     };
 
-    // TODO: esta ruta tampoco existe todavía en el backend, por ahora solo limpia estado local
     const logout = async () => {
 
         try {

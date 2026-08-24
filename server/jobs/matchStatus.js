@@ -1,119 +1,282 @@
 import cron from 'node-cron';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+
 import Match from '../models/Match.js';
 import User from '../models/user.js';
 
-cron.schedule('* * * * *', async () => {
-  try {
-    const now = new Date();
-    console.log('Cron running at:', now.toISOString());
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
-    /*
-      ==========================================
-      OPEN → CLOSED (si nunca empezó)
-      ==========================================
-    */
-    const openMatches = await Match.find({ status: 'Open' });
+const MADRID_TIMEZONE = 'Europe/Madrid';
 
-    for (const match of openMatches) {
-      if (!match.date || !match.startTime) continue;
+/*
+  ============================================================
+  CRON
+  ============================================================
 
-      const startDate = new Date(match.date);
-      const [h, m] = match.startTime.split(':');
+  Se ejecuta cada minuto.
 
-      startDate.setHours(Number(h), Number(m), 0, 0);
+  timezone: Europe/Madrid hace que node-cron interprete
+  la programación utilizando la hora de Madrid.
+*/
+cron.schedule(
+  '* * * * *',
+  async () => {
+    try {
+      const now = dayjs().tz(MADRID_TIMEZONE);
 
-      if (now >= startDate) {
-        match.status = 'Closed';
-        await match.save();
-        console.log(`${match._id} → Closed (from Open)`);
-      }
-    }
+      console.log(
+        'Cron running at:',
+        now.format('YYYY-MM-DD HH:mm:ss Z')
+      );
 
-    /*
-      ==========================================
-      READY → PLAYING
-      ==========================================
-    */
-    const readyMatches = await Match.find({ status: 'Ready' });
+      /*
+        ==========================================
+        OPEN → CLOSED
+        ==========================================
+      */
 
-    for (const match of readyMatches) {
-      if (!match.date || !match.startTime) continue;
+      const openMatches = await Match.find({
+        status: 'Open',
+      });
 
-      const startDate = new Date(match.date);
-      const [h, m] = match.startTime.split(':');
+      for (const match of openMatches) {
+        if (!match.date || !match.startTime) continue;
 
-      startDate.setHours(Number(h), Number(m), 0, 0);
+        /*
+          Construimos explícitamente la fecha/hora
+          del partido en Europe/Madrid.
 
-      if (now >= startDate) {
-        match.status = 'Playing';
-        await match.save();
-        console.log(`${match._id} → Playing`);
-      }
-    }
+          Ejemplo:
+          date      = 2026-08-24
+          startTime = 18:30
 
-    /*
-      ==========================================
-      PLAYING → PLAYED
-      ==========================================
-    */
-    const playingMatches = await Match.find({ status: 'Playing' });
+          → 2026-08-24 18:30 Europe/Madrid
+        */
 
-    for (const match of playingMatches) {
-      if (!match.date || !match.endTime) continue;
+        const startDate = buildMadridDate(
+          match.date,
+          match.startTime
+        );
 
-      const endDate = new Date(match.date);
-      const [h, m] = match.endTime.split(':');
+        if (!startDate) continue;
 
-      endDate.setHours(Number(h), Number(m), 0, 0);
+        if (now.isSame(startDate) || now.isAfter(startDate)) {
+          match.status = 'Closed';
 
-      if (now >= endDate) {
-        match.status = 'Played';
-        match.wasPlayed = true;
-        await match.save();
+          await match.save();
 
-
-        await User.updateMany(
-        {
-          _id: { $in: match.players.map(p => p.user) },
-          $or: [
-            {lastMatchPlayed: {$exists: false}},
-            {lastMatchPlayed: {$lt : match.date}}
-          ]
-        },
-        {
-          $set:{lastMatchPlayed: match.date}
+          console.log(
+            `${match._id} → Closed (from Open)`
+          );
         }
-      )
-
-        console.log(`${match._id} → Played`);
       }
-    }
 
-    /*
-      ==========================================
-      PLAYED → CLOSED (48h después)
-      ==========================================
-    */
-    const playedMatches = await Match.find({ status: 'Played' });
+      /*
+        ==========================================
+        READY → PLAYING
+        ==========================================
+      */
 
-    for (const match of playedMatches) {
-      if (!match.date || !match.endTime) continue;
+      const readyMatches = await Match.find({
+        status: 'Ready',
+      });
 
-      const endDate = new Date(match.date);
-      const [h, m] = match.endTime.split(':');
+      for (const match of readyMatches) {
+        if (!match.date || !match.startTime) continue;
 
-      endDate.setHours(Number(h), Number(m), 0, 0);
+        const startDate = buildMadridDate(
+          match.date,
+          match.startTime
+        );
 
-      const closeDate = new Date(endDate.getTime() + 48 * 60 * 60 * 1000);
+        if (!startDate) continue;
 
-      if (now >= closeDate) {
-        match.status = 'Closed';
-        await match.save();
-        console.log(`${match._id} → Closed`);
+        if (now.isSame(startDate) || now.isAfter(startDate)) {
+          match.status = 'Playing';
+
+          await match.save();
+
+          console.log(
+            `${match._id} → Playing`
+          );
+        }
       }
-    }
 
-  } catch (error) {
-    console.error('Cron error:', error);
+      /*
+        ==========================================
+        PLAYING → PLAYED
+        ==========================================
+      */
+
+      const playingMatches = await Match.find({
+        status: 'Playing',
+      });
+
+      for (const match of playingMatches) {
+        if (!match.date || !match.endTime) continue;
+
+        const endDate = buildMadridDate(
+          match.date,
+          match.endTime
+        );
+
+        if (!endDate) continue;
+
+        if (now.isSame(endDate) || now.isAfter(endDate)) {
+          match.status = 'Played';
+          match.wasPlayed = true;
+
+          await match.save();
+
+          /*
+            Actualizar lastMatchPlayed
+            de los jugadores del partido.
+          */
+
+          await User.updateMany(
+            {
+              _id: {
+                $in: match.players.map(
+                  (player) => player.user
+                ),
+              },
+
+              $or: [
+                {
+                  lastMatchPlayed: {
+                    $exists: false,
+                  },
+                },
+                {
+                  lastMatchPlayed: {
+                    $lt: match.date,
+                  },
+                },
+              ],
+            },
+            {
+              $set: {
+                lastMatchPlayed: match.date,
+              },
+            }
+          );
+
+          console.log(
+            `${match._id} → Played`
+          );
+        }
+      }
+
+      /*
+        ==========================================
+        PLAYED → CLOSED
+        48 HORAS DESPUÉS
+        ==========================================
+      */
+
+      const playedMatches = await Match.find({
+        status: 'Played',
+      });
+
+      for (const match of playedMatches) {
+        if (!match.date || !match.endTime) continue;
+
+        const endDate = buildMadridDate(
+          match.date,
+          match.endTime
+        );
+
+        if (!endDate) continue;
+
+        /*
+          Añadimos exactamente 48 horas
+          desde el final del partido.
+        */
+
+        const closeDate = endDate.add(
+          48,
+          'hour'
+        );
+
+        if (
+          now.isSame(closeDate) ||
+          now.isAfter(closeDate)
+        ) {
+          match.status = 'Closed';
+
+          await match.save();
+
+          console.log(
+            `${match._id} → Closed`
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        'Cron error:',
+        error
+      );
+    }
+  },
+  {
+    timezone: MADRID_TIMEZONE,
   }
-});
+);
+
+
+/*
+  ============================================================
+  HELPER
+  ============================================================
+
+  Recibe:
+
+  date      → fecha del partido
+  time      → HH:mm
+
+  Y devuelve un objeto Dayjs situado explícitamente
+  en Europe/Madrid.
+*/
+
+function buildMadridDate(date, time) {
+  if (!date || !time) {
+    return null;
+  }
+
+  /*
+    Si match.date viene de MongoDB como Date,
+    primero obtenemos la fecha calendario que representa.
+
+    Usamos UTC aquí para evitar que la zona horaria
+    del servidor cambie el día.
+  */
+
+  const dateString = dayjs(date)
+    .utc()
+    .format('YYYY-MM-DD');
+
+  const [hours, minutes] = time
+    .split(':')
+    .map(Number);
+
+  if (
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes)
+  ) {
+    console.error(
+      'Invalid match time:',
+      time
+    );
+
+    return null;
+  }
+
+  return dayjs.tz(
+    `${dateString} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
+    'YYYY-MM-DD HH:mm',
+    MADRID_TIMEZONE
+  );
+}

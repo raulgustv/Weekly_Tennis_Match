@@ -103,7 +103,8 @@ export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const user = await User.findOne({ email }).select('+password -resetPasswordToken -resetPasswordExpire');
+        const user = await User.findOne({ email })
+            .select('+password +sessions -resetPasswordToken -resetPasswordExpire');
 
         if (!user) {
             return res.status(401).json({ ok: false, message: "Invalid credentials" });
@@ -155,14 +156,19 @@ export const login = async (req, res) => {
         const rawRefresh = generateRefreshToken();
         const refreshExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-        user.refreshTokenHash = hashToken(rawRefresh);
-        user.refreshTokenExpires = refreshExpires;
+        // limpia sesiones caducadas antes de añadir la nueva
+        user.sessions = (user.sessions || []).filter(s => s.expiresAt > new Date());
 
-        await user.save(); // un único save con todo lo pendiente
+        user.sessions.push({
+            refreshTokenHash: hashToken(rawRefresh),
+            expiresAt: refreshExpires,
+            userAgent: req.headers["user-agent"]
+        });
+
+        await user.save();
 
         setRefreshCookie(res, rawRefresh, refreshExpires);
 
-        // shape consistente con register y /user/auth
         const safeUser = await User.findById(user._id).select(PUBLIC_USER_FIELDS);
 
         return res.json({ ok: true, accessToken, user: safeUser });
@@ -175,61 +181,72 @@ export const login = async (req, res) => {
 
 export const refresh = async (req, res) => {
     try {
-        const raw = req.cookies?.refreshToken;
-        if (!raw) {
+        const rawRefresh = req.cookies.refreshToken;
+        if (!rawRefresh) {
             return res.status(401).json({ ok: false, message: "No refresh token" });
         }
 
-        const tokenHash = hashToken(raw);
+        const hash = hashToken(rawRefresh);
 
-        const user = await User.findOne({
-            refreshTokenHash: tokenHash,
-            refreshTokenExpires: { $gt: new Date() }
-        }).select("+refreshTokenHash +refreshTokenExpires");
+        const user = await User.findOne({ "sessions.refreshTokenHash": hash })
+            .select("+sessions");
 
         if (!user) {
-            res.clearCookie("refreshToken", { path: "/api/user" }); // ✅ coincide con setRefreshCookie
-            return res.status(401).json({ ok: false, message: "Invalid refresh token" });
+            return res.status(401).json({ ok: false, message: "Invalid session" });
         }
 
-        if (!user.isActive) {
-            res.clearCookie("refreshToken", { path: "/api/user" }); // ✅
-            return res.status(401).json({ ok: false, message: "Invalid user" });
+        const session = user.sessions.find(s => s.refreshTokenHash === hash);
+
+        if (!session || session.expiresAt < new Date()) {
+            // limpia si estaba caducada
+            user.sessions = user.sessions.filter(s => s.refreshTokenHash !== hash);
+            await user.save();
+            return res.status(401).json({ ok: false, message: "Session expired" });
         }
 
-        const newRaw = generateRefreshToken();
+        if (user.isActive === false) {
+            return res.status(401).json({ ok: false, message: "Invalid session" });
+        }
+
+        // rotación: reemplaza esta sesión por una nueva
+        const newRawRefresh = generateRefreshToken();
         const newExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-        user.refreshTokenHash = hashToken(newRaw);
-        user.refreshTokenExpires = newExpires;
+        session.refreshTokenHash = hashToken(newRawRefresh);
+        session.expiresAt = newExpires;
+
         await user.save();
 
-        setRefreshCookie(res, newRaw, newExpires);
+        setRefreshCookie(res, newRawRefresh, newExpires);
 
         const accessToken = generateToken(user);
         return res.json({ ok: true, accessToken });
 
     } catch (error) {
-        console.error("REFRESH ERROR:", error);
-        return res.status(500).json({ ok: false, message: "Internal server error" });
+        console.log(error);
+        res.status(500).json({ ok: false, message: 'Internal refresh server error' });
     }
 };
 
+// cierra solo el dispositivo actual
 export const logout = async (req, res) => {
-    try {
-        const raw = req.cookies?.refreshToken;
-        if (raw) {
-            await User.updateOne(
-                { refreshTokenHash: hashToken(raw) },
-                { refreshTokenHash: null, refreshTokenExpires: null }
-            );
-        }
-        res.clearCookie("refreshToken", { path: "/api/auth" });
-        return res.json({ ok: true });
-    } catch (error) {
-        console.error("LOGOUT ERROR:", error);
-        return res.status(500).json({ ok: false });
+    const rawRefresh = req.cookies.refreshToken;
+    if (rawRefresh) {
+        const hash = hashToken(rawRefresh);
+        await User.updateOne(
+            { "sessions.refreshTokenHash": hash },
+            { $pull: { sessions: { refreshTokenHash: hash } } }
+        );
     }
+    res.clearCookie("refreshToken", { path: "/api/user" });
+    res.json({ ok: true });
+};
+
+// cierra sesión en todos los dispositivos (requiere req.user del middleware protect)
+export const logoutAllDevices = async (req, res) => {
+    await User.updateOne({ _id: req.user._id }, { $set: { sessions: [] } });
+    res.clearCookie("refreshToken", { path: "/api/user" });
+    res.json({ ok: true });
 };
 
 // export const googleAuth = async(req, res) =>{
