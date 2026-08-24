@@ -9,10 +9,13 @@ const PaymentModal = ({
     onConfirm,
     paymentMethods = [],
     price,
-    balance
+    balance,
+    walletPaymentAllowed
 }) => {
 
     const [selectedPayment, setSelectedPayment] = useState(null);
+
+    console.log(walletPaymentAllowed)
 
     useEffect(() => {
         if (!open) {
@@ -57,7 +60,9 @@ const PaymentModal = ({
                     style={{ width: "100%" }}
                     size="middle"
                 >
-                    {paymentMethods.map((pm) => {
+                    {paymentMethods
+                        .filter((pm) => pm.type !== 'wallet' || walletPaymentAllowed) 
+                        .map((pm) => {
 
                         const isWallet = pm.type === "wallet";
                         const isDisabled =

@@ -153,6 +153,11 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    /* allows the user to receive wallet payments */
+    walletPaymentAllowed: {
+        type: Boolean,
+        default: false
+    },
     lastMatchPlayed: {
         type: Date,
         default: null

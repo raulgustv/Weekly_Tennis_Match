@@ -22,6 +22,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
   const {user, loadUser} = useAuth();
 
   const balance = user?.walletBalance;
+  const walletPaymentAllowed = user?.walletPaymentAllowed
 
   // 🔵 AÑADIDO
   const [selectedMatch, setSelectedMatch] = useState(null);
@@ -181,6 +182,7 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
             selectedMatch.maxPlayers
           ).toFixed(2)}
           balance={balance}
+          walletPaymentAllowed={walletPaymentAllowed}
         />
       )}
     </>

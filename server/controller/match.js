@@ -457,6 +457,11 @@ export const joinMatch = async (req, res) => {
 
     if (paymentMethod === "wallet") {
 
+      //wallet for allowed only
+      if(!user.walletPaymentAllowed){
+        throw new Error("Wallet payment not available for this user")
+      }
+
       //  precio estimado por jugador
       const estimatedPrice = Math.round((match.price / match.maxPlayers) * 100) / 100;;
 
