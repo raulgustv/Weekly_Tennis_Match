@@ -16,8 +16,6 @@ const UserDashboard = () => {
     (match) => match.status !== "Played"
   );
 
-
-
   return (
     <>
       <Space

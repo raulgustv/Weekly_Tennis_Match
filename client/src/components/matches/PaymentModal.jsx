@@ -15,8 +15,6 @@ const PaymentModal = ({
 
     const [selectedPayment, setSelectedPayment] = useState(null);
 
-    console.log(walletPaymentAllowed)
-
     useEffect(() => {
         if (!open) {
             setSelectedPayment(null);
