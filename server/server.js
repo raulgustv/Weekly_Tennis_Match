@@ -33,8 +33,8 @@ app.set('trust_proxy', 1)
 
 //Middleware
 const allowedOrigins = [
-  process.env.ALOWED_ORIGIN_LOCAL,
-  process.env.ALOWED_ORIGIN_MAIN
+  process.env.ALLOWED_ORIGIN_LOCAL,
+  process.env.ALLOWED_ORIGIN_MAIN
 ];
 
 app.use(cookieParser())
