@@ -16,38 +16,47 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
         try {
             const res = await getUserAuth();
-            setUser(res.data.user);   // ✅ ahora el backend manda { ok, user }
+            setUser(res.data.user);   // ✅ backend manda { ok, user }
         } catch (error) {
             setAccessToken(null);
             setUser(null);
         }
     };
 
-    // al montar la app: intenta recuperar sesión vía refresh token (cookie httpOnly)
-    // TODO: por ahora esta ruta no existe en el backend todavía, cuando esté lista
-    // esto va a levantar la sesión sola al recargar la página
+    // intenta recuperar sesión vía refresh token (cookie httpOnly)
+    const tryRestoreSession = async () => {
+        try {
+            const { data } = await axiosInstance.post("/user/refresh");
+            setAccessToken(data.accessToken);
+            await loadUser();
+            return true;
+        } catch (error) {
+            setAccessToken(null);
+            setUser(null);
+            return false;
+        }
+    };
+
+    // al montar la app
     useEffect(() => {
-
         const bootstrap = async () => {
-            try {
-
-                const { data } = await axiosInstance.post("/user/refresh");
-                setAccessToken(data.accessToken);
-                await loadUser();
-
-            } catch (error) {
-
-                // no había sesión válida (no logueado, o refresh token expirado/inválido)
-                setAccessToken(null);
-                setUser(null);
-
-            } finally {
-                setLoading(false);
-            }
+            await tryRestoreSession();
+            setLoading(false);
         };
 
         bootstrap();
+    }, []);
 
+    // al volver del segundo plano (clave para iOS PWA / app añadida a inicio)
+    useEffect(() => {
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === "visible") {
+                await tryRestoreSession();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, []);
 
     useEffect(() => {
@@ -83,7 +92,6 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     };
 
-    // TODO: esta ruta tampoco existe todavía en el backend, por ahora solo limpia estado local
     const logout = async () => {
 
         try {
