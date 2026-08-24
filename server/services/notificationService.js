@@ -58,7 +58,7 @@ export const sendJoinMatchNotification = async (tokens, playerName, locationName
     return sendNotification(
         tokens,
         "🎾 New Player Joined",
-        `${playerName} just joined your match at ${locationName}.`,
+        `${playerName} just joined match at ${locationName}.`,
         {
             type: "PLAYER_JOINED"
         }
