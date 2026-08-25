@@ -42,11 +42,12 @@ export const sendNotification = async(tokens, title, body, data) =>{
 }
 
 
-export const sendNewMatchNotification = async (tokens, locationName) => {
+export const sendNewMatchNotification = async (tokens, locationName, creator, formattedDate, formattedTime) => {
+    //console.log(formattedDate, formattedTime)
     return sendNotification(
         tokens,
         "🎾 New Match Available",
-        `A new match has been created at ${locationName}.`,
+        `${creator} has posted a new match on ${formattedDate} ${formattedTime}h at: ${locationName}`,
         {
             type: "NEW_MATCH"
         }
