@@ -2,7 +2,7 @@ import admin from "../config/firebase.js";
 import User from '../models/user.js'
 
 
-export const notifyOtherPlayersOfJoin = async (userId, playerName, location) => {
+export const notifyOtherPlayersOfJoin = async (userId, playerName, location, formattedDate) => {
   const usersNotice = await User.find({
     isActive: true,
     _id: { $ne: userId },
@@ -12,7 +12,7 @@ export const notifyOtherPlayersOfJoin = async (userId, playerName, location) => 
   const tokens = usersNotice.map(u => u.fcmToken).filter(Boolean);
 
   if (tokens.length > 0) {
-    await sendJoinMatchNotification(tokens, playerName, location);
+    await sendJoinMatchNotification(tokens, playerName, location, formattedDate);
   }
 };
 
@@ -54,11 +54,11 @@ export const sendNewMatchNotification = async (tokens, locationName) => {
 };
 
 
-export const sendJoinMatchNotification = async (tokens, playerName, locationName) => {
+export const sendJoinMatchNotification = async (tokens, playerName, locationName, formattedDate) => {
     return sendNotification(
         tokens,
         "🎾 New Player Joined",
-        `${playerName} just joined match at ${locationName}.`,
+        `${playerName} just joined match on ${formattedDate} at ${locationName}.`,
         {
             type: "PLAYER_JOINED"
         }

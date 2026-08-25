@@ -526,7 +526,7 @@ export const joinMatch = async (req, res) => {
       await session.commitTransaction(); 
 
       try {
-        await notifyOtherPlayersOfJoin(userId, user.name, match.location.name);
+        await notifyOtherPlayersOfJoin(userId, user.name, match.location.name, formattedDate);
       } catch (notifError) {
         console.error("Error sending join notification:", notifError);
 }
@@ -574,11 +574,13 @@ export const joinMatch = async (req, res) => {
         await updatedMatch.save({ session });
       }
 
+      const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
       await session.commitTransaction();
 
+      
 
       try {
-        await notifyOtherPlayersOfJoin(userId, user.name, match.location.name);
+        await notifyOtherPlayersOfJoin(userId, user.name, match.location.name, formattedDate );
       } catch (notifError) {
         console.error("Error sending join notification:", notifError);
 }
