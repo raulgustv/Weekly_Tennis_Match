@@ -94,7 +94,17 @@ export const newMatch = async (req, res) => {
             paymentMethods: finalPaymentMethods
         });
 
-        /* PUSH NOTIFICATION */   
+        /* PUSH NOTIFICATION */ 
+        
+        const creator = await User.findById(req.user._id).select("name lastname");
+
+        const formattedDate = new Intl.DateTimeFormat('en-US', {
+                                  weekday: 'short',
+                                  day: 'numeric',
+                                  month: 'long',
+                                  timeZone: 'Europe/Madrid'
+                                }).format(new Date(`${date}T00:00:00`))
+                                  .replace(',', ''); // saca la coma que agrega el locale es-ES        
         const usersNotice = await User.find({
           isActive: true,
           _id: { $ne: req.user._id },
@@ -108,7 +118,7 @@ export const newMatch = async (req, res) => {
           .map(user => user.fcmToken)
           .filter(Boolean);
 
-        await sendNewMatchNotification(tokens, location.name);
+        await sendNewMatchNotification(tokens, location.name, `${creator.name} ${creator.lastname}`, formattedDate, startTime);
 
         return res.status(201).json(match);
 
