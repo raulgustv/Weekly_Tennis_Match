@@ -305,8 +305,12 @@ export const allDeposits = async(req, res) =>{
 
         //const adminId = req.user._id;
 
+        /* .find({createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }}) 
+            poner antes del .populate si quiero ultimos 30 días
+        */ 
+
         const transactions = await WalletTransaction
-                .find({createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }})
+                .find()
                 .populate("user", "name lastname email phone")
         .sort({createdAt: -1})
 
