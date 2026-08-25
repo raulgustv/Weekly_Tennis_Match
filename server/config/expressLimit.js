@@ -88,7 +88,7 @@ export const authLimiter = rateLimit({
 // config/expressLimit.js
 export const refreshLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20, // el refresh se llama seguido (bootstrap, retries de 401), dale más margen que login
+    max: 60, 
     standardHeaders: true,
     legacyHeaders: false,
     message: {
