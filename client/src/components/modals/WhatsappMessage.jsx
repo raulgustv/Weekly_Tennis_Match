@@ -55,8 +55,8 @@ const WhatsappMessage = ({ open, setOpenMessage, match }) => {
 *Only for visibility please join using the link*
 https://www.madridtenniscommunity.es/games
 
+*Date*:  ${matchDateTime.format("dddd, MMM D, YYYY HH[h]")}
 DEADLINE: ${deadline.format("H[h]")} - ${deadline.format("dddd, MMM D, YYYY")}
-Date:  ${matchDateTime.format("dddd, MMM D, YYYY HH[h]")}
 Location: ${match.location.name} - ${match.location.address}
 
 Players:

@@ -19,6 +19,7 @@ import TransactionsTable from '../../components/wallet/TransactionsTable';
 import axiosInstance from '../../API/axios';
 import { toast } from 'react-toastify';
 import { updatePaymentRecepient } from '../../actions/admin';
+import WalletBalanceSummary from '../../components/wallet/WalletBalanceSummary';
 
 const WalletAdmin = () => {
 
@@ -68,7 +69,7 @@ const WalletAdmin = () => {
         try {
             setLoadingUpdate(true);
 
-            const res = await updatePaymentRecepient(selectedAdmin);   
+            const res = await updatePaymentRecepient(selectedAdmin);
 
             toast.success(res?.message || 'Payment admin updated');
 
@@ -86,50 +87,66 @@ const WalletAdmin = () => {
         <>
             <Title level={3}>Manage transactions</Title>
 
-            <div style={{ marginBottom: 16 }}>
-                <Title level={5}>
-                    Payment admin:{' '}
-                    {paymentAdmin ? (
-                        <>
-                            {paymentAdmin.name} {paymentAdmin.lastname}{' '}
-                            <Tag color="green">Current</Tag>
-                        </>
-                    ) : (
-                        <Tag color="red">Not assigned</Tag>
-                    )}
-                </Title>
-            </div>
+            <Row gutter={[16, 16]} style={{ marginBottom: 16 }} align="stretch">
+                <Col xs={24} md={12}>
+                    <WalletBalanceSummary transactions={transactions} />
+                </Col>
 
-            <Flex gap={8} align="center" wrap="wrap">
-
-                <Select
-                    value={selectedAdmin}
-                    placeholder="Select an admin"
-                    style={{ width: 260 }}
-                    options={admins.map((ad) => ({
-                        value: ad._id,
-                        label: (
-                            <Flex justify="space-between">
-                                <span>{ad.name} {ad.lastname}</span>
-                                {ad.receivesPayment && (
+                <Col xs={24} md={12}>
+                    <Flex
+                        vertical
+                        justify="center"
+                        gap={8}
+                        style={{
+                            height: '100%',
+                            borderRadius: 14,
+                            border: '1px solid #f0f0f0',
+                            padding: '14px 20px',
+                        }}
+                    >
+                        <Title level={5} style={{ margin: 0 }}>
+                            Payment admin:{' '}
+                            {paymentAdmin ? (
+                                <>
+                                    {paymentAdmin.name} {paymentAdmin.lastname}{' '}
                                     <Tag color="green">Current</Tag>
-                                )}
-                            </Flex>
-                        )
-                    }))}
-                    onChange={(value) => setSelectedAdmin(value)}
-                />
+                                </>
+                            ) : (
+                                <Tag color="red">Not assigned</Tag>
+                            )}
+                        </Title>
 
-                <Button
-                    type="primary"
-                    disabled={!selectedAdmin}
-                    loading={loadingUpdate}
-                    onClick={handleUpdate}
-                >
-                    Update
-                </Button>
+                        <Flex gap={8} align="center" wrap="wrap">
+                            <Select
+                                value={selectedAdmin}
+                                placeholder="Select an admin"
+                                style={{ flex: 1, minWidth: 180 }}
+                                options={admins.map((ad) => ({
+                                    value: ad._id,
+                                    label: (
+                                        <Flex justify="space-between">
+                                            <span>{ad.name} {ad.lastname}</span>
+                                            {ad.receivesPayment && (
+                                                <Tag color="green">Current</Tag>
+                                            )}
+                                        </Flex>
+                                    )
+                                }))}
+                                onChange={(value) => setSelectedAdmin(value)}
+                            />
 
-            </Flex>
+                            <Button
+                                type="primary"
+                                disabled={!selectedAdmin}
+                                loading={loadingUpdate}
+                                onClick={handleUpdate}
+                            >
+                                Update
+                            </Button>
+                        </Flex>
+                    </Flex>
+                </Col>
+            </Row>
 
             <Divider />
 

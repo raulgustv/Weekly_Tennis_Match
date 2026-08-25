@@ -242,6 +242,21 @@ const TransactionsTable = ({
         },
     ];
 
+
+    const exportData = useMemo(() => {
+    return filteredTransactions.map((t) => ({
+        Date: dayjs(t.createdAt).format("DD/MM/YYYY HH:mm"),
+        ...(isAdmin && {
+            Usuario: `${t?.user?.name ?? ""} ${t?.user?.lastname ?? ""}`.trim(),
+        }),
+        Type: t?.type?.replace("_", " ").toUpperCase(),
+        Amount: Number(t?.amount ?? 0),
+        Status: t?.status,
+        Method: t?.method || "-",
+        Note: t?.note || "-",
+    }));
+}, [filteredTransactions, isAdmin]);
+
     // --------------------------------------------------
     // MOBILE TRANSACTION CARD
     // --------------------------------------------------
@@ -586,7 +601,7 @@ const TransactionsTable = ({
                     <ExportToExcel
                         fileName="transactions.xlsx"
                         data={
-                            filteredTransactions
+                            exportData
                         }
                     />
                 </Flex>
