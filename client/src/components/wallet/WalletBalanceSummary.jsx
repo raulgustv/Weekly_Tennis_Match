@@ -8,12 +8,19 @@ const WalletBalanceSummary = ({ transactions = [] }) => {
     const screens = useBreakpoint();
 
     const { total, count } = useMemo(() => {
-        const total = transactions.reduce((sum, transaction) => {
+        const confirmedTransactions = transactions.filter(
+            (transaction) => transaction?.status === 'confirmed'
+        );
+
+        const total = confirmedTransactions.reduce((sum, transaction) => {
             const amount = Number(transaction?.amount) || 0;
             return sum + amount;
         }, 0);
 
-        return { total, count: transactions.length };
+        return {
+            total,
+            count: confirmedTransactions.length,
+        };
     }, [transactions]);
 
     return (
@@ -50,24 +57,52 @@ const WalletBalanceSummary = ({ transactions = [] }) => {
                 </Flex>
 
                 <Flex vertical align="center">
-                    <Typography.Text type="secondary" style={{ fontSize: 12, marginBottom: 2 }}>
+                    <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 12, marginBottom: 2 }}
+                    >
                         Wallet balance
                     </Typography.Text>
-                    <Statistic value={total} precision={2} prefix="€" style={{ fontSize: 22, fontWeight: 600 }} />
+
+                    <Statistic
+                        value={total}
+                        precision={2}
+                        prefix="€"
+                        style={{ fontSize: 22, fontWeight: 600 }}
+                    />
                 </Flex>
 
-                {screens.sm && <Divider orientation="vertical" style={{ height: 32, margin: 0 }} />}
+                {screens.sm && (
+                    <Divider
+                        orientation="vertical"
+                        style={{ height: 32, margin: 0 }}
+                    />
+                )}
 
                 <Flex align="center" gap={6}>
                     <Flex
                         align="center"
                         gap={4}
-                        style={{ background: '#e6f4ff', color: '#1677ff', padding: '3px 8px', borderRadius: 7, fontSize: 11, fontWeight: 500 }}
+                        style={{
+                            background: '#e6f4ff',
+                            color: '#1677ff',
+                            padding: '3px 8px',
+                            borderRadius: 7,
+                            fontSize: 11,
+                            fontWeight: 500,
+                        }}
                     >
                         <SwapOutlined />
                         {count}
                     </Flex>
-                    <Typography.Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+
+                    <Typography.Text
+                        type="secondary"
+                        style={{
+                            fontSize: 11,
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
                         {count === 1 ? 'transaction' : 'transactions'}
                     </Typography.Text>
                 </Flex>
