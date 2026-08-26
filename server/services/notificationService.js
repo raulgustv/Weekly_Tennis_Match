@@ -16,30 +16,43 @@ export const notifyOtherPlayersOfJoin = async (userId, playerName, location, for
   }
 };
 
-export const sendNotification = async(tokens, title, body, data) =>{
-    if(!tokens?.length) return;
+export const sendNotification = async (tokens, title, body, data) => {
+    if (!tokens?.length) return;
 
     try {
         const message = {
-            data:{
+            notification: {
                 title,
-                body,
+                body
+            },
+            data: {
                 ...data
             },
             tokens
-        }
+        };
 
-        const response = await admin.messaging().sendEachForMulticast(message)
+        const response = await admin.messaging().sendEachForMulticast(message);
 
         console.log(
             `Notifications: ${response.successCount} sent, ${response.failureCount} failed`
         );
 
+        // log detallado de los que fallaron
+        if (response.failureCount > 0) {
+            response.responses.forEach((resp, idx) => {
+                if (!resp.success) {
+                    console.log(
+                        `Failed token: ${tokens[idx]} | code: ${resp.error?.code} | message: ${resp.error?.message}`
+                    );
+                }
+            });
+        }
+
         return response;
     } catch (error) {
-        console.log(error)
+        console.log(error);
     }
-}
+};
 
 
 export const sendNewMatchNotification = async (tokens, locationName, creator, formattedDate, formattedTime) => {
@@ -56,12 +69,16 @@ export const sendNewMatchNotification = async (tokens, locationName, creator, fo
 
 
 export const sendJoinMatchNotification = async (tokens, playerName, locationName, formattedDate) => {
-    return sendNotification(
-        tokens,
-        "🎾 New Player Joined",
-        `${playerName} just joined match on ${formattedDate} at ${locationName}.`,
-        {
-            type: "PLAYER_JOINED"
-        }
-    );
+    try {
+            return sendNotification(
+            tokens,
+            "🎾 New Player Joined",
+            `${playerName} just joined match on ${formattedDate} at ${locationName}.`,
+            {
+                type: "PLAYER_JOINED"
+            }
+        );
+    } catch (error) {
+        console.log(error)
+    }
 };
