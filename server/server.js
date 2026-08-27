@@ -20,6 +20,7 @@ import './jobs/matchStatus.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser';
+import { geoBlock } from './middlewares/geoBlock.js';
 
 
 
@@ -49,6 +50,7 @@ app.use(cors({
   },
   credentials: true
 }));
+app.use(geoBlock)
 app.use(globalLimiter)
 app.use(express.json());
 app.use(morgan("dev"));
