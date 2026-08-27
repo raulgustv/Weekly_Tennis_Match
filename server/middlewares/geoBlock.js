@@ -17,11 +17,11 @@ export const geoBlock = (req, res, next) => {
   if (!geo) return next(); // sin datos de geo (ej. IP local en dev), dejamos pasar
 
   if (BLOCKED_COUNTRIES.includes(country)) {
-    return res.status(403).json({ error: 'GEO_BLOCKED', message: 'Este servicio no está disponible en tu región.' });
+    return res.status(403).json({ error: 'GEO_BLOCKED', message: 'This service is not available in your region' });
   }
 
   if (continent !== EU_CONTINENT_CODE) {
-    return res.status(403).json({ error: 'GEO_BLOCKED', message: 'Este servicio no está disponible en tu región.' });
+    return res.status(403).json({ error: 'GEO_BLOCKED', message: 'This service is not available in your region' });
   }
 
   next();
