@@ -1,16 +1,16 @@
-import { Typography, Card, Flex, Divider, Button } from "antd";
+import { Typography, Card, Flex, Button } from "antd";
 import { useFeedback } from "../../context/FeedbackContext";
 import { useAuth } from "../../context";
 import { Link } from "react-router-dom";
 
-const { Title, Paragraph, Text } = Typography;
+const { Title, Paragraph } = Typography;
 
 const Contact = () => {
 
-  const {user} = useAuth();
-  const {triggerFeedbackCheck} = useFeedback();
+  const { user } = useAuth();
+  const { triggerFeedbackCheck } = useFeedback();
 
-  const handleFeedbackClick = ()=>{
+  const handleFeedbackClick = () => {
     triggerFeedbackCheck('user_initiated', {}, 'app', 'Share your feedback')
   }
 
@@ -30,25 +30,27 @@ const Contact = () => {
         </Card>
 
         {/* WHATSAPP */}
-        <Card style={{ marginBottom: 24, borderRadius: 16 }}>
-          <Title level={4}>WhatsApp Group</Title>
+        {user && (
+          <Card style={{ marginBottom: 24, borderRadius: 16 }}>
+            <Title level={4}>WhatsApp Group</Title>
 
-          <Paragraph>
-            The fastest way to join matches and stay in the loop.
-          </Paragraph>
+            <Paragraph>
+              The fastest way to join matches and stay in the loop.
+            </Paragraph>
 
-          <a
-            href="https://chat.whatsapp.com/XXXXXXXXXXX"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "#25D366", fontWeight: 500 }}
-          >
-            👉 Join our WhatsApp group
-          </a>
-        </Card>
+            <a
+              href="https://chat.whatsapp.com/XXXXXXXXXXX"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#25D366", fontWeight: 500 }}
+            >
+              👉 Join our WhatsApp group
+            </a>
+          </Card>
+        )}
 
         {/* SOCIAL MEDIA */}
-        <Card style={{ marginBottom: 24, borderRadius: 16 }}>
+        {/* <Card style={{ marginBottom: 24, borderRadius: 16 }}>
           <Title level={4}>Social Media</Title>
 
           <Paragraph>
@@ -72,10 +74,10 @@ const Contact = () => {
               🐦 X (Twitter)
             </a>
           </Flex>
-        </Card>
+        </Card> */}
 
         {/* EMAIL */}
-        <Card style={{ borderRadius: 16 }}>
+        {/* <Card style={{ borderRadius: 16 }}>
           <Title level={4}>Email</Title>
 
           <Paragraph>
@@ -89,10 +91,10 @@ const Contact = () => {
           <Paragraph type="secondary">
             We usually reply within 24-48 hours.
           </Paragraph>
-        </Card>
+        </Card> */}
 
         {/* Feedback section */}
-        <Card style={{borderRadius: 16}}>
+        <Card style={{ borderRadius: 16 }}>
           <Title level={4}>Feedback</Title>
 
           <Paragraph>
@@ -100,11 +102,11 @@ const Contact = () => {
           </Paragraph>
 
           {!user ? (
-              <Link to='/auth'>Login to provide feedback</Link>
+            <Link to='/auth'>Login to provide feedback</Link>
           ) : (
             <Button type="primary" onClick={handleFeedbackClick}>
-             Give feedback 
-          </Button>
+              Give feedback
+            </Button>
           )}
         </Card>
 

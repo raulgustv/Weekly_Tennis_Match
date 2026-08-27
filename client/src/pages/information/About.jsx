@@ -75,7 +75,7 @@ const About = () => {
         </Card>
 
         {/* CONTACT */}
-        <Card style={{ borderRadius: 16 }}>
+        {/* <Card style={{ borderRadius: 16 }}>
           <Title level={4}>Contact</Title>
 
           <Paragraph>
@@ -93,7 +93,7 @@ const About = () => {
           <Paragraph type="secondary">
             Let’s play, connect and grow the community together 🎾
           </Paragraph>
-        </Card>
+        </Card> */}
       </div>
     </Flex>
   );
