@@ -39,7 +39,7 @@ const Contact = () => {
             </Paragraph>
 
             <a
-              href="https://chat.whatsapp.com/XXXXXXXXXXX"
+              href="https://chat.whatsapp.com/DHGAmc9sI1nHG8iX8UsPH2?s=cl&p=a&mlu=4"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "#25D366", fontWeight: 500 }}
