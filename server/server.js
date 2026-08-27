@@ -50,7 +50,7 @@ app.use(cors({
   },
   credentials: true
 }));
-app.use(geoBlock)
+//app.use(geoBlock)
 app.use(globalLimiter)
 app.use(express.json());
 app.use(morgan("dev"));
