@@ -73,3 +73,14 @@ export const verifyBookerOrAdmin = async (req, res, next) => {
         });
     }
 };
+
+export const requireVerification = async(req, res, next) =>{
+    if(!req.user.isVerified){
+        return res.status(403).json({
+            ok: false,
+            code: 'ACCOUNT_NOT_VERIFIED',
+            message: 'Your account is not verified'
+        })
+    }
+    next();
+}

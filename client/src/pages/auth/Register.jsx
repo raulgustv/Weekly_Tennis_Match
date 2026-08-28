@@ -177,7 +177,7 @@ const Register = () => {
     try {
       const data = await register(payload);
 
-      await setSession(data?.accessToken);   // ✅ await + nombre unificado
+       await setSession(data?.accessToken, { fromRegister: true });
 
       toast.success(`Registration complete, welcome ${data?.user?.name}`);
 

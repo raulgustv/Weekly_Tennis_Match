@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     Card,
     Typography,
@@ -11,12 +11,10 @@ import {
 } from "antd";
 import {
     RocketOutlined,
-    LockOutlined,
     CreditCardOutlined,
     EditOutlined,
     TrophyOutlined,
     GoogleOutlined,
-    MailOutlined,
     ArrowRightOutlined,
     CheckCircleFilled,
     ClockCircleOutlined,
@@ -28,18 +26,6 @@ const { Title, Text, Paragraph } = Typography;
 const upcomingFeatures = [
     {
         number: 1,
-        title: "Change password",
-        shortTitle: "Password",
-        icon: <LockOutlined />,
-        color: "#1677ff",
-        background: "#e6f4ff",
-        description:
-            "We're working on a secure password change and recovery system.",
-        detail:
-            "We are currently waiting to get our own domain so we can properly set up the email infrastructure required for password recovery and related security features.",
-    },
-    {
-        number: 2,
         title: "More payment methods",
         shortTitle: "Payments",
         icon: <CreditCardOutlined />,
@@ -51,7 +37,7 @@ const upcomingFeatures = [
             "A payment gateway is currently under discussion. For now, we prefer to keep supporting traditional payment methods while we decide on the best option for the community.",
     },
     {
-        number: 3,
+        number: 2,
         title: "More profile options",
         shortTitle: "Profile",
         icon: <EditOutlined />,
@@ -63,7 +49,7 @@ const upcomingFeatures = [
             "We're planning to add more editable information and profile options so you can better represent yourself as a player.",
     },
     {
-        number: 4,
+        number: 3,
         title: "Ranking & tournaments",
         shortTitle: "Tournaments",
         icon: <TrophyOutlined />,
@@ -75,7 +61,7 @@ const upcomingFeatures = [
             "We're exploring ways to turn the app into more than just weekly matches, including internal rankings, tournaments and new ways for players to compete.",
     },
     {
-        number: 5,
+        number: 4,
         title: "Google login",
         shortTitle: "Google",
         icon: <GoogleOutlined />,
@@ -86,18 +72,7 @@ const upcomingFeatures = [
         detail:
             "Federated login with Google is planned to make signing in simpler and more convenient.",
     },
-    {
-        number: 6,
-        title: "Internal mailbox",
-        shortTitle: "Mailbox",
-        icon: <MailOutlined />,
-        color: "#eb2f96",
-        background: "#fff0f6",
-        description:
-            "A notification center built directly into Weekly Tennis.",
-        detail:
-            "We're planning an internal mailbox where you can receive and review important messages and notifications without relying only on browser or email notifications.",
-    },
+
 ];
 
 const HelpComingSoon = ({onClose}) => {

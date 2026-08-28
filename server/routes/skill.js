@@ -6,7 +6,7 @@ import { readLimiter } from '../config/expressLimit.js';
 
 const router = Router();
 
-router.post("/match/:id", protect, validateObjectId("id"), voteSkillLevel)
+router.post("/match/:id", protect,  validateObjectId("id"), voteSkillLevel)
 router.get('/match/:matchId', protect, readLimiter, validateObjectId("matchId"),  userVotesPerMatch)
 
 export default router;

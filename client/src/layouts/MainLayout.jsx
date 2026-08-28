@@ -35,14 +35,15 @@ import "../styles/menu.css";
 import AppFooter from "./AppFooter";
 import { useFeedback } from "../context/FeedbackContext";
 import Notifications from "../components/notifications/Notifications";
+import AlertNotVerified from "../components/utils/AlertNotVerified";
+import VerifyAccountModal from "../components/modals/VerifyAccountModal";
+
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
 
 const MainLayout = () => {
-  const { user, logout } = useAuth();
-
-  //console.log(user)
+  const { user, logout, justRegistered, dismissJustRegistered, loadUser } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -481,6 +482,20 @@ const MainLayout = () => {
             overflow: "auto",
           }}
         >
+          {/* ALERTA AQUI */}
+          <AlertNotVerified name={user?.name} email={user?.email} isVerified={user?.isVerified} />
+
+          {/* MODAL AUTOMÁTICO POST-REGISTRO, se muestra 1 sola vez */}
+          <VerifyAccountModal
+            open={justRegistered && !user?.isVerified}
+            onClose={dismissJustRegistered}
+            email={user?.email}
+            onVerified={async () => {
+              dismissJustRegistered();
+              await loadUser();
+            }}
+          />
+
           <Outlet />
         </Content>
 

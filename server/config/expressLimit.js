@@ -133,6 +133,19 @@ export const addFundsLimiter = rateLimit({
 });
 
 
+export const resendVerificationLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    max: 1,
+    keyGenerator: (req) => {
+        return req.user?._id?.toString() ?? req.ip;
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        ok: false,
+        message: "Please wait 1 minute before requesting a new verification code."
+    }
+});
 
 
 export const feedbackLimiter = rateLimit({

@@ -52,6 +52,19 @@ export const resetPasswordEmail = async(email) =>{
     await axiosInstance.post('/profile/reset-password', {email})
 }
 
+export const sendTokenEmail = async() =>{
+    const {data} = await axiosInstance.post('/user/resend-verification')
+
+    return data;
+}
+
+export const verifyCode = async(code) =>{
+    const {data} = await axiosInstance.post('/user/verification', {code})
+
+    return data
+}
+
+
 // export const uploadProfilePicture = async(req, res) =>{
 
 // }

@@ -205,6 +205,30 @@ const userSchema = new mongoose.Schema({
     type: [sessionSchema],
     default: [],
     select: false
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationCodeHash: {
+        type: String,
+        default: null,
+        select: false
+    },
+    verificationCodeExpires: {
+        type: Date,
+        default: null,
+        select: false
+    },
+    verificationAttempts: {
+        type: Number,
+        default: 0,
+        select: false
+    },
+    lastVerificationSentAt: {
+        type: Date,
+        default: null,
+        select: false
     }
 
 }, {
