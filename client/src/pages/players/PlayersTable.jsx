@@ -8,7 +8,8 @@ import {
     Table,
     Typography,
     Grid,
-    Tooltip
+    Tooltip,
+    Tag
 } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import { useCountries } from "../../hooks/useCountries";
@@ -24,6 +25,8 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
 
     const { useBreakpoint } = Grid;
     const screens = useBreakpoint();
+
+
 
     const { countries } = useCountries();
 
@@ -72,8 +75,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
             if (!user) return toast.error("User was not found");
 
             toast.success(
-                `${user?.name} ${user?.lastname} has been ${
-                    active ? "activated" : "de-activated"
+                `${user?.name} ${user?.lastname} has been ${active ? "activated" : "de-activated"
                 }`
             );
 
@@ -135,6 +137,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                                 e.stopPropagation();
                                 navigate(`/admin/player/${p._id}`);
                             }}
+                            justify="space-between"
                         >
                             <ProfilePicture
                                 profilePicture={p?.profilePicture?.url}
@@ -153,6 +156,20 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                             >
                                 {p?.name} {p?.lastname}
                             </span>
+                            {
+                                (p?.notesHistory.length || p?.notesHistory.length > 0) && (
+                                    <Tag
+                                        style={{
+                                            margin: 0,
+                                            fontSize: 11,
+                                            lineHeight: '20px'
+                                        }}
+                                        color="orange"
+                                    >
+                                        {p?.notesHistory.length ?? 0} notes
+                                    </Tag>
+                                )
+                            }
                         </Flex>
                     </Tooltip>
 
@@ -323,6 +340,21 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                             >
                                 {p?.name} {p?.lastname}
                             </span>
+                            {
+                                (p?.notesHistory.length > 0 && p?.notesHistory.length) && (
+                                    <Tag
+                                        style={{
+                                            margin: 0,
+                                            fontSize: 11,
+                                            lineHeight: "20px",
+                                            flexShrink: 0
+                                        }}
+                                        color="orange"
+                                    >
+                                        {p?.notesHistory?.length} notes
+                                    </Tag>
+                                )
+                            }
                         </Flex>
 
                         <Button

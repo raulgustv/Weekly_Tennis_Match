@@ -1,9 +1,10 @@
 //import admin from "../config/firebase.js";
 import User from "../models/user.js";
-import { sendResetPasswordEmail } from "../utils/emailService.js";
+import { sendResetPasswordEmail, sendVerificationEmail } from "../utils/emailService.js";
 import { generateToken, generateRefreshToken, setRefreshCookie, hashToken } from "../utils/generateToken.js";
 import crypto from 'crypto'
 import { PUBLIC_USER_FIELDS } from "../utils/userProjections.js";
+import { generateVerificationCode, hashVerificationCode } from "../helpers/accountVerification.js";
 
 export const validateEmail = async(req, res) =>{
     try {
@@ -70,17 +71,29 @@ export const register = async (req, res) => {
             termsAndConditions
         });
 
-        // generamos el refresh token igual que en login, para que quede logueado tras registrarse
         const accessToken = generateToken(user);
 
         const rawRefresh = generateRefreshToken();
         const refreshExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-        user.refreshTokenHash = hashToken(rawRefresh);
-        user.refreshTokenExpires = refreshExpires;
+       user.sessions = [{
+            refreshTokenHash: hashToken(rawRefresh),
+            expiresAt: refreshExpires,
+            userAgent: req.headers["user-agent"]
+        }];
+
+        // --- verificación de cuenta ---
+        const code = generateVerificationCode();
+        user.verificationCodeHash = hashVerificationCode(code);
+        user.verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
+        user.lastVerificationSentAt = new Date();
+
         await user.save();
 
         setRefreshCookie(res, rawRefresh, refreshExpires);
+
+        // no bloqueamos el registro si falla el mail, solo logueamos
+        sendVerificationEmail(user.email, user.name, code).catch(err => console.log(err));
 
         const safeUser = await User.findById(user._id).select(PUBLIC_USER_FIELDS);
 
@@ -227,6 +240,144 @@ export const refresh = async (req, res) => {
         res.status(500).json({ ok: false, message: 'Internal refresh server error' });
     }
 };
+
+export const verifyAccount = async(req, res) => {
+    try {
+        const userId = req.user._id
+
+        const {code} = req.body;
+
+        if(!code || typeof code !== 'string'){
+            return res.status(400).json({
+                ok: false,
+                message: 'Verification code is required'
+            })
+        }
+
+        const user = await User.findById(userId).select('+verificationCodeHash +verificationCodeExpires +verificationAttempts')
+
+        if(!user){
+            return res.status(400).json({
+                ok: false,
+                message: 'User not found'
+            })
+        }
+
+         if(user.isVerified){
+            return res.status(400).json({
+                ok: false,
+                message: 'Your account is already verified'
+            })
+        }
+
+         if(!user.verificationCodeHash || !user.verificationCodeExpires){
+            return res.status(400).json({
+                ok: false,
+                message: 'No verification code. Please provide a new one'
+            })
+        }
+
+         if(user.verificationCodeExpires < new Date()){
+            return res.status(400).json({
+                ok: false,
+                message: 'Verification code has expired'
+            })
+        }
+
+        if(user.verificationAttempts >= 5){
+            return res.status(400).json({
+                ok: false,
+                message: 'Too many attempts please request new code'
+            })
+        }
+
+        const isMatch = user.verificationCodeHash === hashVerificationCode(code)
+
+        if(!isMatch){
+            user.verificationAttempts += 1;
+            await user.save();
+            return res.status(400).json({
+                ok: false,
+                message: 'Invalid verification code'
+            })
+        }
+
+        user.isVerified = true;
+        user.verificationCodeHash = null;
+        user.verificationCodeExpires = null;
+        user.verificationAttempts = 0
+
+        await user.save();
+
+        return res.status(200).json({
+            ok: true,
+            message: 'Account has been correctly verified'
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal server error with account verification'
+        })
+    }
+}
+
+export const resendVerification = async(req, res) =>{
+    try {
+         const userId = req.user._id
+
+        const user = await User.findById(userId).select('+lastVerificationSentAt')
+
+        if(!user){
+            return res.status(400).json({
+                ok: false,
+                message: 'User not found'
+            })
+        }
+
+        if(user.isVerified){
+            return res.status(400).json({
+                ok: false,
+                message: 'User already verified'
+            })
+        }
+        
+         if (user.lastVerificationSentAt && (Date.now() - user.lastVerificationSentAt.getTime()) < 60 * 1000) {
+            return res.status(429).json({
+                ok: false,
+                message: "Please wait a moment before requesting a new code" 
+            });
+        }
+
+        const code = generateVerificationCode();
+        user.verificationCodeHash = hashVerificationCode(code);
+        user.verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
+        user.verificationAttempts = 0;
+        user.lastVerificationSentAt = new Date();
+
+        await user.save();
+
+        sendVerificationEmail(user.email, user.name, code)
+            .catch(err => console.log(err))
+
+
+        return res.status(200).json({
+            ok: true,
+            message: 'Verification code sent'
+        })
+
+
+
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            ok: false,
+            message: 'Internal server error resending code'
+        })
+    }
+}
 
 // cierra solo el dispositivo actual
 export const logout = async (req, res) => {

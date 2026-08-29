@@ -12,6 +12,10 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // true solo cuando el usuario acaba de registrarse en esta sesión de la app
+    // NUNCA se persiste, NUNCA se prende desde tryRestoreSession
+    const [justRegistered, setJustRegistered] = useState(false);
+
     // trae los datos del usuario asumiendo que el access token ya está seteado en memoria
     const loadUser = useCallback(async () => {
         try {
@@ -81,16 +85,22 @@ export const AuthProvider = ({ children }) => {
 
     }, [user]);
 
-    // se llama justo después de un login exitoso, con el accessToken que devuelve el backend
-    const setSession = async (accessToken) => {
+    // se llama justo después de un login o registro exitoso, con el accessToken que devuelve el backend
+    // options.fromRegister === true SOLO cuando viene del flujo de registro
+    const setSession = async (accessToken, { fromRegister = false } = {}) => {
 
         setAccessToken(accessToken);
         setLoading(true);
 
         await loadUser();
 
+        setJustRegistered(fromRegister);
+
         setLoading(false);
     };
+
+    // se llama cuando el usuario cierra/ignora el modal, o cuando ya se verificó
+    const dismissJustRegistered = () => setJustRegistered(false);
 
     const logout = async () => {
 
@@ -101,6 +111,7 @@ export const AuthProvider = ({ children }) => {
         } finally {
             setAccessToken(null);
             setUser(null);
+            setJustRegistered(false);
         }
     };
 
@@ -112,7 +123,9 @@ export const AuthProvider = ({ children }) => {
                 loading,
                 setSession,
                 logout,
-                loadUser
+                loadUser,
+                justRegistered,
+                dismissJustRegistered
             }}
         >
             {children}

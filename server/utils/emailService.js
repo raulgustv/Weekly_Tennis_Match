@@ -69,3 +69,24 @@ export const sendMatchInviteEmail = async(to, matchId, userId) =>{
         console.log(error)
     }
 }
+
+export const sendVerificationEmail = async (to, name, code) => {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    try {
+        await resend.emails.send({
+            from: process.env.FROM_EMAIL,
+            to,
+            subject: "Welcome to MTC - Verify your account",
+            html: `
+                <h2>Welcome to MTC, ${name}!</h2>
+                <p>Thanks for signing up. Please use the code below to verify your account:</p>
+                <h1 style="letter-spacing: 4px;">${code}</h1>
+                <p>This code expires in 15 minutes.</p>
+                <p>If you didn't create this account, you can ignore this email.</p>
+            `
+        });
+    } catch (error) {
+        console.log(error);
+    }
+};

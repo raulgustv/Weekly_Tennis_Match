@@ -1,4 +1,5 @@
 import { useMatches } from "../../context/MatchContext"
+import { useAuth } from "../../context/AuthContext"
 import JoinMatch from "../../components/matches/JoinMatch";
 import { Button, Space, Spin, Typography } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
@@ -9,8 +10,8 @@ const { Title } = Typography;
 
 const UserDashboard = () => {
 
-
   const { openMatches, loadOpenMatches, fetchOpenMatches } = useMatches();
+  const { user } = useAuth();
 
   const openMatch = openMatches.filter(
     (match) => match.status !== "Played"
@@ -26,9 +27,27 @@ const UserDashboard = () => {
           alignItems: "center",
         }}
       >
-        <Title level={3} style={{ margin: 0 }}>
-          🎾 Open Matches
-        </Title>
+        <Space align="center" size={16}>
+          <Title level={3} style={{ margin: 0 }}>
+            🎾 Open Matches
+          </Title>
+
+          {user?.isVerified && (
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: 13 }}
+            >
+              Not in our WhatsApp group?{" "}
+              <Typography.Link
+                href="https://chat.whatsapp.com/DHGAmc9sI1nHG8iX8UsPH2?s=cl&p=a&mlu=4"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Join us here
+              </Typography.Link>
+            </Typography.Text>
+          )}
+        </Space>
 
         <Button
           type="primary"

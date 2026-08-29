@@ -1,9 +1,9 @@
 import {Router} from 'express';
-import { refresh, login, logout, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote, userNotes, suspendUser } from '../controller/user.js';
+import { refresh, login, logout, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote, userNotes, suspendUser, verifyAccount, resendVerification } from '../controller/user.js';
 import { googleValidator, loginValidator, noteValidator, registerValidator } from '../validator/userValidator.js';
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 import { protect, verifyAdmin } from '../middlewares/auth.js';
-import { adminLimiter, authLimiter, changePasswordLimiter, readLimiter, refreshLimiter, registerLimiter } from '../config/expressLimit.js';
+import { adminLimiter, authLimiter, changePasswordLimiter, readLimiter, refreshLimiter, registerLimiter, resendVerificationLimiter } from '../config/expressLimit.js';
 //import { verify } from 'crypto';
 
 
@@ -11,6 +11,8 @@ const router = Router();
 
 router.post("/register", registerLimiter, registerValidator, validateFields, register)
 router.post("/login", authLimiter, loginValidator, validateFields, login)
+router.post("/verification", protect, verifyAccount)
+router.post("/resend-verification", protect, resendVerificationLimiter, resendVerification)
 router.get('/auth', protect,  getMeAuth)
 router.post('/refresh', refreshLimiter, refresh)
 router.post('/logout', logout)
