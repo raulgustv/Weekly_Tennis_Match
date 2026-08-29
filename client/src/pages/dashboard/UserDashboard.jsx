@@ -14,7 +14,7 @@ const UserDashboard = () => {
   const { user } = useAuth();
 
   const openMatch = openMatches.filter(
-    (match) => match.status !== "Played"
+    (match) => match.status !== "Played"  
   );
 
   return (
