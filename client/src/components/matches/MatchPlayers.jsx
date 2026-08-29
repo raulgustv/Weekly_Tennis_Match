@@ -77,7 +77,7 @@ const MatchPlayers = () => {
 
   if (pageLoading || !match) return <LoadingSpinner />;
 
-  const isReady = match.status === "Ready";
+  const isReady = match?.status === "Ready" || match?.status === 'Playing';
 
   return (
     <div style={{ padding: 20 }}>
@@ -134,7 +134,7 @@ const MatchPlayers = () => {
       </Row>
 
       {/* READY STATE */}
-      {isReady ? (
+      {isReady  ? (
         <Row gutter={[24, 24]}>
           {match.generatedMatches?.map((m, index) => (
             <Col key={index} xs={24} sm={12} lg={12}>
