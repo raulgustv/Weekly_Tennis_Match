@@ -14,6 +14,9 @@ const VerifyAccountModal = ({ open, onClose, email, onVerified, autoSend = true 
     // evita reenviar dos veces si el modal re-renderiza mientras está abierto
     const sentForThisOpenRef = useRef(false);
 
+    // ref al contenedor del OTP para forzar teclado numérico en mobile (Android/iOS)
+    const otpWrapperRef = useRef(null);
+
     useEffect(() => {
         if (open) {
             setCode('');
@@ -28,6 +31,17 @@ const VerifyAccountModal = ({ open, onClose, email, onVerified, autoSend = true 
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
+
+    // fuerza teclado numérico en cada input real del OTP (Android/iOS)
+    useEffect(() => {
+        if (otpWrapperRef.current) {
+            const inputs = otpWrapperRef.current.querySelectorAll('input');
+            inputs.forEach((input) => {
+                input.setAttribute('inputmode', 'numeric');
+                input.setAttribute('pattern', '[0-9]*');
+            });
+        }
+    }, [open, code]);
 
     const startCooldown = () => {
         setCooldown(60);
@@ -108,7 +122,7 @@ const VerifyAccountModal = ({ open, onClose, email, onVerified, autoSend = true 
                 We've sent a verification code to {email}. Please enter this code to finish account verification.
             </Text>
 
-            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+            <div ref={otpWrapperRef} style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
                 <Input.OTP
                     length={6}
                     value={code}
