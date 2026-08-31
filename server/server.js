@@ -17,6 +17,7 @@ import feedbackRoutes from './routes/feedback.js'
 import notificationRoutes from './routes/notification.js'
 import userNotificationRoutes from './routes/userNotification.js'
 import './jobs/matchStatus.js'
+import './jobs/inactivityEmails.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser';
