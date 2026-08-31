@@ -30,7 +30,14 @@ export const MatchesProvider = ({ children }) => {
             setMatches(data)
         } catch (error) {
             console.log(error)
-            toast.error('Error obtaining all matches')
+            // Un 401 significa token/sesión expirada: el interceptor de axios
+            // ya intenta refrescarla y, si falla de verdad, AuthContext cierra
+            // la sesión y la app redirige a /login. No mostramos un toast
+            // técnico para eso. Tampoco molestamos con un toast en los
+            // refrescos silenciosos en segundo plano (isSilent).
+            if (!isSilent && error?.response?.status !== 401) {
+                toast.error('Error obtaining all matches')
+            }
         } finally {
             if (!isSilent) setLoadMatches(false)
         }
@@ -45,7 +52,9 @@ export const MatchesProvider = ({ children }) => {
             setOpenMatches(data);
         } catch (error) {
             console.log(error)
-            toast.error('There was an error obtaining matches')
+            if (!isSilent && error?.response?.status !== 401) {
+                toast.error('There was an error obtaining matches')
+            }
         } finally {
             if (!isSilent) setloadOpenMatches(false);
         }
