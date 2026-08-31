@@ -3,7 +3,7 @@ import { getNotificationToken, getUserAuth } from "../actions/auth";
 import { getToken } from "firebase/messaging";
 //import { toast } from "react-toastify";
 import { messaging } from "../config/firebase";
-import axiosInstance, { setAccessToken } from "../API/axios"; // ajusta el path si tu archivo se llama distinto
+import axiosInstance, { setAccessToken, setOnSessionExpired } from "../API/axios"; // ajusta el path si tu archivo se llama distinto
 
 export const AuthContext = createContext();
 
@@ -62,6 +62,20 @@ export const AuthProvider = ({ children }) => {
         document.addEventListener("visibilitychange", handleVisibilityChange);
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, [tryRestoreSession]);
+
+    // si el interceptor de axios detecta que el refresh token ya no es
+    // válido (sesión caducada de verdad, no un simple access token vencido),
+    // limpiamos aquí el usuario. ProtectedRoute reacciona a isAuthenticated
+    // y redirige a /login solo, sin que ninguna pantalla tenga que mostrar
+    // un error de token.
+    useEffect(() => {
+        setOnSessionExpired(() => {
+            setUser(null);
+            setJustRegistered(false);
+        });
+
+        return () => setOnSessionExpired(null);
+    }, []);
 
     useEffect(() => {
         if (!user) return;

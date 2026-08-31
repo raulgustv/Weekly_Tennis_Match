@@ -17,6 +17,16 @@ export const setAccessToken = (token) => {
 
 export const getAccessToken = () => accessToken;
 
+// --- callback que la app (AuthContext) registra para reaccionar cuando la
+// sesión deja de ser válida de forma definitiva (el refresh token ya no
+// sirve). Así evitamos que cada petición en curso muestre su propio error
+// de "token expirado": la app se entera una vez y limpia el estado. ---
+let onSessionExpired = null;
+
+export const setOnSessionExpired = (callback) => {
+    onSessionExpired = callback;
+};
+
 // --- request interceptor: agrega el access token en memoria ---
 axiosInstance.interceptors.request.use((config) => {
 
@@ -40,8 +50,8 @@ axiosInstance.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        const isAuthRoute = originalRequest.url?.includes("/login")
-            || originalRequest.url?.includes("/refresh");
+        const isAuthRoute = originalRequest?.url?.includes("/login")
+            || originalRequest?.url?.includes("/refresh");
 
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
 
@@ -72,6 +82,13 @@ axiosInstance.interceptors.response.use(
                 refreshQueue.forEach(({ reject }) => reject(refreshError));
                 refreshQueue = [];
                 setAccessToken(null);
+
+                // La sesión ya no es recuperable (refresh token caducado o
+                // inválido). Avisamos a la app en vez de dejar que cada
+                // fetch en curso se encargue por su cuenta de mostrar un
+                // error técnico de token.
+                onSessionExpired?.();
+
                 return Promise.reject(refreshError);
 
             } finally {
