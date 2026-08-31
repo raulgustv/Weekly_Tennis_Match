@@ -103,7 +103,7 @@ const MatchPlayers = () => {
 
 
 
-        {(user?.role === 'admin' && match.generatedMatches?.length > 0) && (
+        {((user?.role === 'admin' || user?.role === 'booker') && match.generatedMatches?.length > 0) && (
           <Col xs={24} md={4} style={{ textAlign: "right", marginTop: 12 }}>
             <Button
               icon={<EditOutlined />}
@@ -178,7 +178,7 @@ const MatchPlayers = () => {
                           </div>
 
                         </Flex>
-                        {user?.role === 'admin' && (
+                        {(user?.role === 'admin' || user?.role === 'booker') && (
                           <Flex
                             align="center"
                             gap={8}

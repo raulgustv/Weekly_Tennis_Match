@@ -136,37 +136,44 @@ cron.schedule(
             de los jugadores del partido.
           */
 
-          await User.updateMany(
-            {
-              _id: {
-                $in: match.players.map(
-                  (player) => player.user
-                ),
-              },
+          const lastMatchPlayed = endDate.toDate();
 
-              $or: [
-                {
-                  lastMatchPlayed: {
-                    $exists: false,
-                  },
-                },
-                {
-                  lastMatchPlayed: {
-                    $lt: match.date,
-                  },
-                },
-              ],
-            },
-            {
-              $set: {
-                lastMatchPlayed: match.date,
-              },
-            }
-          );
+          const userIds = match.players
+                            .map((player) => player.user)
+                            .filter(Boolean)
 
-          console.log(
-            `${match._id} → Played`
-          );
+          
+
+         await User.updateMany(
+                  {
+                    _id: {
+                      $in: userIds,
+                    },
+
+                    $or: [
+                      {
+                        lastMatchPlayed: {
+                          $exists: false,
+                        },
+                      },
+                      {
+                        lastMatchPlayed: {
+                          $lt: lastMatchPlayed,
+                        },
+                      },
+                    ],
+                  },
+                  {
+                    $set: {
+                      lastMatchPlayed,
+                    },
+                  }
+                );
+
+        console.log(
+          `${match._id} → Played | ${userIds.length} usuarios actualizados`
+        );
+    
         }
       }
 
