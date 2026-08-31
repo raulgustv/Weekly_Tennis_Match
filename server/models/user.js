@@ -175,6 +175,11 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    inactivityStage: {
+        type: String,
+        enum: ['none', 'first_warning', 'final_warning', 'closed'],
+        default: 'none'
+    },
     suspendedUntil: {
         type: Date,
         default: null

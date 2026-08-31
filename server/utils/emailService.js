@@ -90,3 +90,113 @@ export const sendVerificationEmail = async (to, name, code) => {
         console.log(error);
     }
 };
+
+
+/*
+  ============================================================
+  INACTIVITY EMAILS (jobs/inactivityCheck.js)
+  ============================================================
+ */
+const REPLY_TO_EMAIL = process.env.SUPPORT_EMAIL;
+
+export const sendInactivityEmail = async(to, name) =>{
+    try {
+
+        const resend = new Resend(process.env.RESEND_API_KEY);
+
+        await resend.emails.send({
+            from: process.env.FROM_EMAIL,
+            to,
+            replyTo: REPLY_TO_EMAIL,
+            subject: '[MTC] Weekly tennis - We miss you on the court',
+            html: `
+                <h2>Hi ${name},</h2>
+
+                <p>It's been a while since you've joined a Weekly Tennis match.</p>
+
+                <p>Why not sign up for a match this week? If your account remains
+                inactive, we may eventually have to close it.</p>
+
+                <p>
+                    If there's a match available you will see it here:
+                    <a href="${process.env.FRONTEND_URL}/games">View available matches</a>
+                </p>
+
+                <p>If you believe this is a mistake, simply reply to this email.</p>`
+        });
+
+        console.log('First warning inactivity email sent')
+        
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+
+export const sendInactivityEmailFinalWarning = async(to, name) =>{
+    try {
+
+        const resend = new Resend(process.env.RESEND_API_KEY);
+
+        await resend.emails.send({
+            from: process.env.FROM_EMAIL,
+            to,
+            replyTo: REPLY_TO_EMAIL,
+            subject: '[MTC] Weekly tennis - Last warning before your account is closed',
+            html: `
+                <h2>Hi ${name},</h2>
+
+                <p>This is our last reminder to join for you to join us playing a match:</p>
+
+                <p>
+                    We'd like to see you around in our group, so we invite you to join us on future matches. Unfortunately
+                    if your account still shows inactivity we will have to close it. You will still remain in our Whatsapp 
+                    group if you wish. 
+                </p>
+
+                <p>
+                    Matches available, are here:
+                    <a href="${process.env.FRONTEND_URL}/games">View available matches</a>
+                </p>
+
+                <p>If you believe this is a mistake, simply reply to this email.</p>`
+        });
+
+        console.log('Second and final warning inactivity email sent')
+        
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+export const sendAccountCloseEmail = async(to, name) =>{
+    try {
+
+        const resend = new Resend(process.env.RESEND_API_KEY);
+
+        await resend.emails.send({
+            from: process.env.FROM_EMAIL,
+            to,
+            replyTo: REPLY_TO_EMAIL,
+            subject: '[MTC] Weekly tennis - Your account has been closed',
+            html: `
+                <h2>Hi ${name},</h2>
+
+                <p>It's been a while since we've seen you on court, so we have decided to close your account</p>
+
+                <p>
+                    If you believe this is a mistake, or you want to have your account re-activated please reply to this email
+                    and we will review your case
+                </p>
+                
+                <p>Thanks for having been a part of the Madrid tennis community</p>
+                `
+
+        });
+
+        console.log('Account close email sent')
+        
+    } catch (error) {
+        console.log(error)
+    }
+}
