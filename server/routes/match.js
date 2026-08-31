@@ -25,7 +25,7 @@ router.post('/leave/:matchId', protect, writeLimiter, validateObjectId("matchId"
 router.post('/invite/accept', acceptInvite)
 router.post('/invite/decline', declineInvite)
 
-router.post('/generate/:id', protect, verifyAdmin, validateObjectId("id"), generateMatches)
+router.post('/generate/:id', protect, verifyBookerOrAdmin, validateObjectId("id"), generateMatches)
 router.put('/update-generate/:matchId', protect, verifyBookerOrAdmin, validateObjectId("matchId"), updateGeneratedMatches)
 router.post('/remove-courts/:matchId/:courtNumber', protect, verifyBookerOrAdmin, removeMatchCourts)
 router.post('/add-courts/:matchId', protect, verifyBookerOrAdmin, validateObjectId("matchId"),  addMatchCourts)

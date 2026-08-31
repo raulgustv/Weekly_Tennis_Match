@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { protect, verifyAdmin } from '../middlewares/auth.js';
+import { protect, verifyAdmin, verifyBookerOrAdmin } from '../middlewares/auth.js';
 import {  adminAdjustNTRP, closeMatch, getAdmins, removePlayerMatch, toggleAdminRole, togglePaymentStatus, togglePlayerActivation, updatePaymentRecepient } from '../controller/admin.js';
 import { validateObjectId } from '../middlewares/validateFields.js';
 
@@ -12,7 +12,7 @@ router.post('/adjust-ntrp/:userId', protect,verifyAdmin, validateObjectId("userI
 router.post('/remove-player/:matchId/:playerId', protect, verifyAdmin, validateObjectId("playerId"), removePlayerMatch)
 
 router.post('/add-admin', protect, verifyAdmin, toggleAdminRole)
-router.put('/payment/:matchId/:userId', protect, verifyAdmin, togglePaymentStatus)
+router.put('/payment/:matchId/:userId', protect, verifyBookerOrAdmin, togglePaymentStatus)
 
 //wallet
 router.get('/get-admin', protect, verifyAdmin, getAdmins)
