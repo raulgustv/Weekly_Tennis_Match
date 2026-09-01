@@ -5,7 +5,13 @@ const sessionSchema = new mongoose.Schema({
     refreshTokenHash: { type: String, required: true },
     expiresAt: { type: Date, required: true },
     userAgent: String,
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    // 🔧 FIX (logout bug): soporte de "grace period" para la rotación del
+    // refresh token — ver refresh() en server/controller/user.js. Sin
+    // `required` y con `default: null` para no romper las sesiones que ya
+    // existen en la base de datos (no necesitan migración).
+    previousRefreshTokenHash: { type: String, default: null },
+    previousHashGraceUntil: { type: Date, default: null }
 }, { _id: true }); // el _id de cada sesión nos sirve para logout individual
 
 const adjustmentHistorySchema = new mongoose.Schema({

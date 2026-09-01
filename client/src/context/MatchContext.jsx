@@ -30,11 +30,15 @@ export const MatchesProvider = ({ children }) => {
             setMatches(data)
         } catch (error) {
             console.log(error)
-            // Un 401 significa token/sesión expirada: el interceptor de axios
-            // ya intenta refrescarla y, si falla de verdad, AuthContext cierra
-            // la sesión y la app redirige a /login. No mostramos un toast
-            // técnico para eso. Tampoco molestamos con un toast en los
-            // refrescos silenciosos en segundo plano (isSilent).
+            // 🔧 FIX (logout bug): antes este toast se ejecutaba SIEMPRE —
+            // `isSilent` solo controlaba el spinner, no el aviso de error. Como
+            // este fetch también se dispara en segundo plano, en cuanto el
+            // access token caducaba (a los 15 min) aparecía este toast en
+            // cada ciclo, dando la sensación de que la app te expulsaba todo
+            // el rato. Ahora se respeta `isSilent` y, además, nunca se
+            // muestra en un 401: ese caso ya lo gestiona el flujo de sesión
+            // (AuthContext / ProtectedRoute), que redirige a /login sin
+            // necesidad de un mensaje técnico de "error obteniendo partidos".
             if (!isSilent && error?.response?.status !== 401) {
                 toast.error('Error obtaining all matches')
             }
@@ -52,6 +56,12 @@ export const MatchesProvider = ({ children }) => {
             setOpenMatches(data);
         } catch (error) {
             console.log(error)
+            // 🔧 FIX (logout bug — mismo cambio que en fetchMatches): este es
+            // el sondeo en segundo plano (cada 1 min los miércoles, cada 1h
+            // el resto de días) que dispara el mensaje "There was an error
+            // obtaining matches" descrito en el informe de seguridad. Antes
+            // se mostraba en CADA ciclo de sondeo mientras el token estaba
+            // expirado; ahora se respeta `isSilent` y se ignoran los 401.
             if (!isSilent && error?.response?.status !== 401) {
                 toast.error('There was an error obtaining matches')
             }

@@ -17,16 +17,6 @@ export const setAccessToken = (token) => {
 
 export const getAccessToken = () => accessToken;
 
-// --- callback que la app (AuthContext) registra para reaccionar cuando la
-// sesión deja de ser válida de forma definitiva (el refresh token ya no
-// sirve). Así evitamos que cada petición en curso muestre su propio error
-// de "token expirado": la app se entera una vez y limpia el estado. ---
-let onSessionExpired = null;
-
-export const setOnSessionExpired = (callback) => {
-    onSessionExpired = callback;
-};
-
 // --- request interceptor: agrega el access token en memoria ---
 axiosInstance.interceptors.request.use((config) => {
 
@@ -41,58 +31,95 @@ axiosInstance.interceptors.request.use((config) => {
     return config;
 }, (error) => Promise.reject(error));
 
-// --- response interceptor: si el access token expiró (401), refresca y reintenta ---
-let isRefreshing = false;
-let refreshQueue = [];
+// 🔧 FIX (logout bug): callback opcional para avisar al resto de la app
+// (AuthContext) cuando la sesión termina DE VERDAD, es decir, cuando un
+// refresh disparado desde aquí (por un 401) falla de forma definitiva.
+// Antes esto no existía: si el interceptor no conseguía refrescar, se
+// limpiaba el access token en memoria pero AuthContext nunca se enteraba, así
+// que `user` seguía "logueado" en la UI mientras todas las peticiones
+// seguían fallando en segundo plano.
+let onSessionExpired = null;
 
+export const setOnSessionExpired = (callback) => {
+    onSessionExpired = callback;
+};
+
+// 🔧 FIX (logout bug — causa raíz principal): refresco de sesión centralizado
+// y deduplicado.
+//
+// Antes había DOS caminos totalmente independientes que podían llamar a
+// POST /user/refresh al mismo tiempo con la MISMA cookie:
+//   1. Este interceptor, cuando cualquier petición recibía un 401.
+//   2. AuthContext.tryRestoreSession(), al montar la app y cada vez que la
+//      pestaña volvía a estar visible (visibilitychange) — justo el
+//      escenario de "salgo de la app y cuando vuelvo me ha sacado" que
+//      describiste, porque es exactamente cuando el access token (dura solo
+//      15 min) suele haber caducado.
+//
+// El backend rota el refresh token en cada uso (de un solo uso, por
+// seguridad). Si estas dos peticiones llegaban casi a la vez con el mismo
+// refresh token, ambas podían "ganar" en el servidor y pisarse entre sí
+// (ver el fix en server/controller/user.js) — el resultado era que la cookie
+// del navegador dejaba de coincidir con lo que el backend esperaba, y el
+// siguiente refresh fallaba con "Invalid session" aunque el refresh token de
+// 30 días siguiera siendo perfectamente válido. Eso te sacaba a /login sin
+// ningún motivo real.
+//
+// La solución: una única función `refreshSession()`, compartida por el
+// interceptor y por AuthContext. Si ya hay un refresh en curso, cualquier
+// llamada adicional espera la MISMA promesa en vez de disparar una petición
+// nueva — solo hay un POST /user/refresh en vuelo por pestaña en cada
+// momento.
+let refreshPromise = null;
+
+export const refreshSession = () => {
+    if (!refreshPromise) {
+        refreshPromise = axiosInstance
+            .post("/user/refresh")
+            .then(({ data }) => {
+                setAccessToken(data.accessToken);
+                return data.accessToken;
+            })
+            .catch((error) => {
+                setAccessToken(null);
+                // la sesión ha terminado de verdad: avisamos a AuthContext
+                if (onSessionExpired) onSessionExpired();
+                throw error;
+            })
+            .finally(() => {
+                refreshPromise = null;
+            });
+    }
+
+    return refreshPromise;
+};
+
+// --- response interceptor: si el access token expiró (401), refresca y reintenta ---
 axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
+        // 🔧 FIX: guarda frente a error.config venir undefined (p. ej. errores
+        // de red sin respuesta), que antes podía lanzar al leer originalRequest.url.
         const isAuthRoute = originalRequest?.url?.includes("/login")
             || originalRequest?.url?.includes("/refresh");
 
-        if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
-
-            if (isRefreshing) {
-                return new Promise((resolve, reject) => {
-                    refreshQueue.push({ resolve, reject, originalRequest });
-                });
-            }
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthRoute) {
 
             originalRequest._retry = true;
-            isRefreshing = true;
 
             try {
-                const { data } = await axiosInstance.post("/user/refresh");
+                // 🔧 FIX: antes cada petición 401 gestionaba su propio
+                // isRefreshing/refreshQueue "a mano". Ahora simplemente se
+                // apunta a la promesa compartida de refreshSession().
+                const newAccessToken = await refreshSession();
 
-                setAccessToken(data.accessToken);
-
-                refreshQueue.forEach(({ resolve, originalRequest: req }) => {
-                    req.headers.Authorization = `Bearer ${data.accessToken}`;
-                    resolve(axiosInstance(req));
-                });
-                refreshQueue = [];
-
-                originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
                 return axiosInstance(originalRequest);
 
             } catch (refreshError) {
-                refreshQueue.forEach(({ reject }) => reject(refreshError));
-                refreshQueue = [];
-                setAccessToken(null);
-
-                // La sesión ya no es recuperable (refresh token caducado o
-                // inválido). Avisamos a la app en vez de dejar que cada
-                // fetch en curso se encargue por su cuenta de mostrar un
-                // error técnico de token.
-                onSessionExpired?.();
-
                 return Promise.reject(refreshError);
-
-            } finally {
-                isRefreshing = false;
             }
         }
 
