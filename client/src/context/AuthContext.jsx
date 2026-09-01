@@ -3,7 +3,7 @@ import { getNotificationToken, getUserAuth } from "../actions/auth";
 import { getToken } from "firebase/messaging";
 //import { toast } from "react-toastify";
 import { messaging } from "../config/firebase";
-import axiosInstance, { setAccessToken, setOnSessionExpired } from "../API/axios"; // ajusta el path si tu archivo se llama distinto
+import axiosInstance, { setAccessToken, refreshSession, setOnSessionExpired } from "../API/axios"; // ajusta el path si tu archivo se llama distinto
 
 export const AuthContext = createContext();
 
@@ -28,10 +28,18 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // intenta recuperar sesión vía refresh token (cookie httpOnly)
+    //
+    // 🔧 FIX (logout bug): ahora usa refreshSession(), la misma función
+    // compartida que usa el interceptor 401 de axios.js, en vez de llamar
+    // directamente a axiosInstance.post("/user/refresh"). Antes esta función
+    // y el interceptor podían disparar cada uno su propio refresh al mismo
+    // tiempo (típicamente justo cuando la app vuelve de segundo plano y, a la
+    // vez, algún fetch en curso recibía un 401), chocando con la rotación de
+    // un solo uso del refresh token en el backend y provocando un logout sin
+    // que el refresh token de 30 días hubiera caducado realmente.
     const tryRestoreSession = useCallback(async () => {
         try {
-            const { data } = await axiosInstance.post("/user/refresh");
-            setAccessToken(data.accessToken);
+            await refreshSession();
             await loadUser();
             return true;
         } catch (error) {
@@ -63,11 +71,12 @@ export const AuthProvider = ({ children }) => {
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, [tryRestoreSession]);
 
-    // si el interceptor de axios detecta que el refresh token ya no es
-    // válido (sesión caducada de verdad, no un simple access token vencido),
-    // limpiamos aquí el usuario. ProtectedRoute reacciona a isAuthenticated
-    // y redirige a /login solo, sin que ninguna pantalla tenga que mostrar
-    // un error de token.
+    // 🔧 FIX (logout bug): se suscribe al aviso de "sesión terminada de
+    // verdad" que ahora emite axios.js cuando un refresh disparado por el
+    // interceptor 401 falla de forma definitiva (refresh token realmente
+    // inválido o caducado). Antes esto no existía y el estado `user` podía
+    // quedarse desincronizado del backend — la UI seguía pensando que había
+    // sesión mientras todas las peticiones fallaban en segundo plano.
     useEffect(() => {
         setOnSessionExpired(() => {
             setUser(null);

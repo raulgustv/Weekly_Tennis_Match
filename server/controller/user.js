@@ -6,6 +6,9 @@ import crypto from 'crypto'
 import { PUBLIC_USER_FIELDS } from "../utils/userProjections.js";
 import { generateVerificationCode, hashVerificationCode } from "../helpers/accountVerification.js";
 
+
+const REFRESH_GRACE_MS = 20 * 1000; // 20 segundos
+
 export const validateEmail = async(req, res) =>{
     try {
 
@@ -192,6 +195,37 @@ export const login = async (req, res) => {
     }
 };
 
+// 🔧 FIX (logout bug — causa raíz nº2, además del trust proxy en server.js):
+//
+// La versión anterior hacía find() + mutar el array en memoria + save().
+// Si dos peticiones de refresh llegaban casi a la vez con el MISMO refresh
+// token (dos pestañas del navegador, un reintento de red, o el propio
+// frontend disparando dos refrescos en paralelo — ver el fix aplicado en
+// axios.js / AuthContext.jsx), ambas pasaban la validación igual de bien, y
+// el segundo `save()` podía pisar silenciosamente al primero: no había
+// ninguna comprobación atómica de "el hash antiguo sigue siendo el actual".
+//
+// Resultado: la cookie que se queda en el navegador (la de la petición que
+// "pierde" la carrera en el servidor, pero cuya respuesta llega después) ya
+// no coincide con el hash guardado en la base de datos. El siguiente
+// refresh devuelve "Invalid session" aunque el refresh token de 30 días
+// siguiera siendo perfectamente válido — la app te expulsa a /login sin que
+// haya pasado nada raro.
+//
+// La solución tiene dos partes:
+//   1. Rotar con `findOneAndUpdate` (compara-y-cambia atómico sobre el hash
+//      actual) en vez de find + mutar + save.
+//   2. Guardar el hash recién rotado ("previousRefreshTokenHash") con una
+//      ventana de gracia corta (20s). Si llega una petición duplicada o
+//      tardía usando ese hash ya rotado pero DENTRO de la ventana de gracia,
+//      se le entrega un access token válido sin tocar la cookie (la cookie
+//      correcta ya la dejó la petición que ganó la rotación, en el mismo
+//      navegador) en vez de invalidar toda la sesión del usuario.
+//
+// Fuera de la ventana de gracia, el comportamiento de seguridad es
+// exactamente el mismo que antes: un hash que no es ni el actual ni el
+// recién rotado devuelve 401 "Invalid session".
+
 export const refresh = async (req, res) => {
     try {
         const rawRefresh = req.cookies.refreshToken;
@@ -201,38 +235,54 @@ export const refresh = async (req, res) => {
 
         const hash = hashToken(rawRefresh);
 
-        const user = await User.findOne({ "sessions.refreshTokenHash": hash })
-            .select("+sessions");
-
-        if (!user) {
-            return res.status(401).json({ ok: false, message: "Invalid session" });
-        }
-
-        const session = user.sessions.find(s => s.refreshTokenHash === hash);
-
-        if (!session || session.expiresAt < new Date()) {
-            // limpia si estaba caducada
-            user.sessions = user.sessions.filter(s => s.refreshTokenHash !== hash);
-            await user.save();
-            return res.status(401).json({ ok: false, message: "Session expired" });
-        }
-
-        if (user.isActive === false) {
-            return res.status(401).json({ ok: false, message: "Invalid session" });
-        }
-
-        // rotación: reemplaza esta sesión por una nueva
         const newRawRefresh = generateRefreshToken();
+        const newHash = hashToken(newRawRefresh);
         const newExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const graceUntil = new Date(Date.now() + REFRESH_GRACE_MS);
 
-        session.refreshTokenHash = hashToken(newRawRefresh);
-        session.expiresAt = newExpires;
+        // Rotación atómica: solo hay match (y por tanto éxito) si ese hash
+        // sigue siendo el hash ACTUAL de la sesión en este instante exacto.
+        const rotatedUser = await User.findOneAndUpdate(
+            { "sessions.refreshTokenHash": hash },
+            {
+                $set: {
+                    "sessions.$.refreshTokenHash": newHash,
+                    "sessions.$.expiresAt": newExpires,
+                    "sessions.$.previousRefreshTokenHash": hash,
+                    "sessions.$.previousHashGraceUntil": graceUntil
+                }
+            },
+            { new: true }
+        ).select("+sessions");
 
-        await user.save();
+        if (rotatedUser) {
+            if (rotatedUser.isActive === false) {
+                return res.status(401).json({ ok: false, message: "Invalid session" });
+            }
 
-        setRefreshCookie(res, newRawRefresh, newExpires);
+            setRefreshCookie(res, newRawRefresh, newExpires);
 
-        const accessToken = generateToken(user);
+            const accessToken = generateToken(rotatedUser);
+            return res.json({ ok: true, accessToken });
+        }
+
+        // No se encontró como hash ACTUAL. Antes de rechazar, comprobamos si
+        // es el hash que se acaba de rotar (petición duplicada o tardía
+        // dentro de la ventana de gracia).
+        const graceUser = await User.findOne({
+            "sessions.previousRefreshTokenHash": hash,
+            "sessions.previousHashGraceUntil": { $gt: new Date() }
+        }).select("+sessions");
+
+        if (!graceUser || graceUser.isActive === false) {
+            return res.status(401).json({ ok: false, message: "Invalid session" });
+        }
+
+        // No reemitimos cookie aquí: la petición que ganó la rotación ya dejó
+        // la cookie correcta en el navegador (misma pestaña/perfil, mismo
+        // origen). Solo entregamos un access token válido para que esta
+        // petición duplicada no acabe invalidando la sesión del usuario.
+        const accessToken = generateToken(graceUser);
         return res.json({ ok: true, accessToken });
 
     } catch (error) {
