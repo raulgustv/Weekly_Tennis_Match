@@ -17,6 +17,17 @@ export const isLessThan24h = (date, startTime) => {
     return diffHours <= 24 && diffHours > 0;
 };
 
+// 🔵 CAMBIO: función nueva. A diferencia de isLessThan24h/isLessThan48h (que excluyen
+// partidos cuya hora de inicio ya pasó, exigiendo diffHours > 0), esta función sí
+// permite diffHours negativo (partido cuya hora de inicio ya llegó/pasó). El caso de
+// uso es "¿se puede generar el emparejamiento?" — no tiene sentido bloquear la
+// generación solo porque la hora de inicio ya se cumplió, así que solo se bloquea
+// cuando aún faltan más de 12 horas.
+export const isLessThan12h = (date, startTime) => {
+    const diffHours = hoursToMatch(date, startTime);
+    return diffHours <= 12;
+};
+
 
 export const formatDate = (date) => {
   const d = new Date(date);

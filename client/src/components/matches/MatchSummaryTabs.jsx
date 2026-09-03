@@ -20,18 +20,13 @@ import { useNavigate } from "react-router-dom";
 import colors from "../../themes/colors";
 import { useMemo } from "react";
 
-// 🔵 CAMBIO: prop "onJoin" eliminada (ya no se usa para el join directo de
-// backup); prop "onRequestBackup" añadida — ver JoinMatch.jsx.
 const MatchSummaryTabs = ({
     matchSummary,
     showJoinButton = false,
     onRequestJoin,
-    onRequestBackup,
+    onRequestBackupJoin,
     onLeave
 }) => {
-
-
-
 
     const { Text, Title, Link } = Typography;
     const { user } = useAuth();
@@ -114,6 +109,14 @@ const MatchSummaryTabs = ({
 
     const disabledLeave = isJoinedPlayer && isLess24h;
 
+    // CAMBIO (nuevo): "Join as backup" solo tiene sentido cuando ya no
+    // quedan plazas de player — pedías que solo estuviera disponible "si no
+    // hay espacios". Se comprueba tanto el status ("Full", que es lo que ya
+    // usa el resto de la app, p.ej. el botón "Generate matches" en
+    // MatchPlayers.jsx) como el conteo real de players por si el status
+    // aún no se hubiera actualizado.
+    const noSpotsLeft = status === "Full" || players.length >= maxPlayers;
+
 
     const leaveDeadline = dayjs(date)
         .hour(Number(startTime.split(":")[0]))
@@ -192,8 +195,8 @@ const MatchSummaryTabs = ({
                 />
             </div>
 
-            {isJoinedPlayer && <Tag color="blue">You are a player</Tag>}
-            {isJoinedBackup && <Tag color="orange">You are a backup</Tag>}
+            {isJoinedPlayer && <Tag color="blue">You are signed as a player</Tag>}
+            {isJoinedBackup && <Tag color="orange">You are signed as a backup</Tag>}
 
             {showJoinButton && (
                 <div>
@@ -238,30 +241,32 @@ const MatchSummaryTabs = ({
                                 </Tooltip>
                             )}
 
-                            {/*
-                              🔵 CAMBIO: antes este botón era un Popconfirm que
-                              llamaba a onJoin(_id, true) directamente (sin pasar
-                              por el modal de pago, y sin comprobar si el match
-                              estaba Full). Ahora:
-                              - está disabled si status !== "Full" (backup solo
-                                cuando el match está lleno), con tooltip explicando por qué
-                              - al pulsar, abre el modal de pago vía onRequestBackup
-                                (igual que "Join Match" hace con onRequestJoin)
-                            */}
+                            {/* CAMBIO: antes esto era un Popconfirm que llamaba a
+                                onJoin(_id, true) directamente, sin pedir método de
+                                pago. Ahora el backup elige método (y si es wallet,
+                                el saldo se retiene ya al apuntarse) igual que un
+                                player normal, así que abre el mismo PaymentModal
+                                a través de onRequestBackupJoin. Se quita el
+                                Popconfirm porque el propio PaymentModal ya exige
+                                confirmación explícita.
+                                CAMBIO (nuevo): además, el botón ahora está
+                                disabled mientras queden plazas de player libres
+                                (noSpotsLeft) — "Join as backup" solo tiene
+                                sentido cuando el match ya está lleno. */}
                             <Tooltip
                                 color="volcano"
                                 title={
                                     isSuspended
                                         ? `Your account is suspended until ${dayjs(user.suspendedUntil).format("DD/MM/YYYY HH:mm")}`
-                                        : status !== "Full"
-                                            ? "Backup spots are only available once the match is full"
+                                        : !noSpotsLeft
+                                            ? "You can only join as backup once the match is full"
                                             : null
                                 }
                             >
                                 <Button
                                     type="link" block
-                                    disabled={isSuspended || status !== "Full"}
-                                    onClick={() => onRequestBackup(matchSummary)}
+                                    disabled={isSuspended || !noSpotsLeft}
+                                    onClick={() => onRequestBackupJoin(matchSummary)}
                                 >
                                     Join as backup
                                 </Button>
@@ -270,7 +275,7 @@ const MatchSummaryTabs = ({
                     ) : (
                         <Popconfirm
                             title="Leave match"
-                            description="Are you sure you want to leave this match?"
+                            description="By leaving this match the spot maybe taken by another player. Are you sure you want to leave this match?"
                             onConfirm={() => onLeave(_id)}
                         >
                             <Tooltip

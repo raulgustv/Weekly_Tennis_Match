@@ -83,8 +83,7 @@ export const sendJoinMatchNotification = async (tokens, playerName, locationName
     }
 };
 
-// 🔵 CAMBIO: nueva — push que acompaña a sendAutoPromotedEmail cuando un
-// backup pasa a player automáticamente.
+
 export const sendAutoPromotedNotification = async (tokens, locationName, formattedDate) => {
     try {
         return sendNotification(
@@ -100,8 +99,7 @@ export const sendAutoPromotedNotification = async (tokens, locationName, formatt
     }
 };
 
-// 🔵 CAMBIO: nueva — push que acompaña a sendRemovedFromMatchEmail cuando
-// un admin/booker retira a alguien manualmente.
+
 export const sendRemovedFromMatchNotification = async (tokens, locationName, formattedDate) => {
     try {
         return sendNotification(
@@ -114,5 +112,20 @@ export const sendRemovedFromMatchNotification = async (tokens, locationName, for
         );
     } catch (error) {
         console.log(error);
+    }
+};
+
+export const sendMatchGeneratedNotification = async (tokens, locationName, formattedDate) => {
+    try {
+        return sendNotification(
+            tokens,
+            "🎾 Matches have been generated",
+            `The pairings for your match on ${formattedDate} at ${locationName} are ready. Check who you're playing with!`,
+            {
+                type: "MATCH_GENERATED"
+            }
+        );
+    } catch (error) {
+        console.log(error)
     }
 };

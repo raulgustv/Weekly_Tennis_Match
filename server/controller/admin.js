@@ -189,20 +189,47 @@ export  const removePlayerMatch = async(req, res) =>{
         }
 
         // 🔵 CAMBIO: antes solo hacía el filter/save, sin refund de wallet.
-        if(isBackup){
-            match.backUps = match.backUps.filter(p => p.user.toString() !== playerId.toString())
+                if(isBackup){
+            // CAMBIO (nuevo): antes de quitarlo, guardamos su payment —
+            // hace falta para saber si hay que reembolsarle. Mismo patrón
+            // que el refund de "removing as player" más abajo y que
+            // leaveMatch en controller/match.js.
+            const removedBackup = match.backUps.find(
+                p => p.user.toString() === playerId.toString()
+            );
+            const removedBackupPaymentMethod = removedBackup?.payment?.method;
+            const removedBackupPaymentStatus = removedBackup?.payment?.status;
+            const removedBackupAmount = removedBackup?.payment?.amount;
 
+            match.backUps = match.backUps.filter(p => p.user.toString() !== playerId.toString())
             await match.save({session})
 
-            await refundBackupWallet({
-                backup: backupObj,
-                userId: playerId,
-                match,
-                session,
-                note: `Backup refund - removed by admin/booker from match ${match._id}`
-            });
+            // CAMBIO (nuevo): si el backup tenía saldo de wallet retenido
+            // (se retiene al apuntarse como backup con método "wallet", ver
+            // joinMatch), se lo devolvemos al quitarlo — nunca llegó a
+            // jugar, no hay motivo para quedarnos con ese dinero.
+            if (removedBackupPaymentMethod === "wallet" && removedBackupPaymentStatus === "held") {
+                await User.findByIdAndUpdate(
+                    playerId,
+                    { $inc: { walletBalance: removedBackupAmount } },
+                    { session }
+                );
 
-            removedUserId = playerId;
+                const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
+
+                await WalletTransaction.create(
+                    [{
+                        user: playerId,
+                        amount: removedBackupAmount,
+                        type: "refund",
+                        status: "confirmed",
+                        note: `Refund admin removed backup ${formattedDate}`,
+                        match: match._id
+                    }],
+                    { session }
+                );
+            }
+
             return;
         }
 
