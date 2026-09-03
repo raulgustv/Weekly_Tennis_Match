@@ -317,12 +317,17 @@ const MatchPlayers = () => {
                               okText="Remove"
                               cancelText="Cancel"
                             >
-                              <Button
-                                danger
-                                size="small"
-                                icon={<UserDeleteOutlined />}
-                                loading={removingId === p?.user?._id}
-                              />
+                              <Tooltip
+                                title='Remove player from this match'
+                                color="#1677FF"
+                              >
+                                <Button
+                                  danger
+                                  size="small"
+                                  icon={<UserDeleteOutlined />}
+                                  loading={removingId === p?.user?._id}
+                                />
+                              </Tooltip>
                             </Popconfirm>
                           </Flex>
                         )}
