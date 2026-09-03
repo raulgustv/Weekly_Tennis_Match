@@ -89,9 +89,9 @@ const ProfileViewAdmin = () => {
                 <Button
                     icon={<ArrowLeftOutlined />}
                     type="default"
-                    onClick={() => { navigate('/admin/players') }}
+                    onClick={() => navigate(-1)}
                 >
-                    Back to players table
+                    Back 
                 </Button>
             </Flex>
 
