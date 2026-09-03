@@ -355,7 +355,7 @@ const MatchPlayers = () => {
                       <Flex align="center" justify="space-between" wrap gap={12}>
                         {/* 🔵 CAMBIO: misma tarjeta clicable que en Players, solo para
                             admin/booker */}
-                        <Tooltip title={canManage ? "Click on player to view profile" : ""}>
+                        <Tooltip title={user?.role === 'admin' ? "Click on player to view profile" : ""}>
                           <Flex
                             align="center"
                             gap={12}
