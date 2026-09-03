@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getMatch } from "../../actions/matches";
+import { getMatch, generateMatch } from "../../actions/matches"; // 🔵 CAMBIO: se añade generateMatch
 import LoadingSpinner from "../utils/LoadingSpinner";
 import {
   //Badge,
@@ -14,12 +14,14 @@ import {
   Tag,
   Switch,
   Popconfirm,
+  Tooltip, // 🔵 CAMBIO: nuevo — explica por qué "Generate matches" está deshabilitado
 } from "antd";
 import {
   ArrowLeftOutlined,
   ExclamationCircleOutlined,
   EditOutlined,
   UserDeleteOutlined,
+  ThunderboltOutlined, // 🔵 CAMBIO: icono para el botón "Generate matches"
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import MatchDetails from "./MatchDetails";
@@ -29,6 +31,7 @@ import colors from "../../themes/colors";
 import ProfilePicture from "../uploads/ProfilePicture";
 import CourtDetail from "./CourtDetail";
 import { toast } from "react-toastify";
+import { getMatchStartDateTime } from "../../helpers/time"; // 🔵 CAMBIO: mismo helper que ya usa el countdown de MatchesTable.jsx
 
 const { Title, Text } = Typography;
 
@@ -45,6 +48,7 @@ const MatchPlayers = () => {
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState(null); // 🔵 CAMBIO: nuevo, para el loading del botón "quitar"
   const [pageLoading, setPageLoading] = useState(false)
+  const [generating, setGenerating] = useState(false); // 🔵 CAMBIO: nuevo, para el loading del botón "Generate matches"
 
   // 🔵 CAMBIO: variable nueva, evita repetir la condición admin/booker por todo el componente
   const canManage = user?.role === 'admin' || user?.role === 'booker';
@@ -98,9 +102,43 @@ const MatchPlayers = () => {
     }
   }
 
+  // 🔵 CAMBIO: handler nuevo — llama a POST /match/generate/:id (ya existía en el
+  // backend, protegido por verifyBookerOrAdmin). El backend también valida las 12h
+  // (ver server/controller/match.js), así que aunque este botón esté deshabilitado
+  // en el cliente, el endpoint se protege igual si alguien lo llama directamente.
+  const handleGenerateMatch = async () => {
+    try {
+      setGenerating(true)
+      await generateMatch(match._id)
+      toast.success('Matches successfully generated')
+      const updated = await getMatch(id)
+      setMatch(updated)
+    } catch ({ response }) {
+      toast.error(response?.data?.message || 'Error generating matches')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   if (pageLoading || !match) return <LoadingSpinner />;
 
   const isReady = match?.status === "Ready" || match?.status === 'Playing';
+
+  // 🔵 CAMBIO: bloque nuevo — condiciones para mostrar/habilitar "Generate matches".
+  // Mismas reglas de base que ya usaba MatchesTable.jsx (Open/Full + 4 jugadores),
+  // más la ventana de 12h que pidió Raúl. El botón se MUESTRA siempre que se cumplan
+  // las condiciones de base (aunque falten más de 12h) pero queda deshabilitado con
+  // un tooltip explicando por qué, en vez de desaparecer.
+  const hasEnoughPlayers = (match?.players?.length ?? 0) >= 4;
+  const isGenerableStatus = match?.status === 'Open' || match?.status === 'Full';
+  const alreadyGenerated = (match?.generatedMatches?.length ?? 0) > 0;
+  const showGenerateButton = canManage && isGenerableStatus && hasEnoughPlayers && !alreadyGenerated;
+
+  const matchStartMs = getMatchStartDateTime(match);
+  const hoursUntilMatch = matchStartMs ? (matchStartMs - Date.now()) / (1000 * 60 * 60) : null;
+  // Igual que isLessThan12h en el backend: se permite generar aunque hoursUntilMatch
+  // sea negativo (el partido ya empezó), solo se bloquea si aún faltan más de 12h.
+  const withinGenerateWindow = hoursUntilMatch !== null && hoursUntilMatch <= 12;
 
   return (
     <div style={{ padding: 20 }}>
@@ -139,6 +177,34 @@ const MatchPlayers = () => {
           </Col>
         )}
 
+        {/* 🔵 CAMBIO: bloque nuevo — botón "Generate matches". Visible para admin/booker
+            cuando el partido está Open/Full con 4+ jugadores confirmados y aún no se ha
+            generado el emparejamiento (misma regla base que MatchesTable.jsx). Si aún
+            faltan más de 12h para el inicio, el botón se muestra pero deshabilitado, con
+            un tooltip explicando por qué — a petición de Raúl, en vez de ocultarlo. */}
+        {showGenerateButton && (
+          <Col xs={24} md={4} style={{ textAlign: "right", marginTop: 12 }}>
+            <Tooltip
+              title={
+                withinGenerateWindow
+                  ? ""
+                  : "Matches can only be generated once 12 hours or less remain before the match starts"
+              }
+            >
+              <Button
+                icon={<ThunderboltOutlined />}
+                onClick={handleGenerateMatch}
+                block
+                disabled={!withinGenerateWindow}
+                loading={generating}
+                style={{ background: colors.yellow }}
+              >
+                Generate matches
+              </Button>
+            </Tooltip>
+          </Col>
+        )}
+
         <Col xs={24} md={user?.role === 'admin' ? 3 : 6} style={{ textAlign: "right", marginTop: 12 }}>
           <Button
             icon={<ArrowLeftOutlined />}
@@ -161,7 +227,9 @@ const MatchPlayers = () => {
         <Row gutter={[24, 24]}>
           {match.generatedMatches?.map((m, index) => (
             <Col key={index} xs={24} sm={12} lg={12}>
-              <MatchDetails match={m} />
+              {/* 🔵 CAMBIO: prop nueva currentUserId — permite a MatchDetails resaltar
+                  al jugador logueado dentro del emparejamiento generado */}
+              <MatchDetails match={m} currentUserId={user?._id} />
             </Col>
           ))}
         </Row>
@@ -182,25 +250,43 @@ const MatchPlayers = () => {
                       style={{ borderLeft: "4px solid #52c41a" }}
                     >
                       <Flex align="center" justify="space-between" wrap gap={12}>
-                        <Flex align="center" gap={12}>
-                          {/* <Avatar
-                            size={40}
-                            icon={<UserOutlined />}
-                            style={{ backgroundColor: "#52c41a" }}
-                          /> */}
-                          <ProfilePicture
-                            user={p}
-                            profilePicture={p?.user?.profilePicture?.url}
-                            size={28}
-                            editable={false}
-                          />
-                          <div>
-                            <Text strong>{p?.user?.name} {p?.user?.lastname?.[0]} <small>({p?.user?.ntrplvl})</small></Text>
-                            <br />
-                            <Tag color="green">Confirmed</Tag>
-                          </div>
-
-                        </Flex>
+                        {/* 🔵 CAMBIO: la tarjeta del jugador ahora es clicable para
+                            admin/booker y lleva al perfil (/admin/player/:id), igual que
+                            ya hace PlayersTable.jsx. Para el resto de usuarios se deja
+                            igual que antes (no clicable), porque esa ruta está protegida
+                            por AdminRoute y un jugador normal sería redirigido. */}
+                        <Tooltip title={canManage ? "Click on player to view profile" : ""}>
+                          <Flex
+                            align="center"
+                            gap={12}
+                            style={canManage ? { cursor: "pointer" } : undefined}
+                            onClick={
+                              canManage
+                                ? (e) => {
+                                    e.stopPropagation();
+                                    navigate(`/admin/player/${p?.user?._id}`);
+                                  }
+                                : undefined
+                            }
+                          >
+                            {/* <Avatar
+                              size={40}
+                              icon={<UserOutlined />}
+                              style={{ backgroundColor: "#52c41a" }}
+                            /> */}
+                            <ProfilePicture
+                              user={p}
+                              profilePicture={p?.user?.profilePicture?.url}
+                              size={28}
+                              editable={false}
+                            />
+                            <div>
+                              <Text strong>{p?.user?.name} {p?.user?.lastname?.[0]} <small>({p?.user?.ntrplvl})</small></Text>
+                              <br />
+                              <Tag color="green">Confirmed</Tag>
+                            </div>
+                          </Flex>
+                        </Tooltip>
                         {canManage && (
                           <Flex
                             align="center"
@@ -266,26 +352,42 @@ const MatchPlayers = () => {
                       style={{ borderLeft: "4px solid #faad14" }}
                     >
                       <Flex align="center" justify="space-between" wrap gap={12}>
-                        <Flex align="center" gap={12}>
-                          <ProfilePicture
-                            user={b}
-                            profilePicture={b?.user?.profilePicture?.url}
-                            size={28}
-                            editable={false}
-                          />
-                          <div>
-                            <Text strong>{b?.user?.name}</Text>
-                            <br />
-                            <Tag color="gold">Backup</Tag>
-                            {/* 🔵 CAMBIO: tag nuevo — antes no se mostraba nada
-                                del pago de un backup (no existía ese dato). */}
-                            {b?.payment?.method && (
-                              <Tag color={b?.payment?.status === 'held' ? 'success' : 'default'}>
-                                <strong>{b.payment.method}</strong> · {b.payment.status}
-                              </Tag>
-                            )}
-                          </div>
-                        </Flex>
+                        {/* 🔵 CAMBIO: misma tarjeta clicable que en Players, solo para
+                            admin/booker */}
+                        <Tooltip title={canManage ? "Click on player to view profile" : ""}>
+                          <Flex
+                            align="center"
+                            gap={12}
+                            style={canManage ? { cursor: "pointer" } : undefined}
+                            onClick={
+                              canManage
+                                ? (e) => {
+                                    e.stopPropagation();
+                                    navigate(`/admin/player/${b?.user?._id}`);
+                                  }
+                                : undefined
+                            }
+                          >
+                            <ProfilePicture
+                              user={b}
+                              profilePicture={b?.user?.profilePicture?.url}
+                              size={28}
+                              editable={false}
+                            />
+                            <div>
+                              <Text strong>{b?.user?.name}</Text>
+                              <br />
+                              <Tag color="gold">Backup</Tag>
+                              {/* 🔵 CAMBIO: tag nuevo — antes no se mostraba nada
+                                  del pago de un backup (no existía ese dato). */}
+                              {b?.payment?.method && (
+                                <Tag color={b?.payment?.status === 'held' ? 'success' : 'default'}>
+                                  <strong>{b.payment.method}</strong> · {b.payment.status}
+                                </Tag>
+                              )}
+                            </div>
+                          </Flex>
+                        </Tooltip>
 
                         {/* 🔵 CAMBIO: botón nuevo, mismo handler que para players */}
                         {canManage && (

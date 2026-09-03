@@ -308,10 +308,6 @@ const MatchesTable = () => {
                         <Tag
                             key={p._id}
                             color="green"
-                            closable={
-                                r.status !== "Played" &&
-                                r.status !== "Full"
-                            }
                             onClose={() =>
                                 handleRemovePlayer(
                                     r._id,
@@ -613,12 +609,7 @@ const MatchesTable = () => {
                                     <Tag
                                         key={p._id}
                                         color="green"
-                                        closable={
-                                            r.status !==
-                                                "Played" &&
-                                            r.status !==
-                                                "Full"
-                                        }
+                                        closable={false}
                                         onClose={() =>
                                             handleRemovePlayer(
                                                 r._id,

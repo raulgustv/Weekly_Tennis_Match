@@ -15,7 +15,11 @@ import ProfilePicture from "../uploads/ProfilePicture";
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
 
-const MatchDetails = ({ match }) => {
+// 🔵 CAMBIO: nueva prop currentUserId — permite resaltar al usuario logueado dentro
+// del emparejamiento generado (ej: "John and Amazona vs Bob and Ray", si el usuario
+// logueado es Amazona, su nombre aparece marcado). Se compara como string por si un
+// lado llega como ObjectId de Mongo y el otro como string ya serializado por JSON.
+const MatchDetails = ({ match, currentUserId }) => {
   const screens = useBreakpoint();
 
   const renderPlayers = (team, accentColor) => (
@@ -24,44 +28,71 @@ const MatchDetails = ({ match }) => {
       size={4}
       style={{ width: "100%" }}
     >
-      {Object.values(team).map((p) => (
-        <div
-          key={p?._id}
-          style={{
-            padding: "4px 7px",
-            minHeight: 36,
-            borderRadius: 7,
-            background: colors.white,
-            borderLeft: `3px solid ${accentColor}`,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-            display: "flex",
-            alignItems: "center",
-            overflow: "hidden",
-          }}
-        >
-          <ProfilePicture
-            user={p}
-            editable={false}
-            profilePicture={p?.profilePicture?.url}
-            size={26}
-          />
+      {Object.values(team).map((p) => {
+        // 🔵 CAMBIO: bloque nuevo — detecta si esta tarjeta es la del usuario logueado
+        const isCurrentUser =
+          !!currentUserId && String(p?._id) === String(currentUserId);
 
-          <Text
+        return (
+          <div
+            key={p?._id}
             style={{
-              fontSize: 12,
-              lineHeight: "16px",
-              color: colors.textPrimary,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              width: "100%",
-              marginLeft: 6,
+              padding: "4px 7px",
+              minHeight: 36,
+              borderRadius: 7,
+              // 🔵 CAMBIO: fondo distinto para resaltar al usuario logueado
+              background: isCurrentUser ? "#E6F4FF" : colors.white,
+              border: isCurrentUser
+                ? "1.5px solid #1677FF"
+                : "1.5px solid transparent",
+              borderLeft: `3px solid ${accentColor}`,
+              boxShadow: isCurrentUser
+                ? "0 1px 5px rgba(22,119,255,0.25)"
+                : "0 1px 3px rgba(0,0,0,0.05)",
             }}
           >
-            {p?.name} {p?.lastname[0]}
-          </Text>
-        </div>
-      ))}
+            <ProfilePicture
+              user={p}
+              editable={false}
+              profilePicture={p?.profilePicture?.url}
+              size={26}
+            />
+
+            <Text
+              style={{
+                fontSize: 12,
+                lineHeight: "16px",
+                color: colors.textPrimary,
+                // 🔵 CAMBIO: nombre en negrita cuando es el usuario logueado
+                fontWeight: isCurrentUser ? 700 : 400,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                width: "100%",
+                marginLeft: 6,
+              }}
+            >
+              {p?.name} {p?.lastname[0]}
+            </Text>
+
+            {/* 🔵 CAMBIO: tag "You" nuevo, solo en la tarjeta del usuario logueado */}
+            {isCurrentUser && (
+              <Tag
+                color="green"
+                style={{
+                  margin: 0,
+                  marginLeft: 4,
+                  fontSize: 10,
+                  lineHeight: "16px",
+                  flexShrink: 0,
+                }}
+              >
+                You
+              </Tag>
+            )}
+          </div>
+        );
+      })}
     </Space>
   );
 
