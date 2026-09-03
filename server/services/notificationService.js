@@ -116,3 +116,23 @@ export const sendRemovedFromMatchNotification = async (tokens, locationName, for
         console.log(error);
     }
 };
+
+// CAMBIO (nuevo): aviso para el flujo pedido por Raúl — 10 minutos después de
+// generar o editar los partidos automáticos (sin que se vuelva a tocar nada),
+// se avisa SOLO a los jugadores confirmados de ESE partido (no a todos los
+// usuarios de la app, a diferencia de sendNewMatchNotification). Quien decide
+// cuándo llamar a esta función es el cron nuevo, server/jobs/matchNotifications.js.
+export const sendMatchGeneratedNotification = async (tokens, locationName, formattedDate) => {
+    try {
+        return sendNotification(
+            tokens,
+            "🎾 Matches have been generated",
+            `The pairings for your match on ${formattedDate} at ${locationName} are ready. Check who you're playing with!`,
+            {
+                type: "MATCH_GENERATED"
+            }
+        );
+    } catch (error) {
+        console.log(error)
+    }
+};
