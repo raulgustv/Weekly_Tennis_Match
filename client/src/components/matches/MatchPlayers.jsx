@@ -164,7 +164,7 @@ const MatchPlayers = () => {
 
 
 
-        {((user?.role === 'admin' || user?.role === 'booker') && match.generatedMatches?.length > 0) && (
+        {((user?.role === 'admin') && match.generatedMatches?.length > 0) && (
           <Col xs={24} md={4} style={{ textAlign: "right", marginTop: 12 }}>
             <Button
               icon={<EditOutlined />}
@@ -177,11 +177,7 @@ const MatchPlayers = () => {
           </Col>
         )}
 
-        {/* 🔵 CAMBIO: bloque nuevo — botón "Generate matches". Visible para admin/booker
-            cuando el partido está Open/Full con 4+ jugadores confirmados y aún no se ha
-            generado el emparejamiento (misma regla base que MatchesTable.jsx). Si aún
-            faltan más de 12h para el inicio, el botón se muestra pero deshabilitado, con
-            un tooltip explicando por qué — a petición de Raúl, en vez de ocultarlo. */}
+
         {showGenerateButton && (
           <Col xs={24} md={4} style={{ textAlign: "right", marginTop: 12 }}>
             <Tooltip
@@ -223,7 +219,7 @@ const MatchPlayers = () => {
       </Row>
 
       {/* READY STATE */}
-      {isReady  ? (
+      {isReady ? (
         <Row gutter={[24, 24]}>
           {match.generatedMatches?.map((m, index) => (
             <Col key={index} xs={24} sm={12} lg={12}>
@@ -255,17 +251,17 @@ const MatchPlayers = () => {
                             ya hace PlayersTable.jsx. Para el resto de usuarios se deja
                             igual que antes (no clicable), porque esa ruta está protegida
                             por AdminRoute y un jugador normal sería redirigido. */}
-                        <Tooltip title={canManage ? "Click on player to view profile" : ""}>
+                        <Tooltip title={user?.role === 'admin' ? "Click on player to view profile" : ""}>
                           <Flex
                             align="center"
                             gap={12}
-                            style={canManage ? { cursor: "pointer" } : undefined}
+                            style={user?.role === 'admin' ? { cursor: "pointer" } : undefined}
                             onClick={
-                              canManage
+                              user?.role === 'admin'
                                 ? (e) => {
-                                    e.stopPropagation();
-                                    navigate(`/admin/player/${p?.user?._id}`);
-                                  }
+                                  e.stopPropagation();
+                                  navigate(`/admin/player/${p?.user?._id}`);
+                                }
                                 : undefined
                             }
                           >
@@ -362,9 +358,9 @@ const MatchPlayers = () => {
                             onClick={
                               canManage
                                 ? (e) => {
-                                    e.stopPropagation();
-                                    navigate(`/admin/player/${b?.user?._id}`);
-                                  }
+                                  e.stopPropagation();
+                                  navigate(`/admin/player/${b?.user?._id}`);
+                                }
                                 : undefined
                             }
                           >
