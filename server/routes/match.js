@@ -1,8 +1,8 @@
 import {Router} from 'express';
 import { protect, requireVerification, verifyAdmin, verifyBookerOrAdmin } from '../middlewares/auth.js';
-import { acceptInvite, addMatchCourts, 
-declineInvite, generateMatches, getAllMatches,
-getMatch, getOpenMatch, joinMatch, 
+import { addMatchCourts,
+generateMatches, getAllMatches,
+getMatch, getOpenMatch, joinMatch,
 leaveMatch, newMatch, removeMatchCourts,
 updateGeneratedMatches,
 updateMatch, updateMatchStatus } from '../controller/match.js';
@@ -22,8 +22,8 @@ router.get('/view-match/:id', protect, viewMatchesLimiter, validateObjectId("id"
 //post match creation
 router.post('/join/:id', protect, requireVerification, matchLimiter, validateObjectId("id"), joinMatch)
 router.post('/leave/:matchId', protect, writeLimiter, validateObjectId("matchId"), leaveMatch)
-router.post('/invite/accept', acceptInvite)
-router.post('/invite/decline', declineInvite)
+// 🔵 CAMBIO: se han quitado las rutas '/invite/accept' y '/invite/decline'
+// (el flujo de invitación por email ya no existe, ver controller/match.js).
 
 router.post('/generate/:id', protect, verifyBookerOrAdmin, validateObjectId("id"), generateMatches)
 router.put('/update-generate/:matchId', protect, verifyBookerOrAdmin, validateObjectId("matchId"), updateGeneratedMatches)

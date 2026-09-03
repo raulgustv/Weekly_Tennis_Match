@@ -122,19 +122,34 @@ const matchSchema = new mongoose.Schema({
             }
         }
     }],
+    // 🔵 CAMBIO: los backups ahora tienen su propio "payment", igual que los
+    // players. Antes un backup solo guardaba user/joinedAt/status y no se le
+    // pedía método de pago. Con esto un backup puede elegir método al
+    // unirse (mismo modal que un player) y, si es wallet, se le puede
+    // "retener" (status: 'held') el importe hasta que se promocione,
+    // devuelva (refunded) o se le haga el hold definitivo al pasar a player.
     backUps:[{
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         },
         joinedAt: {type: Date, default: Date.now},
-        status:{
-            type: String,
-            enum: ['waiting', 'invited', 'accepted', 'rejected', 'expired'],
-            default: 'waiting'
-        },
-        invitedAt: Date
-
+        payment:{
+            method: {
+                type: String,
+                required: true
+            },
+            status: {
+                type: String,
+                enum: ['unpaid', 'held', 'refunded'], // held = wallet retenido; refunded = ya se le devolvió
+                default: 'unpaid'
+            },
+            amount: {
+                type: Number
+            },
+            heldAt: Date,
+            refundedAt: Date
+        }
     }],
     date: {
         type: Date,

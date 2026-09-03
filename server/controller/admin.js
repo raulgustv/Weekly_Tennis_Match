@@ -3,6 +3,12 @@ import { adjustNTRPLevels } from "../jobs/adjustNTRP.js";
 import Match from "../models/Match.js";
 import User from "../models/user.js";
 import WalletTransaction from '../models/Wallet.js'
+import {
+    promoteNextBackup,
+    refundBackupWallet,
+    notifyAutoPromoted,
+    notifyRemovedByAdmin
+} from "../utils/backups.js";
 
 export const closeMatch = async(req, res) =>{
    try {
@@ -134,15 +140,33 @@ export const togglePlayerActivation = async(req, res) =>{
     }
 }
 
+/*
+  🔵 CAMBIO: esta función ya existía, pero solo la podía usar 'admin'
+  (routes/admin.js ahora usa verifyBookerOrAdmin, así que 'booker' también
+  puede). Además tenía un bug: al auto-promocionar un backup hacía
+  match.backUps.shift() + match.players.push(promotedUser) a pelo, sin
+  adaptar el payment al esquema nuevo. Ahora usa promoteNextBackup() (el
+  mismo helper que usa leaveMatch), refund de wallet si aplica, y notifica
+  tanto al retirado como al promocionado.
+
+  Admin / booker manual removal.
+  Unlike a player leaving on their own, this is NOT blocked by the
+  24-hour deadline — an admin or booker can remove a player or backup
+  at any point up until the match starts. Wallet holds are refunded,
+  the next waiting backup (if any) is auto-promoted into the freed
+  spot, and both the removed user and the promoted user are notified.
+*/
 export  const removePlayerMatch = async(req, res) =>{
 
     const session = await mongoose.startSession();
 
-    try {       
+    let removedUserId = null;
+    let promotedUserId = null;
+    const { playerId, matchId } = req.params;
 
-        const {playerId, matchId} = req.params;
+    try {
 
-        await session.withTransaction(async () => {        
+        await session.withTransaction(async () => {
 
         const user = await User.findById(playerId).session(session)
         const match = await Match.findById(matchId).session(session)
@@ -156,28 +180,64 @@ export  const removePlayerMatch = async(req, res) =>{
            throw new Error("Cannot remove player from this match status");
         }
 
-        const isPlayer = match.players.some(p => p.user.toString() === user._id.toString())
-        const isBackup = match.backUps.some(p => p.user.toString() === user._id.toString())
+        const backupObj = match.backUps.find(p => p.user.toString() === playerId.toString())
+        const isBackup = Boolean(backupObj);
+        const isPlayer = match.players.some(p => p.user.toString() === playerId.toString())
 
         if(!isPlayer && !isBackup){
             throw new Error("Player not registered in this match");
         }
 
+        // 🔵 CAMBIO: antes solo hacía el filter/save, sin refund de wallet.
         if(isBackup){
             match.backUps = match.backUps.filter(p => p.user.toString() !== playerId.toString())
 
             await match.save({session})
-            return;            
+
+            await refundBackupWallet({
+                backup: backupObj,
+                userId: playerId,
+                match,
+                session,
+                note: `Backup refund - removed by admin/booker from match ${match._id}`
+            });
+
+            removedUserId = playerId;
+            return;
         }
 
         //removing as player
+        const playerObj = match.players.find(p => p.user.toString() === playerId.toString());
+        const paymentMethod = playerObj?.payment?.method;
+        const paidAmount = match.price / match.maxPlayers;
+
         match.players = match.players.filter(p => p.user.toString() !== playerId.toString())
 
-        //autopromote
-        if(match.backUps.length > 0){
-            const promotedUser = match.backUps.shift();
-            match.players.push(promotedUser)
+        // refund wallet hold, same as a self-initiated leave
+        if(paymentMethod === "wallet"){
+            await User.findByIdAndUpdate(
+                playerId,
+                { $inc: { walletBalance: paidAmount } },
+                { session }
+            );
+
+            const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
+
+            await WalletTransaction.create([{
+                user: playerId,
+                amount: paidAmount,
+                type: "refund",
+                status: "confirmed",
+                note: `Refund - removed by admin/booker from match ${formattedDate}`,
+                match: match._id
+            }], { session });
         }
+
+        // 🔵 CAMBIO: antes -> const promotedUser = match.backUps.shift();
+        // match.players.push(promotedUser) — metía el objeto de backup tal
+        // cual en "players", con un payment que no cuadraba con el esquema.
+        // Ahora usa el mismo helper que leaveMatch, que sí adapta el payment.
+        const promoted = promoteNextBackup(match);
 
         if(match.players.length < match.maxPlayers){
             match.status = 'Open'
@@ -185,7 +245,19 @@ export  const removePlayerMatch = async(req, res) =>{
 
         await match.save({session});
 
+        removedUserId = playerId;
+        promotedUserId = promoted?.userId || null;
+
         })
+
+        // 🔵 CAMBIO: nuevo — antes no se avisaba a nadie al retirarlo.
+        if (removedUserId) {
+            notifyRemovedByAdmin(matchId, removedUserId).catch(console.error);
+        }
+
+        if (promotedUserId) {
+            notifyAutoPromoted(matchId, promotedUserId).catch(console.error);
+        }
 
         return res.status(200).json({
             message: "Removed player from match"
@@ -195,8 +267,8 @@ export  const removePlayerMatch = async(req, res) =>{
         console.log(error)
         return res.status(400).json({
             ok: false,
-            message: 'User not found'
-        });  
+            message: error.message || 'Error removing player from match'
+        });
     }finally{
         session.endSession();
     }

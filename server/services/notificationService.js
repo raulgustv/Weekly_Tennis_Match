@@ -82,3 +82,37 @@ export const sendJoinMatchNotification = async (tokens, playerName, locationName
         console.log(error)
     }
 };
+
+// 🔵 CAMBIO: nueva — push que acompaña a sendAutoPromotedEmail cuando un
+// backup pasa a player automáticamente.
+export const sendAutoPromotedNotification = async (tokens, locationName, formattedDate) => {
+    try {
+        return sendNotification(
+            tokens,
+            "🎾 You're in the match!",
+            `A spot opened up and you were auto-promoted to player for the match on ${formattedDate} at ${locationName}.`,
+            {
+                type: "AUTO_PROMOTED"
+            }
+        );
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+// 🔵 CAMBIO: nueva — push que acompaña a sendRemovedFromMatchEmail cuando
+// un admin/booker retira a alguien manualmente.
+export const sendRemovedFromMatchNotification = async (tokens, locationName, formattedDate) => {
+    try {
+        return sendNotification(
+            tokens,
+            "🎾 Removed from match",
+            `You were removed from the match on ${formattedDate} at ${locationName} by an admin/booker.`,
+            {
+                type: "REMOVED_FROM_MATCH"
+            }
+        );
+    } catch (error) {
+        console.log(error);
+    }
+};
