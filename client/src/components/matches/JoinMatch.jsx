@@ -26,6 +26,9 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
   // 🔵 AÑADIDO
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [paymentModal, setPaymentModal] = useState(false);
+  // 🔵 CAMBIO: nuevo estado — recuerda si el modal de pago se abrió desde
+  // "Join Match" o desde "Join as backup", para saber qué mandar a joinMatch().
+  const [joinAsBackup, setJoinAsBackup] = useState(false);
 
   const walletPaymentAllowed = selectedMatch?.createdBy?.walletPaymentAllowed === true
 
@@ -40,8 +43,8 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
         )} as ${data?.role}`
       );
 
-      fetchMatches();  
-      
+      fetchMatches();
+
     } catch (error) {
       toast.error(error?.response?.data?.message);
     }
@@ -50,6 +53,16 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
   // 🔵 AÑADIDO
   const handleRequestJoin = (match) => {
     setSelectedMatch(match);
+    setJoinAsBackup(false); // 🔵 CAMBIO: aseguramos que no quede el flag de un backup anterior
+    setPaymentModal(true);
+  };
+
+  // 🔵 CAMBIO: handler nuevo, gemelo de handleRequestJoin pero para backup.
+  // Antes el botón "Join as backup" llamaba a onJoin(_id, true) directo,
+  // sin pasar por el modal de pago (ver MatchSummaryTabs.jsx).
+  const handleRequestBackup = (match) => {
+    setSelectedMatch(match);
+    setJoinAsBackup(true);
     setPaymentModal(true);
   };
 
@@ -57,14 +70,18 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
   const handleConfirmJoin = async (paymentMethod) => {
     if (!selectedMatch) return;
 
+    // 🔵 CAMBIO: antes aquí siempre iba "false" (solo se llegaba desde
+    // Join Match). Ahora se manda joinAsBackup para cubrir también el
+    // flujo de backup.
     await handleJoin(
       selectedMatch._id,
-      false,
+      joinAsBackup,
       paymentMethod
     );
 
     setPaymentModal(false);
     setSelectedMatch(null);
+    setJoinAsBackup(false);
     //fetchAllTransactions()
     fetchTransactions()
     loadUser()
@@ -163,7 +180,8 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
                   matchSummary={match}
                   showJoinButton
                   onRequestJoin={handleRequestJoin}
-                  onJoin={handleJoin}
+                  // 🔵 CAMBIO: prop nueva, sustituye a la prop onJoin de antes
+                  onRequestBackup={handleRequestBackup}
                   onLeave={handleLeave}
                 />
               </Card>
@@ -184,6 +202,8 @@ const JoinMatch = ({ openMatches = [], loading, fetchMatches }) => {
           ).toFixed(2)}
           balance={balance}
           walletPaymentAllowed={walletPaymentAllowed}
+          // 🔵 CAMBIO: prop nueva, activa el aviso de backup dentro del modal
+          isBackup={joinAsBackup}
         />
       )}
     </>

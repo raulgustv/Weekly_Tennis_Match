@@ -20,11 +20,13 @@ import { useNavigate } from "react-router-dom";
 import colors from "../../themes/colors";
 import { useMemo } from "react";
 
+// 🔵 CAMBIO: prop "onJoin" eliminada (ya no se usa para el join directo de
+// backup); prop "onRequestBackup" añadida — ver JoinMatch.jsx.
 const MatchSummaryTabs = ({
     matchSummary,
     showJoinButton = false,
     onRequestJoin,
-    onJoin,
+    onRequestBackup,
     onLeave
 }) => {
 
@@ -236,25 +238,34 @@ const MatchSummaryTabs = ({
                                 </Tooltip>
                             )}
 
-                            <Popconfirm
-                                title="Joining as backup"
-                                description="You are joining this match as backup. Are you sure?"
-                                onConfirm={() => onJoin(_id, true)}
+                            {/*
+                              🔵 CAMBIO: antes este botón era un Popconfirm que
+                              llamaba a onJoin(_id, true) directamente (sin pasar
+                              por el modal de pago, y sin comprobar si el match
+                              estaba Full). Ahora:
+                              - está disabled si status !== "Full" (backup solo
+                                cuando el match está lleno), con tooltip explicando por qué
+                              - al pulsar, abre el modal de pago vía onRequestBackup
+                                (igual que "Join Match" hace con onRequestJoin)
+                            */}
+                            <Tooltip
+                                color="volcano"
+                                title={
+                                    isSuspended
+                                        ? `Your account is suspended until ${dayjs(user.suspendedUntil).format("DD/MM/YYYY HH:mm")}`
+                                        : status !== "Full"
+                                            ? "Backup spots are only available once the match is full"
+                                            : null
+                                }
                             >
-                                <Tooltip
-                                    color="volcano"
-                                    title={
-                                        isSuspended ? `Your account is suspended until ${dayjs(user.suspendedUntil).format("DD/MM/YYYY HH:mm")}` : null
-                                    }
+                                <Button
+                                    type="link" block
+                                    disabled={isSuspended || status !== "Full"}
+                                    onClick={() => onRequestBackup(matchSummary)}
                                 >
-                                    <Button
-                                        type="link" block
-                                        disabled={isSuspended}
-                                    >
-                                        Join as backup
-                                    </Button>
-                                </Tooltip>
-                            </Popconfirm>
+                                    Join as backup
+                                </Button>
+                            </Tooltip>
                         </>
                     ) : (
                         <Popconfirm

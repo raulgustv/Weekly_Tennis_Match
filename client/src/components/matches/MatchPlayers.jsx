@@ -13,16 +13,18 @@ import {
   Empty,
   Tag,
   Switch,
+  Popconfirm,
 } from "antd";
 import {
   ArrowLeftOutlined,
   ExclamationCircleOutlined,
   EditOutlined,
+  UserDeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import MatchDetails from "./MatchDetails";
 import { useAuth } from "../../context/AuthContext";
-import { togglePayment } from "../../actions/admin";
+import { togglePayment, adminRemovePlayer } from "../../actions/admin";
 import colors from "../../themes/colors";
 import ProfilePicture from "../uploads/ProfilePicture";
 import CourtDetail from "./CourtDetail";
@@ -41,7 +43,11 @@ const MatchPlayers = () => {
 
 
   const [loading, setLoading] = useState(false);
+  const [removingId, setRemovingId] = useState(null); // 🔵 CAMBIO: nuevo, para el loading del botón "quitar"
   const [pageLoading, setPageLoading] = useState(false)
+
+  // 🔵 CAMBIO: variable nueva, evita repetir la condición admin/booker por todo el componente
+  const canManage = user?.role === 'admin' || user?.role === 'booker';
 
   //console.log(match)
 
@@ -73,6 +79,23 @@ const MatchPlayers = () => {
       toast.error(response?.data?.message || 'Error setting user payment')
       setLoading(false)
     } finally { setLoading(false) }
+  }
+
+  // 🔵 CAMBIO: handler nuevo. Llama a la acción adminRemovePlayer, que ya
+  // existía en actions/admin.js (apunta a POST /admin/remove-player/:matchId/:playerId)
+  // pero no estaba conectada a ningún botón de la interfaz.
+  const handleRemovePlayer = async (userId) => {
+    try {
+      setRemovingId(userId)
+      await adminRemovePlayer(match._id, userId)
+      toast.success('Player removed from the match')
+      const updated = await getMatch(id)
+      setMatch(updated)
+    } catch ({ response }) {
+      toast.error(response?.data?.message || 'Error removing player')
+    } finally {
+      setRemovingId(null)
+    }
   }
 
   if (pageLoading || !match) return <LoadingSpinner />;
@@ -178,10 +201,11 @@ const MatchPlayers = () => {
                           </div>
 
                         </Flex>
-                        {(user?.role === 'admin' || user?.role === 'booker') && (
+                        {canManage && (
                           <Flex
                             align="center"
                             gap={8}
+                            wrap
                             style={{
                               marginTop: 8,
                               marginLeft: "auto",
@@ -201,6 +225,23 @@ const MatchPlayers = () => {
                               onChange={() => handleTogglePayment(p?.user?._id)}
                               loading={loading}
                             />
+
+                            {/* 🔵 CAMBIO: botón nuevo — antes admin/booker no tenían
+                                forma de retirar a un jugador desde esta pantalla. */}
+                            <Popconfirm
+                              title="Remove player"
+                              description="Remove this player from the match? If they paid with wallet, they'll be refunded and the next backup (if any) will be auto-promoted."
+                              onConfirm={() => handleRemovePlayer(p?.user?._id)}
+                              okText="Remove"
+                              cancelText="Cancel"
+                            >
+                              <Button
+                                danger
+                                size="small"
+                                icon={<UserDeleteOutlined />}
+                                loading={removingId === p?.user?._id}
+                              />
+                            </Popconfirm>
                           </Flex>
                         )}
                       </Flex>
@@ -224,18 +265,46 @@ const MatchPlayers = () => {
                       size="small"
                       style={{ borderLeft: "4px solid #faad14" }}
                     >
-                      <Flex align="center" gap={12}>
-                        <ProfilePicture
-                          user={b}
-                          profilePicture={b?.user?.profilePicture?.url}
-                          size={28}
-                          editable={false}
-                        />
-                        <div>
-                          <Text strong>{b?.user?.name}</Text>
-                          <br />
-                          <Tag color="gold">Backup</Tag>
-                        </div>
+                      <Flex align="center" justify="space-between" wrap gap={12}>
+                        <Flex align="center" gap={12}>
+                          <ProfilePicture
+                            user={b}
+                            profilePicture={b?.user?.profilePicture?.url}
+                            size={28}
+                            editable={false}
+                          />
+                          <div>
+                            <Text strong>{b?.user?.name}</Text>
+                            <br />
+                            <Tag color="gold">Backup</Tag>
+                            {/* 🔵 CAMBIO: tag nuevo — antes no se mostraba nada
+                                del pago de un backup (no existía ese dato). */}
+                            {b?.payment?.method && (
+                              <Tag color={b?.payment?.status === 'held' ? 'success' : 'default'}>
+                                <strong>{b.payment.method}</strong> · {b.payment.status}
+                              </Tag>
+                            )}
+                          </div>
+                        </Flex>
+
+                        {/* 🔵 CAMBIO: botón nuevo, mismo handler que para players */}
+                        {canManage && (
+                          <Popconfirm
+                            title="Remove backup"
+                            description="Remove this backup from the match? If they had wallet funds on hold, they'll be refunded."
+                            onConfirm={() => handleRemovePlayer(b?.user?._id)}
+                            okText="Remove"
+                            cancelText="Cancel"
+                          >
+                            <Button
+                              danger
+                              size="small"
+                              icon={<UserDeleteOutlined />}
+                              loading={removingId === b?.user?._id}
+                              style={{ marginLeft: "auto" }}
+                            />
+                          </Popconfirm>
+                        )}
                       </Flex>
                     </Card>
                   ))}

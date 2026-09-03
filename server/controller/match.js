@@ -13,9 +13,10 @@ import {
     isLessThan24h
 } from '../helpers/misc.js';
 import {
-    inviteNextBackup
+    promoteNextBackup,
+    refundBackupWallet,
+    notifyAutoPromoted
 } from '../utils/backups.js';
-import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { notifyOtherPlayersOfJoin, sendNewMatchNotification, sendNotification } from '../services/notificationService.js';
 
@@ -82,6 +83,13 @@ export const newMatch = async (req, res) => {
           });
         }
 
+        const pricePerPlayer = Math.round((totalPrice / maxPlayers) * 100) / 100;
+
+        // 🔵 CAMBIO: antes el creador del partido NO quedaba registrado
+        // como jugador (tenía que hacer join él mismo después). Ahora se
+        // añade directamente en el array "players" del create(), con
+        // payment.status = "paid" (pedido explícito: el booker no debe
+        // figurar como "unpaid" en su propio partido).
         const match = await Match.create({
             createdBy: req.user._id,
             location: location._id,
@@ -91,7 +99,17 @@ export const newMatch = async (req, res) => {
             endTime,
             price: totalPrice,
             maxPlayers,
-            paymentMethods: finalPaymentMethods
+            paymentMethods: finalPaymentMethods,
+            players: [{
+                user: req.user._id,
+                joinedAt: new Date(),
+                payment: {
+                    method: "booker",
+                    status: "paid",
+                    amount: pricePerPlayer
+                }
+            }],
+            status: maxPlayers <= 1 ? "Full" : "Open"
         });
 
         /* PUSH NOTIFICATION */ 
@@ -385,6 +403,13 @@ export const joinMatch = async (req, res) => {
       throw new Error("Invalid match ID");
     }
 
+    // 🔵 CAMBIO: antes esta validación solo se hacía para el join normal;
+    // el join como backup no pedía paymentMethod en absoluto. Ahora se
+    // exige siempre, porque el backup también elige método de pago.
+    if (!paymentMethod) {
+      throw new Error("Payment method required");
+    }
+
     const user = await User.findById(userId).session(session);
 
     if(!user) {
@@ -401,16 +426,83 @@ export const joinMatch = async (req, res) => {
       })
     }
 
+    const match = await Match.findById(id).session(session)
+                  .populate('location', 'name')
+                  .populate('createdBy', 'walletPaymentAllowed');
+
+    if (!match) {
+      throw new Error("Match does not exist");
+    }
+
+    const validPaymentMethod = match.paymentMethods.find(
+      pm => pm.type === paymentMethod
+    );
+
+    if (!validPaymentMethod) {
+      throw new Error("Please select a valid payment method");
+    }
+
+    const estimatedPrice = Math.round((match.price / match.maxPlayers) * 100) / 100;
+    const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
+
+    // 🔵 CAMBIO: función nueva, extraída para no duplicar la lógica de
+    // wallet (antes estaba copiada dos veces: una en el join normal con
+    // wallet, y no existía en absoluto para el backup). La usan tanto el
+    // join de player como el de backup y el fallback de auto-backup.
+    /**
+     * Builds the payment sub-document for either a player or a backup join,
+     * and — for wallet payments — deducts/holds the funds and records the
+     * wallet transaction. Throws if the wallet isn't allowed / doesn't have
+     * enough balance. Must run inside the outer transaction.
+     */
+    const buildPayment = async ({ holdLabel }) => {
+      if (paymentMethod === "wallet") {
+        if (!match.createdBy?.walletPaymentAllowed) {
+          throw new Error("Wallet payment not available for this user");
+        }
+
+        if (user.walletBalance < estimatedPrice) {
+          throw new Error("Insufficient balance");
+        }
+
+        user.walletBalance -= estimatedPrice;
+        await user.save({ session });
+
+        await WalletTransaction.create([{
+          user: userId,
+          amount: -estimatedPrice,
+          type: "match_payment",
+          status: "confirmed",
+          note: `${holdLabel} ${formattedDate}`,
+          match: match._id
+        }], { session });
+
+        return { method: "wallet", amount: estimatedPrice };
+      }
+
+      return { method: paymentMethod, amount: estimatedPrice };
+    };
+
     /* ===================================================== */
-    /* BACKUP JOIN (NO WALLET IMPACT)                       */
+    /* BACKUP JOIN — only once the match is Full             */
     /* ===================================================== */
+    // 🔵 CAMBIO: antes se podía unir como backup con el match en estado
+    // "Open" o "Full" (status: { $in: ["Open", "Full"] }). Ahora solo se
+    // permite si ya está "Full". Además, ahora sí pasa por buildPayment()
+    // (antes el backup se guardaba sin payment de ningún tipo).
 
     if (asBackup === true) {
+
+      if (match.status !== "Full") {
+        throw new Error("Backup spots are only available once the match is full");
+      }
+
+      const paid = await buildPayment({ holdLabel: "Backup wallet hold" });
 
       const updatedBackup = await Match.findOneAndUpdate(
         {
           _id: id,
-          status: { $in: ["Open", "Full"] },
+          status: "Full",
           players: { $not: { $elemMatch: { user: userId } } },
           backUps: { $not: { $elemMatch: { user: userId } } },
           $expr: { $lt: [{ $size: "$backUps" }, "$maxBackups"] }
@@ -419,7 +511,13 @@ export const joinMatch = async (req, res) => {
           $push: {
             backUps: {
               user: userId,
-              joinedAt: new Date()
+              joinedAt: new Date(),
+              payment: {
+                method: paid.method,
+                status: paid.method === "wallet" ? "held" : "unpaid",
+                amount: paid.amount,
+                heldAt: paid.method === "wallet" ? new Date() : undefined
+              }
             }
           }
         },
@@ -439,119 +537,10 @@ export const joinMatch = async (req, res) => {
     }
 
     /* ===================================================== */
-    /* NORMAL PLAYER JOIN                                   */
+    /* NORMAL PLAYER JOIN                                    */
     /* ===================================================== */
 
-    if (!paymentMethod) {
-      throw new Error("Payment method required");
-    }
-
-    const match = await Match.findById(id).session(session)
-                  .populate('location', 'name')
-                  .populate('createdBy', 'walletPaymentAllowed');
-
-
-    if (!match) {
-      throw new Error("Match does not exist");
-    }
-
-    const validPaymentMethod = match.paymentMethods.find(
-      pm => pm.type === paymentMethod
-    );
-
-    if (!validPaymentMethod) {
-      throw new Error("Please select a valid payment method");
-    }
-
-    /* ===================================================== */
-    /* WALLET PAYMENT FLOW                                  */
-    /* ===================================================== */
-
-    if (paymentMethod === "wallet") {
-
-      //wallet for allowed only
-      if(!match.createdBy?.walletPaymentAllowed){
-        throw new Error("Wallet payment not available for this user")
-      }
-
-      //  precio estimado por jugador
-      const estimatedPrice = Math.round((match.price / match.maxPlayers) * 100) / 100;;
-
-      if (user.walletBalance < estimatedPrice) {
-        throw new Error("Insufficient balance");
-      }
-
-      //  1 JOIN MATCH
-      const updatedMatch = await Match.findOneAndUpdate(
-        {
-          _id: id,
-          status: { $in: ["Open", "Full"] },
-          players: { $not: { $elemMatch: { user: userId } } },
-          backUps: { $not: { $elemMatch: { user: userId } } },
-          $expr: { $lt: [{ $size: "$players" }, "$maxPlayers"] }
-        },
-        {
-          $push: {
-            players: {
-              user: userId,
-              joinedAt: new Date(),
-              payment: {
-                method: "wallet",
-                status: "paid",
-                amount: estimatedPrice
-              }
-            }
-          }
-        },
-        { new: true, session }
-      );
-
-      if (!updatedMatch) {
-        throw new Error("Match is full");
-      }
-
-      // 2️ UPDATE WALLET
-      user.walletBalance -= estimatedPrice;
-      await user.save({ session });
-
-      // 3️ CREATE WALLET TRANSACTION
-
-      const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
-
-      await WalletTransaction.create([{
-        user: userId,
-        amount: -estimatedPrice,
-        type: "match_payment",
-        status: "confirmed",
-        note: `Match join ${formattedDate}`,
-        match: match._id
-      }], { session });
-
-      // 4️ UPDATE MATCH STATUS
-      if (updatedMatch.players.length === updatedMatch.maxPlayers) {
-        updatedMatch.status = "Full";
-        await updatedMatch.save({ session });
-      }
-
-      await session.commitTransaction(); 
-
-      try {
-        await notifyOtherPlayersOfJoin(userId, user.name, match.location.name, formattedDate);
-      } catch (notifError) {
-        console.error("Error sending join notification:", notifError);
-}
-
-      return res.status(200).json({
-        role: "player",
-        match: updatedMatch
-      });    
-    }
-
-    /* ===================================================== */
-    /* OTHER PAYMENT METHODS (UNPAID)                        */
-    /* ===================================================== */
-
-    const estimatedPrice = Math.round((match.price / match.maxPlayers) * 100) / 100;
+    const paidPlayer = await buildPayment({ holdLabel: "Match join" });
 
     const updatedMatch = await Match.findOneAndUpdate(
       {
@@ -567,9 +556,9 @@ export const joinMatch = async (req, res) => {
             user: userId,
             joinedAt: new Date(),
             payment: {
-              method: paymentMethod,
-              status: "unpaid",
-              amount: estimatedPrice
+              method: paidPlayer.method,
+              status: paidPlayer.method === "wallet" ? "paid" : "unpaid",
+              amount: paidPlayer.amount
             }
           }
         }
@@ -584,16 +573,13 @@ export const joinMatch = async (req, res) => {
         await updatedMatch.save({ session });
       }
 
-      const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
       await session.commitTransaction();
-
-      
 
       try {
         await notifyOtherPlayersOfJoin(userId, user.name, match.location.name, formattedDate );
       } catch (notifError) {
         console.error("Error sending join notification:", notifError);
-}
+      }
 
       return res.status(200).json({
         role: "player",
@@ -602,13 +588,22 @@ export const joinMatch = async (req, res) => {
     }
 
     /* ===================================================== */
-    /* AUTO BACKUP IF FULL                                   */
+    /* AUTO BACKUP IF FULL — reuses the same payment already  */
+    /* collected/held above for the player attempt. The       */
+    /* status: "Full" filter below is the source of truth —   */
+    /* it re-checks the live document, not the stale `match`  */
+    /* fetched at the top of this request.                    */
     /* ===================================================== */
+    // 🔵 CAMBIO: antes, si elegías "wallet" y el match ya estaba lleno,
+    // simplemente daba error "Match is full" y no te metía como backup
+    // (solo pasaba con métodos que no fueran wallet). Ahora es simétrico:
+    // el dinero/hold que ya se calculó arriba (paidPlayer) se reutiliza
+    // tal cual para meterte como backup, sea cual sea el método elegido.
 
     const autoBackup = await Match.findOneAndUpdate(
       {
         _id: id,
-        status: { $in: ["Open", "Full"] },
+        status: "Full",
         players: { $not: { $elemMatch: { user: userId } } },
         backUps: { $not: { $elemMatch: { user: userId } } },
         $expr: { $lt: [{ $size: "$backUps" }, "$maxBackups"] }
@@ -617,7 +612,13 @@ export const joinMatch = async (req, res) => {
         $push: {
           backUps: {
             user: userId,
-            joinedAt: new Date()
+            joinedAt: new Date(),
+            payment: {
+              method: paidPlayer.method,
+              status: paidPlayer.method === "wallet" ? "held" : "unpaid",
+              amount: paidPlayer.amount,
+              heldAt: paidPlayer.method === "wallet" ? new Date() : undefined
+            }
           }
         }
       },
@@ -1150,96 +1151,11 @@ export const addMatchCourts = async (req, res) => {
 };
 
 
-// export const leaveMatch = async (req, res) => {
-
-//     try {
-//         const {
-//             matchId
-//         } = req.params;
-//         const userId = req.user._id.toString();
-
-//         const match = await Match.findById(matchId).populate('backUps.user', 'email')
-
-//         const less24 = isLessThan24h(match.date, match.startTime);     
-
-//         if (!match) return res.status(400).json({
-//             ok: false,
-//             message: 'Match not found'
-//         });
-
-//         if (['Playing', 'Played', 'Cancelled', 'Closed'].includes(match.status)) return res.status(400).json({
-//             ok: false,
-//             message: 'Can only leave open or full matches'
-//         });
-
-//         const isPlayer = match.players.some(p => {
-//             const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
-//             return playerId === userId
-//         })
-        
-
-//         const isBackup = match.backUps.some(b => 
-//             b.user._id.toString() === userId
-//         )
-
-//         if (!isPlayer && !isBackup) return res.status(400).json({
-//             ok: false,
-//             message: 'Player not registered to this match'
-//         });
-
-//            if(less24 && isPlayer) return res.status(200).json({
-//           ok: 'false',
-//           message: 'Cannot leave match if starting in less than 24 hours'
-//         })
-
-//         /* -------------------- */
-//         /* Leaving as BACKUP    */
-//         /* -------------------- */
-//         if (isBackup) {
-//             match.backUps = match.backUps.filter(
-//                 b => b.user._id.toString() !== userId
-//             )
-
-//             await match.save();
-
-//             return res.status(200).json(match)
-//         }
-
-
-//         /* -------------------- */
-//         /* Leaving as player    */
-//         /* -------------------- */
-//         match.players = match.players.filter(p => {
-//             const playerId = p.user._id ? p.user._id.toString() : p.user.toString()
-//             return playerId !== userId
-//         })
-
-//         //reopen for free spots
-//         if (match.players.length < match.maxPlayers) {
-//             match.status = 'Open'
-//         }
-
-//         await match.save();
-
-//         await inviteNextBackup(match)
-
-//         res.status(200).json({
-//             message: 'User removed from match',
-//             match
-//         })
-
-//     } catch (error) {
-//         console.log(error)
-//         res.status(500).json({
-//             ok: false,
-//             message: 'Error leaving match'
-//         });
-//     }
-
-// }
-
-//accept invite
-
+// 🔵 CAMBIO: se han eliminado por completo las funciones acceptInvite()
+// y declineInvite() que estaban aquí (el flujo de invitación por link de
+// email, con token JWT). Ya no hacen falta: cuando se libera una plaza,
+// leaveMatch() y removePlayerMatch() (admin.js) promocionan directamente
+// al siguiente backup con promoteNextBackup() y solo lo notifican.
 export const leaveMatch = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -1280,14 +1196,32 @@ export const leaveMatch = async (req, res) => {
     }
 
     /* -------------------- */
-    /* BACKUP → NO WALLET   */
+    /* BACKUP LEAVE — always allowed, refund wallet hold if any */
     /* -------------------- */
+    // 🔵 CAMBIO: antes esto solo hacía match.backUps = match.backUps.filter(...)
+    // y no tocaba el wallet para nada. Ahora, si el backup había pagado con
+    // wallet (payment.status === 'held'), se le hace refund antes del commit.
     if (isBackup) {
+      const backupObj = match.backUps.find(
+        (b) => b.user._id.toString() === userId
+      );
+
       match.backUps = match.backUps.filter(
         (b) => b.user._id.toString() !== userId
       );
 
       await match.save({ session });
+
+      const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
+
+      await refundBackupWallet({
+        backup: backupObj,
+        userId,
+        match,
+        session,
+        note: `Backup refund - left match ${formattedDate}`
+      });
+
       await session.commitTransaction();
 
       return res.status(200).json(match);
@@ -1315,8 +1249,6 @@ export const leaveMatch = async (req, res) => {
       match.status = "Open";
     }
 
-    await match.save({ session });
-
     // 3️⃣ WALLET REFUND (SOLO SI WALLET)
     if (paymentMethod === "wallet") {
 
@@ -1341,9 +1273,20 @@ export const leaveMatch = async (req, res) => {
       );
     }
 
+    // 4️⃣ 🔵 CAMBIO: antes aquí se llamaba a inviteNextBackup(match), que
+    // mandaba el email con el link de accept/decline y dejaba al backup
+    // en status "invited" esperando respuesta. Ahora se le promociona
+    // directo con promoteNextBackup() (dentro de esta misma transacción)
+    // y solo se le avisa por push/email después del commit (más abajo).
+    const promoted = promoteNextBackup(match);
+
+    await match.save({ session });
+
     await session.commitTransaction();
 
-    await inviteNextBackup(match);
+    if (promoted) {
+      notifyAutoPromoted(match._id, promoted.userId).catch(console.error);
+    }
 
     return res.status(200).json({
       message: "User removed from match",
@@ -1359,258 +1302,5 @@ export const leaveMatch = async (req, res) => {
     });
   } finally {
     session.endSession();
-  }
-};
-
-export const acceptInvite = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const { token } = req.query;
-    const { paymentMethod } = req.body;
-
-    if (!token) {
-      throw new Error("Invitation token not provided");
-    }
-
-    if (!paymentMethod) {
-      throw new Error("Please select a payment method");
-    }
-
-    // 🔐 Verify token
-    const { matchId, userId, type } = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
-
-    if (type !== "MATCH_INVITE") {
-      throw new Error("Invalid invitation token");
-    }
-
-    const match = await Match.findById(matchId).session(session);
-
-    if (!match) throw new Error("Match not found");
-
-    // 💰 precio dinámico
-    const estimatedPrice = Math.round((match.price / match.maxPlayers) * 100) / 100;
-
-    /* ===================================================== */
-    /* WALLET FLOW                                           */
-    /* ===================================================== */
-
-    if (paymentMethod === "wallet") {
-
-      const user = await User.findById(userId).session(session);
-
-      if (!user) throw new Error("User not found");
-
-      if (user.walletBalance < estimatedPrice) {
-        throw new Error("Insufficient balance");
-      }
-
-      // 1️⃣ PROMOTE BACKUP → PLAYER
-      const updatedMatch = await Match.findOneAndUpdate(
-        {
-          _id: matchId,
-          "backUps.user": userId,
-          "backUps.status": "invited",
-          $expr: { $lt: [{ $size: "$players" }, "$maxPlayers"] }
-        },
-        {
-          $push: {
-            players: {
-              user: userId,
-              joinedAt: new Date(),
-              payment: {
-                method: "wallet",
-                status: "paid"
-              }
-            }
-          },
-          $pull: {
-            backUps: {
-              user: userId,
-              status: "invited"
-            }
-          }
-        },
-        { new: true, session }
-      );
-
-      if (!updatedMatch) {
-        throw new Error("Invitation invalid, expired, or match full");
-      }
-
-      // 2️⃣ DESCONTAR WALLET
-      await User.findByIdAndUpdate(
-        userId,
-        { $inc: { walletBalance: -estimatedPrice } },
-        { session }
-      );
-
-      // 3️⃣ TRANSACTION
-      const d = new Date(match.date);
-      const formattedDate = `${String(d.getDate()).padStart(2, "0")}/${
-        String(d.getMonth() + 1).padStart(2, "0")
-      }/${d.getFullYear()}`;
-
-      await WalletTransaction.create([{
-        user: userId,
-        amount: -estimatedPrice,
-        type: "match_payment",
-        status: "confirmed",
-        note: `Match invite ${formattedDate}`,
-        match: match._id
-      }], { session });
-
-      // 4️⃣ FULL STATUS
-      if (updatedMatch.players.length === updatedMatch.maxPlayers) {
-        updatedMatch.status = "Full";
-        await updatedMatch.save({ session });
-      }
-
-      await session.commitTransaction();
-
-      return res.status(200).json({
-        ok: true,
-        message: "Joined match successfully",
-        match: updatedMatch
-      });
-    }
-
-    /* ===================================================== */
-    /* OTHER METHODS (UNPAID)                                */
-    /* ===================================================== */
-
-    const updatedMatch = await Match.findOneAndUpdate(
-      {
-        _id: matchId,
-        "backUps.user": userId,
-        "backUps.status": "invited",
-        $expr: { $lt: [{ $size: "$players" }, "$maxPlayers"] }
-      },
-      {
-        $push: {
-          players: {
-            user: userId,
-            joinedAt: new Date(),
-            payment: {
-              method: paymentMethod,
-              status: "unpaid",
-              amount: estimatedPrice
-            }
-          }
-        },
-        $pull: {
-          backUps: {
-            user: userId,
-            status: "invited"
-          }
-        }
-      },
-      { new: true, session }
-    );
-
-    if (!updatedMatch) {
-      throw new Error("Invitation invalid, expired, or match full");
-    }
-
-    if (updatedMatch.players.length === updatedMatch.maxPlayers) {
-      updatedMatch.status = "Full";
-      await updatedMatch.save({ session });
-    }
-
-    await session.commitTransaction();
-
-    return res.status(200).json({
-      ok: true,
-      message: "Joined match successfully",
-      match: updatedMatch
-    });
-
-  } catch (error) {
-    await session.abortTransaction();
-
-    return res.status(401).json({
-      ok: false,
-      message: error.message || "Invalid or expired invitation token"
-    });
-  } finally {
-    session.endSession();
-  }
-};
-
-export const declineInvite = async (req, res) => {
-  try {
-    const { token } = req.query;
-
-    if (!token) {
-      return res.status(400).json({
-        ok: false,
-        message: "Token not provided"
-      });
-    }
-
-    // 🔐 Verify token
-    const { matchId, userId, type } = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
-
-    if (type !== "MATCH_INVITE") {
-      return res.status(400).json({
-        ok: false,
-        message: "Invalid invitation token"
-      });
-    }
-
-    // 🔒 Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(matchId)) {
-      return res.status(400).json({
-        ok: false,
-        message: "Invalid match ID"
-      });
-    }
-
-    // 🛡 Atomic removal
-    const updatedMatch = await Match.findOneAndUpdate(
-      {
-        _id: matchId,
-        "backUps.user": userId,
-        "backUps.status": "invited"
-      },
-      {
-        $pull: {
-          backUps: {
-            user: userId,
-            status: "invited"
-          }
-        }
-      },
-      { new: true }
-    );
-
-    if (!updatedMatch) {
-      return res.status(400).json({
-        ok: false,
-        message: "No active invitation to decline"
-      });
-    }
-
-    // 🔄 Invite next backup (safe to call after atomic update)
-    inviteNextBackup(updatedMatch).catch(console.error);
-
-    return res.status(200).json({
-      ok: true,
-      message: "Invitation declined"
-    });
-
-  } catch (error) {
-    console.log(error)
-    return res.status(401).json({
-      ok: false,
-      message: "Invalid or expired invitation token"
-    });
   }
 };

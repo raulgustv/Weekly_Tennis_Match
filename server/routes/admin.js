@@ -9,7 +9,9 @@ const router = Router();
 router.post('/close-match/:id', protect,verifyAdmin, validateObjectId("id"), closeMatch)
 router.post('/player-activation/:id', protect,verifyAdmin, validateObjectId("id"), togglePlayerActivation)
 router.post('/adjust-ntrp/:userId', protect,verifyAdmin, validateObjectId("userId"), adminAdjustNTRP)
-router.post('/remove-player/:matchId/:playerId', protect, verifyAdmin, validateObjectId("playerId"), removePlayerMatch)
+// 🔵 CAMBIO: era verifyAdmin (solo admin), ahora verifyBookerOrAdmin
+// (admin o booker pueden retirar jugadores/backups, incluso <24h).
+router.post('/remove-player/:matchId/:playerId', protect, verifyBookerOrAdmin, validateObjectId("playerId"), removePlayerMatch)
 
 router.post('/add-admin', protect, verifyAdmin, toggleAdminRole)
 router.put('/payment/:matchId/:userId', protect, verifyBookerOrAdmin, togglePaymentStatus)

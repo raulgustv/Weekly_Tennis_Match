@@ -1,4 +1,4 @@
-import { Modal, Radio, Space, Typography, Card } from "antd";
+import { Modal, Radio, Space, Typography, Card, Alert } from "antd";
 import { useEffect, useState } from "react";
 
 const { Text } = Typography;
@@ -10,7 +10,8 @@ const PaymentModal = ({
     paymentMethods = [],
     price,
     balance,
-    walletPaymentAllowed
+    walletPaymentAllowed,
+    isBackup = false // 🔵 CAMBIO: prop nueva. La pasa JoinMatch.jsx cuando se abre el modal desde "Join as backup".
 }) => {
 
     const [selectedPayment, setSelectedPayment] = useState(null);
@@ -37,13 +38,27 @@ const PaymentModal = ({
             open={open}
             onOk={() => onConfirm(selectedPayment)}
             onCancel={onCancel}
-            okText="Confirm & join"
+            // 🔵 CAMBIO: texto del botón distinto cuando es backup
+            okText={isBackup ? "Confirm & join as backup" : "Confirm & join"}
             cancelText="Cancel"
             okButtonProps={{
                 disabled: !selectedPayment
             }}
             destroyOnHidden
         >
+            {/* 🔵 CAMBIO: bloque nuevo — aviso que pidió el cliente: no hay
+                que pagar todavía, y si es wallet se retiene y se devuelve
+                si el partido no llega a jugarse. */}
+            {isBackup && (
+                <Alert
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                    title="You're joining as a backup"
+                    description="You don't need to transfer any money or worry about paying right now. If you select wallet, the amount will be held from your balance, but it will be fully refunded if the match doesn't end up being played. If a spot opens up, you'll be automatically promoted to player."
+                />
+            )}
+
             <p style={{ marginBottom: 16 }}>
                 Price per player <strong>{formatEUR(numericPrice)}</strong>
             </p>

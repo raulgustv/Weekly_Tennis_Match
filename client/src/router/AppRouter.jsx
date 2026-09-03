@@ -11,8 +11,6 @@ import MatchesTable from '../pages/matches/MatchesTable'
 import Players from '../pages/players/Players'
 import UserProfile from '../pages/profile/UserProfile'
 import MatchPlayers from '../components/matches/MatchPlayers'
-import MatchInviteAccept from '../components/matches/MatchInviteAccept'
-import MatchDeclineInvite from '../components/matches/MatchDeclineInvite'
 import ResetPassword from '../pages/auth/ResetPassword'
 import MatchVote from '../pages/matches/MatchVote'
 import EditMatch from '../pages/matches/EditMatch'
@@ -40,9 +38,11 @@ const AppRouter = () => {
             <Route path="/contact" element={<Contact />} />
             <Route path="/help" element={<Help />} />
 
-
-            <Route path='/match/details/:matchId/accept' element={<MatchInviteAccept />} />
-            <Route path='/match/details/:matchId/decline' element={<MatchDeclineInvite />} />
+            {/* 🔵 CAMBIO: se han eliminado las rutas públicas
+                '/match/details/:matchId/accept' y '/decline' (y los
+                componentes MatchInviteAccept.jsx / MatchDeclineInvite.jsx,
+                que ya no existen). Ahora el paso de backup a player es
+                automático, no requiere un link de email. */}
             <Route path='/auth/reset-password/:token' element={<ResetPassword />} />
           </Route>
 
