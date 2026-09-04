@@ -1,9 +1,9 @@
-import { Typography, Card, Flex, Button } from "antd";
+import { Typography, Card, Flex, Button, Divider } from "antd";
 import { useFeedback } from "../../context/FeedbackContext";
 import { useAuth } from "../../context";
 import { Link } from "react-router-dom";
 
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
 
 const Contact = () => {
 
@@ -77,28 +77,28 @@ const Contact = () => {
         </Card> */}
 
         {/* EMAIL */}
-        {/* <Card style={{ borderRadius: 16 }}>
+        <Card style={{ borderRadius: 16 }}>
           <Title level={4}>Email</Title>
 
           <Paragraph>
             For anything else, feel free to reach out directly.
           </Paragraph>
 
-          <Text>📧 mtc.tennis.community@gmail.com</Text>
+          <Text>📧 madridtenniscommunity@gmail.com</Text>
 
           <Divider />
 
           <Paragraph type="secondary">
             We usually reply within 24-48 hours.
           </Paragraph>
-        </Card> */}
+        </Card>
 
         {/* Feedback section */}
         <Card style={{ borderRadius: 16 }}>
           <Title level={4}>Feedback</Title>
 
           <Paragraph>
-            Have thoughts on how to improve? Let us know.
+            Have thoughts on how to improve? Let us know, feedback is annonymous and we work hard to give the best experience to the community
           </Paragraph>
 
           {!user ? (

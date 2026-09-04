@@ -46,9 +46,6 @@ const PaymentModal = ({
             }}
             destroyOnHidden
         >
-            {/* 🔵 CAMBIO: bloque nuevo — aviso que pidió el cliente: no hay
-                que pagar todavía, y si es wallet se retiene y se devuelve
-                si el partido no llega a jugarse. */}
             {isBackup && (
                 <Alert
                     type="info"
