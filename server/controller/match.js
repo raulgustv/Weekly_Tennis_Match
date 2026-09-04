@@ -728,6 +728,27 @@ export const generateMatches = async (req, res) => {
             });
         }
 
+        // NUEVO: si un backup eligió wallet, se le hace refund del monto
+        // retenido -> no va a jugar este partido (no fue promovido a player).
+        for (const backup of match.backUps) {
+            if (backup.payment?.method === 'wallet') {
+
+                await User.findByIdAndUpdate(
+                    backup.user._id || backup.user,
+                    { $inc: { walletBalance: backup.payment.amount } }
+                );
+
+                await WalletTransaction.create({
+                    user: backup.user._id || backup.user,
+                    amount: backup.payment.amount,
+                    type: 'refund',
+                    status: 'confirmed',
+                    note: 'Refund backup not used',
+                    match: match._id
+                });
+            }
+        }
+
         match.status = 'Ready';
 
         await match.save();
