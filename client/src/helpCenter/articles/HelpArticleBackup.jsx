@@ -5,6 +5,7 @@ import {
     MailOutlined,
     TeamOutlined,
     UserDeleteOutlined,
+    WalletOutlined,
     WarningOutlined,
 } from "@ant-design/icons";
 import {
@@ -59,9 +60,9 @@ const HelpArticleBackup = () => {
                         marginBottom: 0,
                     }}
                 >
-                    Sometimes a match is already full, but you may still want
-                    to be available in case a player cannot make it. That's
-                    what the backup list is for.
+                    When a match is already full, you can still join the
+                    backup list in case a player leaves. Backup players are
+                    next in line to take an available spot.
                 </Paragraph>
             </div>
 
@@ -230,10 +231,10 @@ const HelpArticleBackup = () => {
                         lineHeight: 1.75,
                     }}
                 >
-                    Being a backup means that you are available to play if a
-                    regular player leaves the match. You can choose to join
-                    the backup list from the beginning, even while there are
-                    still regular places available.
+                    A backup player is someone who is ready to play if a
+                    regular player leaves the match. The backup list only
+                    becomes available once all regular player spots have
+                    been filled.
                 </Paragraph>
 
                 <Paragraph
@@ -244,8 +245,70 @@ const HelpArticleBackup = () => {
                     }}
                 >
                     There are only <Text strong>four backup spots</Text> for
-                    each match, so the list is limited.
+                    each match, so the backup list is limited.
                 </Paragraph>
+            </section>
+
+            {/* PAYMENT */}
+            <section
+                style={{
+                    marginBottom: 32,
+                }}
+            >
+                <Title level={4}>
+                    Payment is required
+                </Title>
+
+                <Paragraph
+                    style={{
+                        fontSize: 15,
+                        lineHeight: 1.75,
+                    }}
+                >
+                    When joining as a backup, you must select a payment
+                    method just like a regular player.
+                </Paragraph>
+
+                <Card
+                    size="small"
+                    style={{
+                        borderRadius: 14,
+                    }}
+                >
+                    <Flex
+                        align="flex-start"
+                        gap={12}
+                    >
+                        <WalletOutlined
+                            style={{
+                                fontSize: 20,
+                                color: "#1677ff",
+                                marginTop: 2,
+                            }}
+                        />
+
+                        <div>
+                            <Text strong>
+                                Paying with your wallet
+                            </Text>
+
+                            <Paragraph
+                                type="secondary"
+                                style={{
+                                    marginTop: 4,
+                                    marginBottom: 0,
+                                    lineHeight: 1.6,
+                                }}
+                            >
+                                If you choose your wallet, the match amount
+                                will be held from your balance while you are
+                                a backup. If you are not promoted to a
+                                regular player, the amount will be fully
+                                refunded to your wallet.
+                            </Paragraph>
+                        </div>
+                    </Flex>
+                </Card>
             </section>
 
             {/* AVAILABILITY */}
@@ -255,7 +318,7 @@ const HelpArticleBackup = () => {
                 }}
             >
                 <Title level={4}>
-                    Backup means being available
+                    Being a backup means being available
                 </Title>
 
                 <Paragraph
@@ -264,8 +327,10 @@ const HelpArticleBackup = () => {
                         lineHeight: 1.75,
                     }}
                 >
-                    When you join the backup list, we assume that you are
-                    genuinely available to play if a place opens up.
+                    When you join the backup list, you are responsible for
+                    being available to play if a spot opens up. Joining as a
+                    backup means you should be prepared to play the match if
+                    you are promoted.
                 </Paragraph>
 
                 <Card
@@ -288,7 +353,7 @@ const HelpArticleBackup = () => {
 
                         <div>
                             <Text strong>
-                                Make plans accordingly
+                                Keep your availability up to date
                             </Text>
 
                             <Paragraph
@@ -299,24 +364,24 @@ const HelpArticleBackup = () => {
                                     lineHeight: 1.6,
                                 }}
                             >
-                                We understand that players may make plans
-                                around being a regular player or a backup.
-                                That's why keeping your availability
-                                up to date is important.
+                                If you already know that you can no longer
+                                play, please leave the backup list as soon
+                                as possible. This gives another player the
+                                opportunity to be available instead.
                             </Paragraph>
                         </div>
                     </Flex>
                 </Card>
             </section>
 
-            {/* NOTIFICATION */}
+            {/* PROMOTION */}
             <section
                 style={{
                     marginBottom: 32,
                 }}
             >
                 <Title level={4}>
-                    When a place becomes available
+                    When you are promoted to a player
                 </Title>
 
                 <Paragraph
@@ -326,30 +391,30 @@ const HelpArticleBackup = () => {
                     }}
                 >
                     If a regular player leaves the match, the next eligible
-                    backup player will receive an invitation by email to join
-                    the match.
+                    backup player will be automatically promoted to a regular
+                    player.
                 </Paragraph>
 
                 <Alert
                     type="info"
                     showIcon
-                    icon={<MailOutlined />}
-                    title="Watch your email"
-                    description="If you are next in the backup queue and a place becomes available, you will receive an email invitation to join the match."
+                    icon={<BellOutlined />}
+                    title="Stay alert"
+                    description="You will receive a notification when you are promoted. You will also receive a confirmation email letting you know that you have been promoted to a regular player."
                     style={{
                         borderRadius: 12,
                     }}
                 />
             </section>
 
-            {/* ACCEPT / REJECT */}
+            {/* NOTIFICATIONS */}
             <section
                 style={{
                     marginBottom: 32,
                 }}
             >
                 <Title level={4}>
-                    If you no longer want the spot
+                    Keep an eye on your notifications
                 </Title>
 
                 <Paragraph
@@ -358,21 +423,22 @@ const HelpArticleBackup = () => {
                         lineHeight: 1.75,
                     }}
                 >
-                    If you receive an invitation and do not take the available
-                    spot or reject the invitation, you will automatically be
-                    removed from the backup list for that match.
+                    Backup players should regularly check their
+                    notifications and email. A spot can become available when
+                    another player leaves, and the next backup player may be
+                    promoted automatically.
                 </Paragraph>
 
-                <Paragraph
+                <Alert
+                    type="info"
+                    showIcon
+                    icon={<MailOutlined />}
+                    title="You will receive an email"
+                    description="When you are promoted to a regular player, we will send you a confirmation email so you know that your place in the match is confirmed."
                     style={{
-                        fontSize: 15,
-                        lineHeight: 1.75,
-                        marginBottom: 0,
+                        borderRadius: 12,
                     }}
-                >
-                    This allows the opportunity to move to the next available
-                    backup player.
-                </Paragraph>
+                />
             </section>
 
             {/* LEAVE BACKUP */}
@@ -429,10 +495,11 @@ const HelpArticleBackup = () => {
                                     lineHeight: 1.6,
                                 }}
                             >
-                                Admins will not remove players from the
-                                backup list. If you know you cannot play,
-                                please leave the list yourself so another
-                                player can have the opportunity.
+                                Being a backup comes with the responsibility
+                                of staying available. If you know you cannot
+                                play anymore, leave the backup list yourself
+                                so another player can take your place in the
+                                queue.
                             </Paragraph>
                         </div>
                     </Flex>
@@ -462,7 +529,7 @@ const HelpArticleBackup = () => {
                     showIcon
                     icon={<WarningOutlined />}
                     title="Backup = availability, not a guaranteed spot"
-                    description="You are always welcome to join the drinks and other after-game activities, even if you don't get a place on the court. However, we cannot guarantee that a backup player will be able to play."
+                    description="If you are not promoted to a regular player, you will not be charged for the match. Any amount held from your wallet will be fully refunded."
                     style={{
                         borderRadius: 12,
                     }}
@@ -473,38 +540,55 @@ const HelpArticleBackup = () => {
 };
 
 HelpArticleBackup.articleText = `
-Being a backup means that you are available to play if a regular player
-leaves the match. You can choose to join the backup list from the beginning,
-even while there are still regular places available.
+When a match is already full, you can still join the backup list in case
+a player leaves. Backup players are next in line to take an available spot.
 
-There are only four backup spots for each match, so the list is limited.
+A backup player is someone who is ready to play if a regular player leaves
+the match. The backup list only becomes available once all regular player
+spots have been filled.
 
-When you join the backup list, we assume that you are genuinely available
-to play if a place opens up.
+There are only four backup spots for each match, so the backup list is limited.
 
-We understand that players may make plans around being a regular player
-or a backup. That's why keeping your availability up to date is important.
+When joining as a backup, you must select a payment method just like a
+regular player.
 
-If a regular player leaves the match, the next eligible backup player
-will receive an invitation by email to join the match.
+If you choose your wallet, the match amount will be held from your balance
+while you are a backup. If you are not promoted to a regular player, the
+amount will be fully refunded to your wallet.
 
-If you receive an invitation and do not take the available spot or reject
-the invitation, you will automatically be removed from the backup list
-for that match.
+When you join the backup list, you are responsible for being available to
+play if a spot opens up. Joining as a backup means you should be prepared
+to play the match if you are promoted.
 
-If your plans change and you are no longer available to play, please
-remove yourself from the backup list as soon as possible.
+If you already know that you can no longer play, please leave the backup
+list as soon as possible. This gives another player the opportunity to be
+available instead.
 
-Admins will not remove players from the backup list. If you know you
-cannot play, please leave the list yourself so another player can have
-the opportunity.
+If a regular player leaves the match, the next eligible backup player will
+be automatically promoted to a regular player.
+
+You will receive a notification when you are promoted. You will also receive
+a confirmation email letting you know that you have been promoted to a
+regular player.
+
+Backup players should regularly check their notifications and email. A spot
+can become available when another player leaves, and the next backup player
+may be promoted automatically.
+
+If your plans change and you are no longer available to play, please remove
+yourself from the backup list as soon as possible.
+
+Being a backup comes with the responsibility of staying available. If you
+know you cannot play anymore, leave the backup list yourself so another
+player can take your place in the queue.
 
 Joining the backup list means that you are available if a place opens up,
 but it does not guarantee that you will get to play.
 
-You are always welcome to join the drinks and other after-game activities,
-even if you don't get a place on the court. However, we cannot guarantee
-that a backup player will be able to play.
+If nobody leaves the match, the regular players keep their places.
+
+If you are not promoted to a regular player, you will not be charged for
+the match. Any amount held from your wallet will be fully refunded.
 `;
 
 export default HelpArticleBackup;

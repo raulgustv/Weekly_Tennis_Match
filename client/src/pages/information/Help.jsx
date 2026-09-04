@@ -294,7 +294,7 @@ const Help = () => {
                 <Title level={4}>Still need help?</Title>
 
                 <Paragraph type="secondary">
-                    Missing an answer? Contact an admin
+                    Missing an answer? Send us an email to <b>madridtenniscommunity@gmail.com</b>
                 </Paragraph>
             </Card>
 
