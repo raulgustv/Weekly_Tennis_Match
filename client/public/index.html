@@ -5,10 +5,33 @@
     <link rel="icon" href="%PUBLIC_URL%/tenis-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+
+    <!-- CAMBIO: la etiqueta <meta name="MTC Tennis" content="Madrid Tennis Weekly" />
+         no es válida (name= debe ser un nombre reconocido, no el de tu app) y no hacía nada.
+         La sustituyo por una meta description real, que sí usan buscadores y algunas
+         vistas previas como texto de respaldo. -->
     <meta
-      name="MTC Tennis"
-      content="Madrid Tennis Weekly"
+      name="description"
+      content="Madrid Tennis Weekly - organize matches and play tennis with your group."
     />
+
+    <!-- CAMBIO: añadidas las etiquetas Open Graph que faltaban por completo.
+         Sin og:image, WhatsApp no tiene imagen grande que mostrar y cae de vuelta
+         al favicon (el "mini icono"). Con esto WhatsApp mostrará una tarjeta con
+         título, descripción e imagen propios en vez del icono de React.
+         IMPORTANTE: reemplaza TU-DOMINIO.com por tu dominio real de producción,
+         y og:image debe ser una URL absoluta (https) a una imagen pública,
+         idealmente 1200x630px. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MTC Tennis" />
+    <meta
+      property="og:description"
+      content="Madrid Tennis Weekly - organize matches and play tennis with your group."
+    />
+    <meta property="og:image" content="https://TU-DOMINIO.com/tenis-logo.png" />
+    <meta property="og:url" content="https://TU-DOMINIO.com/" />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/tenis-logo.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
