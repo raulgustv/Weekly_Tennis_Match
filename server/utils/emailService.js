@@ -100,3 +100,33 @@ export const sendVerificationEmail = async (to, name, code) => {
         console.log(error);
     }
 };
+
+
+//account deletion
+export const sendDeletAccountEmail = async(to, name, confirmUrl) =>{
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
+    try {
+        await resend.emails.send({
+            from: process.env.FROM_EMAIL,
+            to,
+            subject: "MTC Account - Confirm account deletion",
+            html: `
+                <h2>Confirm account deletion</h2>
+                <p>Hi ${name},</p>
+                <p>
+                    We received a request to permanently delete your MTC account
+                    This action <b>cannot be undone</b>: your profile and personal data will be
+                    permanently removed and you will lose access immediately.
+                </p>
+                <p>
+                    <a href=${confirmUrl}>Click here to confirm account deletion</a>
+                </p>
+                <p>If you did not request this, please ignore this email. If you believe
+                someone else has access to your account, change your password immediately.</p>
+            `
+        })
+    } catch (error) {
+        console.log(error)
+    }
+}

@@ -9,6 +9,7 @@ import {
     notifyAutoPromoted,
     notifyRemovedByAdmin
 } from "../utils/backups.js";
+import { formatDate } from "../helpers/misc.js";
 
 export const closeMatch = async(req, res) =>{
    try {
@@ -122,6 +123,10 @@ export const togglePlayerActivation = async(req, res) =>{
         });    
 
         user.isActive = !user.isActive
+         user.notesHistory.push({
+            note: `Account ${!user.isActive ? 'closed by' : 'opened by'} admin`,
+            createdBy: req.user._id
+        });
 
         await user.save();
 

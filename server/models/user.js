@@ -240,8 +240,31 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null,
         select: false
+    },
+    //delete accounts
+    deleteAccountTokenHash:{
+        type: String,
+        default: null,
+        select: false
+    },
+     deleteAccountTokenExpire:{
+        type: Date,
+        default: null,
+        select: false
+    },
+     lastDeleteAccountRequestedAt:{
+        type: Date,
+        default: null,
+        select: false
+    },
+    isDeleted:{
+        type: Boolean,
+        default: false
+    },
+    deletedAt:{
+        type: Date,
+        default: null
     }
-
 }, {
     timestamps: true
 });
