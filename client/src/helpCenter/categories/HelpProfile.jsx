@@ -14,7 +14,6 @@ import {
     UserOutlined,
     CameraOutlined,
     GlobalOutlined,
-    LockOutlined,
     ArrowRightOutlined,
     CheckCircleFilled,
     InfoCircleOutlined,
@@ -643,17 +642,7 @@ const HelpProfile = ({onClose}) => {
                             editable.
                         </Paragraph>
 
-                        <Alert
-                            style={{
-                                marginTop: 24,
-                                borderRadius: 14,
-                            }}
-                            type="warning"
-                            showIcon
-                            icon={<LockOutlined />}
-                            title="Password changes are not available yet"
-                            description="For now, you cannot change your password directly from your Profile. We're working on this feature and hope to make it available soon."
-                        />
+
 
                         <div
                             style={{
@@ -661,63 +650,8 @@ const HelpProfile = ({onClose}) => {
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: 10,
-                            }}
-                        >
-                            <div
-                                style={{
-                                    padding: 16,
-                                    borderRadius: 15,
-                                    background: "#fafafa",
-                                    border: "1px solid #f0f0f0",
-                                }}
-                            >
-                                <Space
-                                    align="start"
-                                    size={12}
-                                >
-                                    <div
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 11,
-                                            background:
-                                                "#fff7e6",
-                                            color: "#fa8c16",
-                                            display: "flex",
-                                            alignItems:
-                                                "center",
-                                            justifyContent:
-                                                "center",
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        <LockOutlined />
-                                    </div>
-
-                                    <div>
-                                        <Text strong>
-                                            Password management
-                                        </Text>
-
-                                        <div
-                                            style={{
-                                                marginTop: 3,
-                                            }}
-                                        >
-                                            <Text
-                                                type="secondary"
-                                                style={{
-                                                    fontSize: 12,
-                                                }}
-                                            >
-                                                This option is currently
-                                                unavailable, but it is on our
-                                                list of improvements.
-                                            </Text>
-                                        </div>
-                                    </div>
-                                </Space>
-                            </div>
+                            }}                      >
+        
 
                             <div
                                 style={{

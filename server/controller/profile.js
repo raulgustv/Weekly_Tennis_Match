@@ -2,10 +2,13 @@ import cloudinary from "../config/cloudinary.js";
 import {
     getResend
 } from "../config/resend.js";
+import { generateDeleteAccountToken, hashDeleteAccountToken } from "../helpers/accountDeletion.js";
 import User from "../models/user.js";
 import crypto from 'crypto'
+import bcrypt from "bcryptjs";
 import {fileTypeFromBuffer} from 'file-type'
 import sharp from 'sharp';
+import { sendDeletAccountEmail } from "../utils/emailService.js";
 
 export const viewProfile = async (req, res) => {
     try {
@@ -281,6 +284,163 @@ export const getTotalFunds = async(req, res) =>{
         return res.status(400).json({
                 ok: false,
                 message: 'Internal error refunding/adjusting user'
+        })
+    }
+}
+
+export const closeAccount = async(req, res) =>{
+    try {
+        const userId = req.user._id
+
+        const user = await User.findById(userId);
+
+         if(!user || !user.isActive) return res.status(400).json({
+            ok: false,
+            message: 'User account not found or is already closed'
+        });  
+
+        user.isActive = false
+        user.notesHistory.push({
+            note: `Account closed by user`,
+            createdBy: req.user._id
+        });
+
+        await user.save()
+
+        return res.status(200).json({
+            ok: true,
+            message: 'Your account has been closed'
+        })
+
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({
+                ok: false,
+                message: 'Internal server error closing account'
+        })
+    }
+}
+
+export const deleteAccountRequest = async(req, res) =>{
+    try {
+
+        const userId = req.user._id
+
+         const user = await User.findById(userId).select('+lastDeleteAccountRequestedAt');
+
+         if(!user || !user.isActive || user.isDeleted) return res.status(400).json({
+            ok: false,
+            message: 'User account not found or is already closed'
+        });  
+
+        //cooldown request 
+        if (user.lastDeleteAccountRequestedAt && (Date.now() - user.lastDeleteAccountRequestedAt.getTime()) < 60 * 1000){
+            return res.status(429).json({
+                ok: false,
+                message: 'Please wait a moment before requesting this action again'
+            });
+        }
+
+        const rawToken = generateDeleteAccountToken();
+
+        user.deleteAccountTokenHash = hashDeleteAccountToken(rawToken)
+        user.deleteAccountTokenExpire = new Date(Date.now() + 15 * 60 * 1000)
+        user.lastDeleteAccountRequestedAt = new Date();
+
+        await user.save();
+
+        const confirmUrl = `${process.env.FRONTEND_URL}/account/delete/${rawToken}`
+
+        sendDeletAccountEmail(user.email, user.name, confirmUrl)
+                .catch((err) => console.log(err))
+
+        return res.status(200).json({
+            ok: true,
+            message: 'Confirmation link sent. It will expire in 15 minutes'
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({
+                ok: false,
+                message: 'Internal server error closing account'
+        })
+    }
+}
+
+export const confirmAccountDelete = async(req, res) =>{
+    try {
+
+        const userId = req.user._id
+        const {token} = req.body;
+
+        if(!token || typeof token !== 'string'){
+            return res.status(400).json({
+                ok: false,
+                message: 'Account token required'
+            })
+        }
+
+        const hashedToken = hashDeleteAccountToken(token)
+
+        const user = await User.findOne({
+            _id: userId,
+            deleteAccountTokenHash: hashedToken,
+            deleteAccountTokenExpire: { $gt: Date.now() }
+        }).select('+deleteAccountTokenHash +deleteAccountTokenExpire +password');
+
+
+        if(!user){
+            return res.status(400).json({
+                ok: false,
+                message: 'Invalid or expired token'
+            })
+        }
+
+        const anonymizedEmail = `$deleted-${user._id}@deleted.mtc.app`
+        const randomPassword = crypto.randomBytes(32).toString("hex");
+        
+        user.name = 'Deleted'
+        user.lastname = 'user'
+        user.email = anonymizedEmail
+        user.password = await bcrypt.hash(randomPassword, 12)
+        user.phone = undefined
+        user.gender = undefined
+        user.country = undefined
+        user.profilePicture = null
+        user.provider = 'local'
+        user.firebaseUid = undefined
+        user.fcmToken = undefined
+        user.lastMatchPlayed = null
+        user.resetPasswordToken = null
+        user.sessions = []
+        user.resetPasswordExpire = null
+        user.verificationCodeHash = null
+        user.verificationCodeExpires = null
+        user.deleteAccountTokenHash = null
+        user.isActive = false
+        user.isDeleted = true
+        user.deletedAt = new Date();
+        
+        user.notesHistory.push({
+            note: 'Account permanently deleted by user (GDPR erasure request)',
+            createdBy: user._id
+        })
+
+        await user.save();
+
+        res.clearCookie('refreshToken', {path: '/api/user'})
+
+        res.status(200).json({
+            ok: true,
+            message: 'Your account has been permanently deleted'
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({
+                ok: false,
+                message: 'Internal server error closing account'
         })
     }
 }
