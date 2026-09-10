@@ -502,7 +502,8 @@ export const logoutAllDevices = async (req, res) => {
 
 export const viewAllUsers = async(req, res) =>{
     try {
-        const users = await User.find().select('-resetPasswordToken -resetPasswordExpire');
+        const users = await User.find({isDeleted: {$ne: true}})
+            .select('-resetPasswordToken -resetPasswordExpire');
         res.status(200).json(users)
     } catch (error) {
         console.log(error)

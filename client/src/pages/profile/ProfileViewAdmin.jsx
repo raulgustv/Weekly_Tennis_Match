@@ -11,6 +11,7 @@ import ProfileHeader from "../../components/profile/ProfileHeader";
 import { toast } from "react-toastify";
 import UserNotes from "../../components/profile/UserNotes";
 import { ArrowLeftOutlined } from "@ant-design/icons";
+import CloseAccountModal from "../../components/modals/CloseAccountModal";
 
 
 
@@ -43,9 +44,9 @@ const ProfileViewAdmin = () => {
 
     //suspension
     const isSuspended =
-    player?.suspendedUntil &&
-    new Date(player.suspendedUntil) > new Date();
-  
+        player?.suspendedUntil &&
+        new Date(player.suspendedUntil) > new Date();
+
 
     const isLoading = !user || !ntrpHistory
 
@@ -91,7 +92,7 @@ const ProfileViewAdmin = () => {
                     type="default"
                     onClick={() => navigate(-1)}
                 >
-                    Back 
+                    Back
                 </Button>
             </Flex>
 
@@ -119,11 +120,9 @@ const ProfileViewAdmin = () => {
 
             </Row>
 
-
-
-
-
-
+            <Col xs={24} md={12} lg={12}>
+                <CloseAccountModal user={user}  />
+            </Col>
 
 
         </>
