@@ -193,6 +193,15 @@ export  const removePlayerMatch = async(req, res) =>{
             throw new Error("Player not registered in this match");
         }
 
+        // 🔵 NUEVO: registro en el historial de notas del usuario afectado,
+        // igual que closeAccount/suspendUser. Se guarda dentro de la misma
+        // transacción para que quede atado al resto de la operación.
+        user.notesHistory.push({
+            note: 'User removed from match 24 hours before match',
+            createdBy: req.user._id
+        });
+        await user.save({ session });
+
         // 🔵 CAMBIO: antes solo hacía el filter/save, sin refund de wallet.
                 if(isBackup){
             // CAMBIO (nuevo): antes de quitarlo, guardamos su payment —

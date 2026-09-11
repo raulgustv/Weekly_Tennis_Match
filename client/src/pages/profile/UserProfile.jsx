@@ -18,6 +18,7 @@ import useCountdown from "../../hooks/useCountdown";
 import PersonalInfo from "../../components/profile/PersonalInfo";
 import NTRPHistory from "../../components/profile/NTRPHistory";
 import ProfileHeader from "../../components/profile/ProfileHeader";
+import CloseAccountModal from "../../components/modals/CloseAccountModal";
 
 const UserProfile = () => {
     const { user, loadUser } = useAuth();
@@ -186,6 +187,9 @@ const UserProfile = () => {
             <NTRPHistory
                 ntrpHistory={ntrpHistory}
             />
+
+            <CloseAccountModal user={user} />
+
         </>
     );
 };

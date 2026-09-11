@@ -64,6 +64,23 @@ export const verifyCode = async(code) =>{
     return data
 }
 
+export const closeAccount = async() =>{
+    const data = await axiosInstance.put('/profile/close-account');
+
+    return data;
+}
+
+export const requestAccountDelete = async() =>{
+    const data = await axiosInstance.put('/profile/request-delete-account')
+
+    return data;
+}
+
+export const confirmAccountDelete = async(token) =>{
+    const data = await axiosInstance.put('/profile/delete-account', {token})
+    return data;
+}
+
 
 // export const uploadProfilePicture = async(req, res) =>{
 
