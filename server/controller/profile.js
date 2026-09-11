@@ -294,6 +294,11 @@ export const closeAccount = async(req, res) =>{
 
         const user = await User.findById(userId);
 
+        if(user.role == 'admin') return res.status(200).json({
+            ok: false,
+            message: 'Admins cannot close account, please change role to user'
+        })
+
          if(!user || !user.isActive) return res.status(400).json({
             ok: false,
             message: 'User account not found or is already closed'
@@ -327,6 +332,11 @@ export const deleteAccountRequest = async(req, res) =>{
         const userId = req.user._id
 
          const user = await User.findById(userId).select('+lastDeleteAccountRequestedAt');
+
+         if(user.role == 'admin') return res.status(200).json({
+            ok: false,
+            message: 'Admins cannot close account, please change role to user'
+        })
 
          if(!user || !user.isActive || user.isDeleted) return res.status(400).json({
             ok: false,

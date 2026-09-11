@@ -24,6 +24,7 @@ const CloseAccountModal = ({ user }) => {
     const { logout } = useAuth();
     const navigate = useNavigate();
 
+
     // matches the 60s cooldown enforced by the backend
     const total_cooldown = 60000;
     const cooldown = useCountdown({ duration: total_cooldown });
@@ -81,6 +82,15 @@ const CloseAccountModal = ({ user }) => {
         }
     };
 
+    if(user.role === 'admin') return (
+        <Alert 
+            title='Admins cannot close/delete accounts'
+            description='Please note that as an admin you cannot close or delete your account, to complete this action please
+            transfer your admin role to a different user and change your role to user
+            '
+        />
+    )
+
     return (
         <div
             style={{
@@ -134,7 +144,7 @@ const CloseAccountModal = ({ user }) => {
                             Choose what you'd like to do:
                         </Paragraph>
 
-                        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+                        <Space orientation="vertical" size={12} style={{ width: "100%" }}>
                             {/* OPTION 1 — reversible */}
                             <div style={{ border: "1px solid #f0f0f0", borderRadius: 12, padding: 16 }}>
                                 <Space align="start">

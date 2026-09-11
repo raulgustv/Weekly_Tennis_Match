@@ -189,6 +189,7 @@ const UserProfile = () => {
             />
 
             <CloseAccountModal user={user} />
+
         </>
     );
 };

@@ -23,6 +23,8 @@ const ProfileViewAdmin = () => {
 
     const [player, setPlayer] = useState(null)
 
+    //console.log(user?._id, id)
+
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -121,7 +123,9 @@ const ProfileViewAdmin = () => {
             </Row>
 
             <Col xs={24} md={12} lg={12}>
-                <CloseAccountModal user={user}  />
+                {user?._id === id && (
+                    <CloseAccountModal user={user} />
+                )}
             </Col>
 
 
