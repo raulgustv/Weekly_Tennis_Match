@@ -37,6 +37,10 @@ const rankingSchema = new mongoose.Schema({
         enum: ['active', 'suspended', 'retired'],
         default: 'active'
     },
+    dateOfLeave:{
+        type: Date,
+        default: null
+    },
     //suspension system
     supsendedUntilRound:{
         type: Number,
@@ -50,6 +54,6 @@ const rankingSchema = new mongoose.Schema({
 
 //player cannot have two documents on the same ranking schema
 rankingSchema.index({season: 1, userId: 1}, {unique: true});
-rankingSchema.inde({season: 1}, {rating: -1})
+rankingSchema.index({season: 1}, {rating: -1})
 
 export default mongoose.model('Ranking', rankingSchema);

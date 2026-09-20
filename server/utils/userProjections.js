@@ -1,13 +1,9 @@
-
 export const PUBLIC_USER_FIELDS = `
-name lastname email role isActive 
-ntrplvl adjustmentHistory profilePicture country 
-walletBalance phone suspendedUntil 
-termsAndConditions notesHistory createdAt 
-walletPaymentAllowed isVerified
+name lastname email role isActive
+ntrplvl adjustmentHistory profilePicture country
+walletBalance phone suspendedUntil
+termsAndConditions notesHistory createdAt
+walletPaymentAllowed isVerified isRanked rankingRegisteredAt
+rankingRulesAccepted rankingRulesAcceptedAt dateOfBirth
 `
-
-
-
-
-    
+ 

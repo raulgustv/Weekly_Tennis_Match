@@ -12,13 +12,14 @@ const seasonSchema = new mongoose.Schema({
     },
     type:{
         type: String,
-        enum: ['Winter', 'Spring', 'Summer', 'Fall'],,
+        enum: ['Winter', 'Spring', 'Summer', 'Fall'],
         required: true
     },
     status: {
         type: String,
         enum: ['upcoming', 'active', 'closed'],
-        required: true
+        required: true,
+        default: 'upcoming'
     },
     roundIntervalDays: {
         type: Number,
