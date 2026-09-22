@@ -145,22 +145,7 @@ export const togglePlayerActivation = async(req, res) =>{
     }
 }
 
-/*
-  🔵 CAMBIO: esta función ya existía, pero solo la podía usar 'admin'
-  (routes/admin.js ahora usa verifyBookerOrAdmin, así que 'booker' también
-  puede). Además tenía un bug: al auto-promocionar un backup hacía
-  match.backUps.shift() + match.players.push(promotedUser) a pelo, sin
-  adaptar el payment al esquema nuevo. Ahora usa promoteNextBackup() (el
-  mismo helper que usa leaveMatch), refund de wallet si aplica, y notifica
-  tanto al retirado como al promocionado.
 
-  Admin / booker manual removal.
-  Unlike a player leaving on their own, this is NOT blocked by the
-  24-hour deadline — an admin or booker can remove a player or backup
-  at any point up until the match starts. Wallet holds are refunded,
-  the next waiting backup (if any) is auto-promoted into the freed
-  spot, and both the removed user and the promoted user are notified.
-*/
 export  const removePlayerMatch = async(req, res) =>{
 
     const session = await mongoose.startSession();

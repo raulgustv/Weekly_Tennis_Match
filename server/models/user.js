@@ -264,6 +264,31 @@ const userSchema = new mongoose.Schema({
     deletedAt:{
         type: Date,
         default: null
+    },
+    //ranking 
+    isRanked: {
+        type: Boolean,
+        default: false
+    },
+    rankingRegisteredAt:{
+        type: Date,
+        default: null
+    },
+    rankingRulesAccepted: {
+        type: Boolean,
+        default: false
+    },
+    rankingRulesAcceptedAt:{
+        type: Date,
+        default: null
+    },
+    rankingRulesVersion:{
+        type: String,
+        default: null
+    },
+    dateOfBirth:{
+        type: Date,
+        default: null,
     }
 }, {
     timestamps: true
