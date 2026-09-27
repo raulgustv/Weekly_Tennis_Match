@@ -24,6 +24,7 @@ import WalletAdmin from '../pages/wallet/WalletAdmin'
 import Help from '../pages/information/Help'
 import NotificationsPage from '../pages/notifications/NotificationsPage'
 import ConfirmAccountDeletion from '../components/profile/ConfirmAccountDeletion'
+import RankingRegistration from '../pages/ranking/RankingRegistration'
 
 const AppRouter = () => {
   return (
@@ -60,6 +61,8 @@ const AppRouter = () => {
               <Route path='match/details/:id' element={<MatchPlayers />} />
               <Route path='wallet' element={<Wallet />} />
               <Route path='account/delete/:token' element={<ConfirmAccountDeletion />} />
+              <Route path='ranking' element={<RankingRegistration />} />
+
 
               {/* <Route path='matches/details/:id' element={<MatchPlayers />} /> */}
 

@@ -1,21 +1,22 @@
 import {Router} from 'express';
-import { protect, verifyAdmin } from '../middlewares/auth.js';
-import { readLimiter } from '../config/expressLimit.js';
-import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
+import { protect, requireVerification, verifyAdmin } from '../middlewares/auth.js';
+import { writeLimiter, adminLimiter } from '../config/expressLimit.js';
+import { validateFields } from '../middlewares/validateFields.js';
 import { closeRoundNow, generateRoundProposal, publishRankingRound, rankingRegistration, submitRankingResult, unRegisterRanking } from '../controller/ranking.js';
-import { submitRankingResultValidator } from '../validator/rankingValidator.js';
+import { registerForRankingValidator, submitRankingResultValidator } from '../validator/rankingValidator.js';
 
 const router = Router();
 
-router.post("/register", protect, rankingRegistration);
-router.post("/unregister", protect, unRegisterRanking)
+router.post("/register", protect, requireVerification, writeLimiter, registerForRankingValidator, validateFields, rankingRegistration);
 
 
-router.post("/rounds/propose", protect, verifyAdmin, generateRoundProposal);
-router.post("/rounds/publish", protect, verifyAdmin, publishRankingRound);
-router.post("/rounds/close", protect, verifyAdmin, closeRoundNow);
+router.post("/unregister", protect, writeLimiter, unRegisterRanking)
 
-router.post("/matches/result", protect, submitRankingResultValidator, validateFields, submitRankingResult);
+router.post("/rounds/propose", protect, verifyAdmin, adminLimiter, generateRoundProposal);
+router.post("/rounds/publish", protect, verifyAdmin, adminLimiter, publishRankingRound);
+router.post("/rounds/close", protect, verifyAdmin, adminLimiter, closeRoundNow);
+
+router.post("/matches/result", protect, writeLimiter, submitRankingResultValidator, validateFields, submitRankingResult);
 
 
 

@@ -5,10 +5,29 @@ import { body } from 'express-validator';
 // porque todo lo que ve el usuario final debe estar en inglés.
 
 export const registerForRankingValidator = [
+    // CHANGE: .isBoolean({ strict: true }) — antes "true" (string) o 1 pasaban
+    // el isBoolean() y luego fallaban en el controller con un mensaje distinto.
     body('acceptRankingRules')
-        .isBoolean().withMessage('You must accept the MTC Ranking rules to register')
+        .isBoolean({ strict: true }).withMessage('You must accept the MTC Ranking rules to register')
         .custom(value => value === true)
-        .withMessage('You must accept the MTC Ranking rules to register')
+        .withMessage('You must accept the MTC Ranking rules to register'),
+
+    // CHANGE: NUEVO — antes dateOfBirth llegaba al controller sin validar
+    // (cualquier string). Ahora: opcional (solo se pide si el usuario aún no
+    // la tiene guardada), formato YYYY-MM-DD estricto, no futura y no absurda.
+    // El 18+ lo sigue comprobando el controller con isAtLeast18 (fuente única).
+    body('dateOfBirth')
+        .optional({ values: 'null' })
+        .isISO8601({ strict: true, strictSeparator: true })
+        .withMessage('Invalid date of birth')
+        .bail()
+        .custom((value) => {
+            const dob = new Date(value);
+            if (Number.isNaN(dob.getTime())) throw new Error('Invalid date of birth');
+            if (dob > new Date()) throw new Error('Date of birth cannot be in the future');
+            if (dob.getFullYear() < 1900) throw new Error('Invalid date of birth');
+            return true;
+        })
 ];
 
 export const submitRankingResultValidator = [
