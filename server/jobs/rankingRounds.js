@@ -1,7 +1,9 @@
 import cron from 'node-cron';
 
 import Season from '../models/Season.js';
-import { closeRound } from '../services/rankingService.js'; // CHANGE: closeRound vive en el service, no en el controller
+// CHANGE (CRÍTICO): antes '../services/rankingService.js' — ese archivo NO existe (es rankingServices.js).
+// En ESM un import roto tumba todo el servidor al arrancar.
+import { closeRound } from '../services/rankingServices.js';
 import { MADRID_TIMEZONE, buildMadridDateTime, dayjs } from '../helpers/dateHelpers.js';
 
 // server/jobs/rankingRound.js

@@ -262,15 +262,44 @@ export const submitRankingResult = async (req, res) => {
             return res.status(403).json({ ok: false, message: 'You are not a participant in this match' });
         }
  
-        if (match.status === 'played' || match.status === 'admin_resolved') {
-            return res.status(400).json({ ok: false, message: 'This match result was already confirmed' });
+        // CHANGE (SEGURIDAD): NUEVO — no se aceptan resultados de propuestas sin publicar
+        if (!match.published) {
+            return res.status(400).json({ ok: false, message: 'This match has not been published yet' });
+        }
+
+        // CHANGE (SEGURIDAD): antes solo bloqueaba 'played' y 'admin_resolved', así que se
+        // podía enviar resultado a un partido 'disputed' (saltándose al admin tras el
+        // cierre), 'cancelled' o 'walkover'. Ahora solo 'scheduled'.
+        if (match.status !== 'scheduled') {
+            return res.status(400).json({ ok: false, message: 'This match is closed and no longer accepts results' });
         }
  
         session.startTransaction();
  
         const setsWonByA = sets.filter(s => s.gamesA > s.gamesB).length;
         const setsWonByB = sets.length - setsWonByA;
-        const winnerIsA = setsWonByA > setsWonByB;
+
+        // CHANGE (BUG CRÍTICO): antes `winnerIsA = setsWonByA > setsWonByB` → con 1-1 en
+        // sets ganaba SIEMPRE el jugador B. Ahora, con empate en sets, decide el súper
+        // tie break (obligatorio en ese caso, a 10 con diferencia de 2).
+        let winnerIsA;
+        if (setsWonByA !== setsWonByB) {
+            winnerIsA = setsWonByA > setsWonByB;
+        } else {
+            const pointsA = Number(superTieBreak?.pointsA);
+            const pointsB = Number(superTieBreak?.pointsB);
+            const validStb =
+                superTieBreak?.played === true &&
+                Number.isInteger(pointsA) && Number.isInteger(pointsB) &&
+                Math.max(pointsA, pointsB) >= 10 &&
+                Math.abs(pointsA - pointsB) >= 2;
+
+            if (!validStb) {
+                await session.abortTransaction();
+                return res.status(400).json({ ok: false, message: 'The sets are tied: please add a valid super tie break score (first to 10, win by 2)' });
+            }
+            winnerIsA = pointsA > pointsB;
+        }
  
         const { gamesWinner, gamesLoser } = sumGames(sets, winnerIsA);
  
@@ -303,7 +332,7 @@ export const submitRankingResult = async (req, res) => {
         match.superTieBreak = superTieBreak || match.superTieBreak;
         match.winner = winnerIsA ? match.playerA : match.playerB;
         match.status = 'played';
-        match.resultSource = 'player';
+        match.resultSource = 'Player'; // CHANGE (CRÍTICO): antes 'player' — el enum es ['Player','Admin'] → ValidationError → TODO resultado daba 500
         match.playedAt = new Date();
         match.marginMultiplier = multiplier;
         match.ratingDelta = { playerA: deltaA, playerB: deltaB };

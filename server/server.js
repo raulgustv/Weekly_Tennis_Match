@@ -20,6 +20,8 @@ import seasonRoutes from './routes/season.js'
 import rankingRoutes from './routes/ranking.js'
 import './jobs/matchStatus.js'
 import './jobs/MatchNotifications.js'
+import './jobs/rankingRounds.js'
+import './jobs/RankingReminders.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser';
