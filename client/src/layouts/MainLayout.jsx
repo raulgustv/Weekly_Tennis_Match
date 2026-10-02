@@ -19,6 +19,8 @@ import {
   DribbbleOutlined,
   WalletOutlined,
   BellOutlined,
+  RiseOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -70,6 +72,14 @@ const MainLayout = () => {
   const isAdmin = user?.role === "admin";
   const isBooker = user?.role === "booker";
 
+  const rankingMenuItem = {
+    key: '/ranking',
+    icon: (
+      <RiseOutlined />
+    ),
+    label: 'Ranking'
+  }
+
   const menuItems = isAdmin
     ? [
         {
@@ -92,6 +102,22 @@ const MainLayout = () => {
             <FlagOutlined style={{ color: "#1677FF" }} />
           ),
           label: "Vote matches",
+        },
+        rankingMenuItem,
+        {
+          key: 'admin-ranking',
+          icon: (<CalendarOutlined  style={{color: "#F4D03F"}} />),
+          label: 'Ranking Administration',
+          children: [
+            {
+              key: '/admin/new-season',
+              label: 'Create new season'
+            },
+            {
+              key: '/admin/seasons',
+              label: 'Seasons'
+            }
+          ]
         },
         {
           key: "/manage-courts",
@@ -180,6 +206,7 @@ const MainLayout = () => {
           ),
           label: "Games",
         },
+        rankingMenuItem,
         {
           key: "/vote",
           icon: (
@@ -227,6 +254,7 @@ const MainLayout = () => {
           ),
           label: "Games",
         },
+        rankingMenuItem,
         {
           key: "/vote",
           icon: (

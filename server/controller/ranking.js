@@ -1,10 +1,28 @@
+import mongoose from "mongoose"; // CHANGE: faltaba — submitRankingResult usa mongoose.startSession()
+import { validationResult } from "express-validator"; // CHANGE: faltaba — submitRankingResult lo usa
 import Ranking from "../models/Ranking.js";
 import User from "../models/user.js";
 import RankingMatch from "../models/RankingMatch.js";
 import { isAtLeast18 } from "../helpers/dateHelpers.js";
-import { generateRankingRoundProposal, resolveSeason } from "../services/rankingServices.js";
+// CHANGE: añadido closeRound — closeRoundNow lo llamaba sin importarlo (ReferenceError → 500)
+import { closeRound, generateRankingRoundProposal, resolveSeason } from "../services/rankingServices.js";
+// CHANGE: faltaba — submitRankingResult usa sumGames y computeRatingDelta sin importarlos (ReferenceError → 500)
+import { computeRatingDelta, sumGames } from "../utils/rankingEngine.js";
 
+// CHANGE: versión del reglamento aceptada. Constante en vez de string suelto
+// dentro del controller; si cambia el reglamento, se sube aquí.
+export const RANKING_RULES_VERSION = 'v1';
 
+// CHANGE: solo devolvemos los campos del ranking, no el documento User entero
+// (antes se devolvía `user` completo: notesHistory, walletBalance, etc. — el
+// frontend no los necesita en esta respuesta y refresca con GET /user/auth).
+const rankingStatusPayload = (user) => ({
+    isRanked: user.isRanked,
+    rankingRegisteredAt: user.rankingRegisteredAt,
+    rankingRulesAccepted: user.rankingRulesAccepted,
+    rankingRulesAcceptedAt: user.rankingRulesAcceptedAt,
+    rankingRulesVersion: user.rankingRulesVersion
+});
 
 
 //registration
@@ -17,7 +35,8 @@ export const rankingRegistration = async(req, res) =>{
 
         const {acceptRankingRules, dateOfBirth} = req.body;
 
-        if(!user || !user.isActive){
+        // CHANGE: también rechaza cuentas borradas (isDeleted) — antes solo miraba isActive
+        if(!user || !user.isActive || user.isDeleted){
              return res.status(400).json({
                 ok: false,
                 message: 'User not found'
@@ -27,7 +46,17 @@ export const rankingRegistration = async(req, res) =>{
         if(user.isRanked){
              return res.status(400).json({
                 ok: false,
-                message: 'You are already registered for this rank'
+                // CHANGE: texto corregido ("this rank" → "the ranking")
+                message: 'You are already registered for the ranking'
+            })
+        }
+
+        // CHANGE: NUEVO — un usuario suspendido no puede darse de alta
+        // (mismo criterio que joinMatch en controller/match.js)
+        if(user.suspendedUntil && user.suspendedUntil > new Date()){
+            return res.status(403).json({
+                ok: false,
+                message: `You are suspended and cannot register for the ranking until ${user.suspendedUntil.toLocaleDateString('es-ES')}`
             })
         }
 
@@ -41,11 +70,19 @@ export const rankingRegistration = async(req, res) =>{
         if(acceptRankingRules !== true){
              return res.status(400).json({
                 ok: false,
-                message: 'Pleaes accept the ranking rules to participate'
+                // CHANGE: typo corregido ("Pleaes")
+                message: 'Please accept the ranking rules to participate'
             })
         }
 
-        const dob = dateOfBirth || user?.dateOfBirth;
+        // CHANGE (SEGURIDAD): antes era `dateOfBirth || user.dateOfBirth`, es decir,
+        // la fecha del body tenía PRIORIDAD sobre la guardada. Un usuario con una
+        // fecha guardada de menor de 18 podía mandar otra fecha en el body, pasar
+        // el check 18+ y registrarse (la fecha falsa ni siquiera se guardaba, así
+        // que no quedaba rastro). Ahora, si ya hay fecha guardada, es la ÚNICA que
+        // cuenta y la del body se ignora.
+        const storedDob = user.dateOfBirth;
+        const dob = storedDob || dateOfBirth;
 
         if(!dob || !isAtLeast18(dob)){
              return res.status(400).json({
@@ -54,22 +91,25 @@ export const rankingRegistration = async(req, res) =>{
             })
         }
 
-         if(dateOfBirth && !user.dateOfBirth){ 
+        if(!storedDob){
             user.dateOfBirth = dateOfBirth;
         }
 
+        const now = new Date();
+
         user.isRanked = true;
-        user.rankingRegisteredAt = new Date();
+        user.rankingRegisteredAt = now;
         user.rankingRulesAccepted = true;
-        user.rankingRulesAcceptedAt = new Date();
-        user.rankingRulesVersion = 'v1';
+        user.rankingRulesAcceptedAt = now;
+        user.rankingRulesVersion = RANKING_RULES_VERSION;
 
         await user.save();
 
         return res.status(200).json({
             ok: true,
-            message: 'Successful registration to the ranking',
-            user
+            message: 'You have successfully registered for the ranking',
+            // CHANGE: antes `user` (documento completo)
+            ranking: rankingStatusPayload(user)
         })
 
         
@@ -92,7 +132,8 @@ export const unRegisterRanking = async(req, res) =>{
         if(!user || !user.isRanked){
             return res.status(400).json({
                 ok: false,
-                message: 'User not found or not registered'
+                // CHANGE: texto más claro para el usuario
+                message: 'You are not registered for the ranking'
             })
         }
 
@@ -106,10 +147,12 @@ export const unRegisterRanking = async(req, res) =>{
 
         return res.status(200).json({
             ok: true,
-            message: 'You have retired from the ranking'
+            message: 'You have retired from the ranking',
+            ranking: rankingStatusPayload(user) // CHANGE: NUEVO — mismo formato que el registro
         })
         
     } catch (error) {
+        console.log(error) // CHANGE: antes el error se tragaba sin log
         return res.status(500).json({
             ok: false,
             message: 'Unable to retire from ranking due to an internal error'
@@ -195,7 +238,6 @@ export const closeRoundNow = async (req, res) => {
         return res.status(500).json({ ok: false, message: error.message || 'Internal error closing the ranking round' });
     }
 };
- 
 
 
 export const submitRankingResult = async (req, res) => {
@@ -220,15 +262,44 @@ export const submitRankingResult = async (req, res) => {
             return res.status(403).json({ ok: false, message: 'You are not a participant in this match' });
         }
  
-        if (match.status === 'played' || match.status === 'admin_resolved') {
-            return res.status(400).json({ ok: false, message: 'This match result was already confirmed' });
+        // CHANGE (SEGURIDAD): NUEVO — no se aceptan resultados de propuestas sin publicar
+        if (!match.published) {
+            return res.status(400).json({ ok: false, message: 'This match has not been published yet' });
+        }
+
+        // CHANGE (SEGURIDAD): antes solo bloqueaba 'played' y 'admin_resolved', así que se
+        // podía enviar resultado a un partido 'disputed' (saltándose al admin tras el
+        // cierre), 'cancelled' o 'walkover'. Ahora solo 'scheduled'.
+        if (match.status !== 'scheduled') {
+            return res.status(400).json({ ok: false, message: 'This match is closed and no longer accepts results' });
         }
  
         session.startTransaction();
  
         const setsWonByA = sets.filter(s => s.gamesA > s.gamesB).length;
         const setsWonByB = sets.length - setsWonByA;
-        const winnerIsA = setsWonByA > setsWonByB;
+
+        // CHANGE (BUG CRÍTICO): antes `winnerIsA = setsWonByA > setsWonByB` → con 1-1 en
+        // sets ganaba SIEMPRE el jugador B. Ahora, con empate en sets, decide el súper
+        // tie break (obligatorio en ese caso, a 10 con diferencia de 2).
+        let winnerIsA;
+        if (setsWonByA !== setsWonByB) {
+            winnerIsA = setsWonByA > setsWonByB;
+        } else {
+            const pointsA = Number(superTieBreak?.pointsA);
+            const pointsB = Number(superTieBreak?.pointsB);
+            const validStb =
+                superTieBreak?.played === true &&
+                Number.isInteger(pointsA) && Number.isInteger(pointsB) &&
+                Math.max(pointsA, pointsB) >= 10 &&
+                Math.abs(pointsA - pointsB) >= 2;
+
+            if (!validStb) {
+                await session.abortTransaction();
+                return res.status(400).json({ ok: false, message: 'The sets are tied: please add a valid super tie break score (first to 10, win by 2)' });
+            }
+            winnerIsA = pointsA > pointsB;
+        }
  
         const { gamesWinner, gamesLoser } = sumGames(sets, winnerIsA);
  
@@ -261,7 +332,7 @@ export const submitRankingResult = async (req, res) => {
         match.superTieBreak = superTieBreak || match.superTieBreak;
         match.winner = winnerIsA ? match.playerA : match.playerB;
         match.status = 'played';
-        match.resultSource = 'player';
+        match.resultSource = 'Player'; // CHANGE (CRÍTICO): antes 'player' — el enum es ['Player','Admin'] → ValidationError → TODO resultado daba 500
         match.playedAt = new Date();
         match.marginMultiplier = multiplier;
         match.ratingDelta = { playerA: deltaA, playerB: deltaB };
@@ -303,11 +374,3 @@ export const submitRankingResult = async (req, res) => {
         session.endSession();
     }
 };
-
-
-
-
-
-
-
-

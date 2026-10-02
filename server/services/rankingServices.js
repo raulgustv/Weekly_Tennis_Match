@@ -41,28 +41,57 @@ export const generateRankingRoundProposal = async ({ seasonId, round } = {}) => 
 
     const rankedUsers = await User.find({ isRanked: true, isActive: true }).select('_id ntrplvl');
 
-    const existing = await Ranking.find({ season: season._id }).select('userId rank');
-    const existingIds = new Set(existing.map(r => r.userId.toString()));
+    // CHANGE: ahora también se lee `status`, para detectar jugadores que se
+    // retiraron y se han vuelto a apuntar (ver bloque de reactivación abajo).
+    const existing = await Ranking.find({ season: season._id }).select('userId rank status');
+    const existingByUser = new Map(existing.map(r => [r.userId.toString(), r]));
 
     let nextRank = existing.length ? Math.max(...existing.map(r => r.rank)) : 0;
     const newRankingDocs = [];
+    const reactivations = [];
 
     for (const u of rankedUsers) {
-        if (!existingIds.has(u._id.toString())) {
+        const current = existingByUser.get(u._id.toString());
+
+        if (!current) {
             nextRank += 1;
             newRankingDocs.push({
                 season: season._id,
                 userId: u._id,
                 rank: nextRank,
-                rating: seedRatingFromNtrp(u.ntrplvl),
+                // CHANGE (BUG): antes llamaba a seedRatingFromNtrp, pero lo importado es
+                // seedRatingFromNTRP → ReferenceError en cuanto había un jugador nuevo,
+                // es decir, la PRIMERA propuesta de ronda tras cualquier registro fallaba.
+                rating: seedRatingFromNTRP(u.ntrplvl),
                 seedNtrpLevel: u.ntrplvl ?? null,
                 status: 'active'
+            });
+        } else if (current.status === 'retired') {
+            // CHANGE (BUG): NUEVO. Antes, si un jugador se daba de baja y luego se
+            // volvía a registrar en la misma temporada, ya existía su Ranking doc
+            // (status 'retired'), así que no se creaba otro y tampoco se reactivaba:
+            // quedaba isRanked=true pero NUNCA entraba en ninguna ronda.
+            // Reglamento: "New players and reactivated players will have the last
+            // ranking position" → se reactiva en la última posición. Se CONSERVA
+            // su rating (no se resetea), para que retirarse y volver no sirva
+            // para "limpiar" un rating bajo o alto. Los 'suspended' NO se tocan.
+            nextRank += 1;
+            reactivations.push({
+                updateOne: {
+                    filter: { _id: current._id, status: 'retired' },
+                    update: { $set: { status: 'active', rank: nextRank, dateOfLeave: null } }
+                }
             });
         }
     }
 
     if (newRankingDocs.length) {
         await Ranking.insertMany(newRankingDocs);
+    }
+
+    // CHANGE: NUEVO — aplica las reactivaciones
+    if (reactivations.length) {
+        await Ranking.bulkWrite(reactivations);
     }
 
     const eligible = await Ranking.find({

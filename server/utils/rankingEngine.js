@@ -16,7 +16,8 @@ export const ratingToNTRPReference = (rating) =>{
 }
 
 export const marginMultiplier = (gamesWinner, gamesLoser) => {
-    const totalGames = gamesWinner - gamesLoser;
+    // CHANGE (BUG): antes `gamesWinner - gamesLoser` → ratio = diff/diff = 1 siempre → multiplicador SIEMPRE 1.3.
+    const totalGames = gamesWinner + gamesLoser;
 
     if(!totalGames) return 1;
 

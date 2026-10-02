@@ -27,7 +27,8 @@ const rankingSchema = new mongoose.Schema({
         type: Number,
         default: null
     },
-    pentaltyPoints: {
+    // CHANGE (CRÍTICO): antes `pentaltyPoints` → closeRound hace $inc: {penaltyPoints} y Mongoose lo descartaba: las penalizaciones nunca se guardaban.
+    penaltyPoints: {
         type: Number,
         default: 0,
         min: 0
@@ -42,7 +43,8 @@ const rankingSchema = new mongoose.Schema({
         default: null
     },
     //suspension system
-    supsendedUntilRound:{
+    // CHANGE (CRÍTICO): antes `supsendedUntilRound` → la propuesta de ronda filtra por `suspendedUntilRound`.
+    suspendedUntilRound:{
         type: Number,
         default: null
     },
@@ -52,8 +54,8 @@ const rankingSchema = new mongoose.Schema({
     }
 }, {timestamps: true})  
 
-//player cannot have two documents on the same ranking schema
 rankingSchema.index({season: 1, userId: 1}, {unique: true});
-rankingSchema.index({season: 1}, {rating: -1})
+// CHANGE: antes index({season: 1}, {rating: -1}) — el 2º argumento son opciones, no campos.
+rankingSchema.index({season: 1, rating: -1})
 
 export default mongoose.model('Ranking', rankingSchema);
