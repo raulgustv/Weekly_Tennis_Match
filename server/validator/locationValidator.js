@@ -13,7 +13,7 @@ export const newLocationValidator = [
     .isLength({min: 5, max: 2000}).withMessage("Court name must be between 5 and 500 characters"),
 
     body("courts")
-    .isInt({min: 1, max: 29}).withMessage("There must be between 1 and 29  courts")
+    .isInt({min: 1, max: 100}).withMessage("There must be between 1 and 29  courts")
     .notEmpty().withMessage("Court total is required"),
 
     body("favorite")

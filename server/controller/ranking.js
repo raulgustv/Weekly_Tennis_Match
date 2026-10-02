@@ -238,7 +238,6 @@ export const closeRoundNow = async (req, res) => {
         return res.status(500).json({ ok: false, message: error.message || 'Internal error closing the ranking round' });
     }
 };
- 
 
 
 export const submitRankingResult = async (req, res) => {

@@ -13,3 +13,8 @@ export const registerRank = async(values) =>{
     const data = await axiosInstance.post('/ranking/register', values)
     return data;
 }
+
+export const newSeason = async(values) =>{
+    const data = await axiosInstance.post('/season', values)
+    return data;
+}

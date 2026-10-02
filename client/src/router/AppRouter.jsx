@@ -25,6 +25,8 @@ import Help from '../pages/information/Help'
 import NotificationsPage from '../pages/notifications/NotificationsPage'
 import ConfirmAccountDeletion from '../components/profile/ConfirmAccountDeletion'
 import RankingRegistration from '../pages/ranking/RankingRegistration'
+import RankingSeason from '../pages/ranking/RankingSeason'
+import RankingNewSeason from '../pages/ranking/RankingNewSeason'
 
 const AppRouter = () => {
   return (
@@ -69,6 +71,8 @@ const AppRouter = () => {
               {/* admin routes */}
               <Route path='admin' element={<AdminRoute />}>
                 <Route index path='dashboard' element={<AdminDashboard />} />
+                <Route index path='seasons' element={<RankingSeason />} />
+                <Route index path='new-season' element={<RankingNewSeason />} />
                 <Route path='add-court' element={<AddCourt />} />
                 <Route path='matches' element={<Matches />} />
                 <Route path='view-matches' element={<MatchesTable />} />

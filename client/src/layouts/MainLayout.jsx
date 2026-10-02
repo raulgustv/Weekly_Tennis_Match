@@ -20,6 +20,7 @@ import {
   WalletOutlined,
   BellOutlined,
   RiseOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -103,6 +104,21 @@ const MainLayout = () => {
           label: "Vote matches",
         },
         rankingMenuItem,
+        {
+          key: 'admin-ranking',
+          icon: (<CalendarOutlined  style={{color: "#F4D03F"}} />),
+          label: 'Ranking Administration',
+          children: [
+            {
+              key: '/admin/new-season',
+              label: 'Create new season'
+            },
+            {
+              key: '/admin/seasons',
+              label: 'Seasons'
+            }
+          ]
+        },
         {
           key: "/manage-courts",
           icon: (
