@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button, Flex, Segmented, Typography } from "antd"; // [CAMBIO] quitados Col y Row, añadido Segmented
 import { ArrowLeftOutlined } from "@ant-design/icons"; // [CAMBIO] quitado AppstoreOutlined (ya no se usa)
 // [CAMBIO] quitado el import de RankingStatCard: la página ya no lo usa directamente (lo usa RankingSeasonList)
-import RankingSeasonList from "../../components/ranking/RankingSeasonList";
+
 import useNow from "../../hooks/useNow";
 import { getSeasons } from "../../actions/ranking";
 import { BRAND, TYPE_META } from "../../helpers/seasonConsants";
+import RankingSeasonList from "../../components/SeasonRanking/RankingSeasonList";
 
 const { Title, Text } = Typography;
 

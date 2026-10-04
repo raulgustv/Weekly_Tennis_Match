@@ -1,9 +1,10 @@
 // src/components/ranking/RankingStatCard.jsx
 // Card de una temporada: tipo, estado, fechas y cuenta atrás de inscripción.
-import { Card, Flex, Tag, Typography } from "antd";
-import { CalendarOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { Button, Card, Flex, Tag, Typography } from "antd";
+import { CalendarOutlined, ClockCircleOutlined, OrderedListOutlined } from "@ant-design/icons";
 import { BRAND, TYPE_META, FALLBACK_TYPE_META, STATUS_META } from "../../helpers/seasonConsants.js";
 import { buildMadridMoment, fmtDateTime,fmtShortDate, formatRemaining } from "../utils/Madridtime.js";
+import { useNavigate } from "react-router-dom";
 
 
 const { Text } = Typography;
@@ -20,7 +21,9 @@ const getSeasonStatus = (start, end, now) => {
 // name, type, year, startDate, endDate, registrationDeadline (fecha), registrationDeadlineTime ("HH:mm")
 const RankingStatCard = ({ season, now }) => {
 
-    console.log(season)
+    const navigate = useNavigate()
+
+    //console.log(season)
 
     const meta = TYPE_META[season?.type] || FALLBACK_TYPE_META;
     const title = season?.name || [season?.type, season?.year].filter(Boolean).join(" ") || "Untitled season";
@@ -101,6 +104,15 @@ const RankingStatCard = ({ season, now }) => {
                         </Flex>
                     )}
                 </Flex>
+                {season?._id && (
+                    <Button
+                        icon={<OrderedListOutlined />}
+                        onClick={() => navigate(`/admin/seasons/${season?._id}/rounds`)}
+                        block
+                    >
+                        Manage rounds
+                    </Button>
+                )}
             </Flex>
         </Card>
     );

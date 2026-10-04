@@ -1,0 +1,172 @@
+// [NUEVO ARCHIVO] src/pages/ranking/RankingRounds.jsx
+// Ruta: /admin/seasons/:id/rounds (solo admin, dentro de AdminRoute)
+// Se entra desde el botón "Manage rounds" de cada RankingStatCard.
+//
+// Flujo admin: proponer ronda → revisar partidos → publicar / descartar.
+// La página solo gestiona estado y llamadas a la API; la UI está en:
+//   - components/ranking/RankingRoundHeader.jsx   (temporada, selector, acciones)
+//   - components/ranking/RankingRoundMatchList.jsx (rejilla de partidos + sin rival)
+//   - components/ranking/RankingRoundMatchCard.jsx (un partido)
+//   - components/ranking/RankingStandingsTable.jsx (clasificación)  [NUEVO]
+//
+// Seguridad: todas las reglas (solo admin, solo temporada activa, una sola
+// propuesta pendiente, no publicar/descartar rondas arbitrarias) se aplican en
+// el SERVIDOR. Lo que se oculta/deshabilita aquí es solo comodidad visual.
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Flex, Tabs } from "antd"; // [CAMBIO] añadido Tabs (pestañas Matches / Standings)
+import { toast } from "react-toastify";
+import { activateSeason, discardRound, getRoundOverview, proposeRound, publishRound } from "../../actions/ranking";
+import RankingStandingsTable from "../../components/Ranking/RankingStandingsTable";
+import RankingRoundMatchList from "../../components/Ranking/RankingRoundList";
+import RankingRoundHeader from "../../components/Ranking/RankingRoundHeader";
+
+// El backend responde { message } en los controllers, pero validateFields
+// responde un ARRAY de express-validator (422) → se contemplan los dos formatos.
+const getErrorMessage = (error, fallback) => {
+    const data = error?.response?.data;
+    if (Array.isArray(data)) return data[0]?.msg || fallback;
+    return data?.message || fallback;
+};
+
+const EMPTY_OVERVIEW = {
+    season: null,
+    rounds: [],
+    selectedRound: null,
+    matches: [],
+    unpaired: [],
+    pendingRound: null,
+    openRound: null,
+    standings: [],      // [NUEVO]
+    pendingPlayers: [], // [NUEVO]
+};
+
+const RankingRounds = () => {
+    const { id: seasonId } = useParams();
+    const navigate = useNavigate();
+
+    const [overview, setOverview] = useState(EMPTY_OVERVIEW);
+    const [requestedRound, setRequestedRound] = useState(null); // null = última ronda
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [actionLoading, setActionLoading] = useState(null);
+    const [reloadKey, setReloadKey] = useState(0);
+    const [activeTab, setActiveTab] = useState("matches"); // [NUEVO] pestaña visible
+
+    // Recarga forzada tras una acción (propose/publish/discard/activate)
+    const reload = useCallback((round = null) => {
+        setRequestedRound(round);
+        setReloadKey((k) => k + 1);
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await getRoundOverview(seasonId, requestedRound);
+                if (active) setOverview({ ...EMPTY_OVERVIEW, ...data });
+            } catch (err) {
+                if (active) setError(getErrorMessage(err, "Could not load the rounds. Please try again."));
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+
+        load();
+        return () => {
+            active = false;
+        };
+    }, [seasonId, requestedRound, reloadKey]);
+
+    // Ejecuta una acción, muestra el toast y recarga. `nextRound` = ronda a mostrar después.
+    const runAction = async (key, request, fallbackError, nextRound = null) => {
+        setActionLoading(key);
+        try {
+            const data = await request();
+            toast.success(data?.message || "Done");
+            reload(nextRound);
+        } catch (err) {
+            toast.error(getErrorMessage(err, fallbackError));
+            reload(overview.selectedRound); // por si el estado cambió en el servidor (otro admin, el cron...)
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handlePropose = () =>
+        runAction("propose", () => proposeRound(seasonId), "Could not propose the round");
+
+    const handlePublish = () =>
+        runAction(
+            "publish",
+            () => publishRound(seasonId, overview.pendingRound),
+            "Could not publish the round",
+            overview.pendingRound
+        );
+
+    const handleDiscard = () =>
+        runAction("discard", () => discardRound(seasonId, overview.pendingRound), "Could not discard the proposal");
+
+    const handleActivate = () =>
+        runAction("activate", () => activateSeason(seasonId), "Could not activate the season");
+
+    return (
+        <Flex vertical gap={24}>
+            <RankingRoundHeader
+                season={overview.season}
+                rounds={overview.rounds}
+                selectedRound={overview.selectedRound}
+                pendingRound={overview.pendingRound}
+                openRound={overview.openRound}
+                actionLoading={actionLoading}
+                onBack={() => navigate("/admin/seasons")}
+                onSelectRound={(round) => setRequestedRound(round)}
+                onPropose={handlePropose}
+                onPublish={handlePublish}
+                onDiscard={handleDiscard}
+                onActivate={handleActivate}
+            />
+
+            {/* [CAMBIO] Antes solo se mostraba RankingRoundMatchList. Ahora dos pestañas:
+                partidos de la ronda seleccionada y clasificación de la temporada. */}
+            <Tabs
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                size="large"
+                items={[
+                    {
+                        key: "matches",
+                        label: "Matches",
+                        children: (
+                            <RankingRoundMatchList
+                                matches={overview.matches}
+                                unpaired={overview.unpaired}
+                                selectedRound={overview.selectedRound}
+                                loading={loading}
+                                error={error}
+                            />
+                        ),
+                    },
+                    {
+                        key: "standings",
+                        // [NUEVO] contador de jugadores en la clasificación
+                        label: `Standings${loading ? "" : ` (${overview.standings.length})`}`,
+                        children: (
+                            <RankingStandingsTable
+                                standings={overview.standings}
+                                pendingPlayers={overview.pendingPlayers}
+                                loading={loading}
+                                error={error}
+                            />
+                        ),
+                    },
+                ]}
+            />
+        </Flex>
+    );
+};
+
+export default RankingRounds;

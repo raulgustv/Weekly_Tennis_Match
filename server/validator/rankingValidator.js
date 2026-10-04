@@ -1,4 +1,4 @@
-import { body } from 'express-validator';
+import { body, query } from 'express-validator'; // CHANGE: añadido `query` (roundOverviewValidator)
 
 // server/validator/rankingValidator.js
 // Mismo estilo que server/validator/userValidator.js. Mensajes en inglés,
@@ -83,4 +83,37 @@ export const disputeRankingResultValidator = [
         .trim()
         .notEmpty().withMessage('A reason is required to dispute a result')
         .isLength({ max: 500 }).withMessage('Reason cannot exceed 500 characters')
+];
+
+// =====================================================================
+// CHANGE (NUEVO): validadores del flujo admin de rondas
+// =====================================================================
+
+const seasonIdInBody = () =>
+    body('seasonId')
+        .notEmpty().withMessage('Season id is required')
+        .bail()
+        .isMongoId().withMessage('Invalid season id');
+
+// POST /ranking/rounds/propose — el número de ronda lo calcula el servidor
+export const proposeRoundValidator = [
+    seasonIdInBody()
+];
+
+// POST /ranking/rounds/publish y /ranking/rounds/discard
+export const roundActionValidator = [
+    seasonIdInBody(),
+    body('round')
+        .notEmpty().withMessage('Round is required')
+        .bail()
+        .isInt({ min: 1 }).withMessage('Invalid round number')
+        .toInt()
+];
+
+// GET /ranking/rounds/:seasonId?round=N (el :seasonId lo valida validateObjectId)
+export const roundOverviewValidator = [
+    query('round')
+        .optional()
+        .isInt({ min: 1 }).withMessage('Invalid round number')
+        .toInt()
 ];

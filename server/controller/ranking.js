@@ -3,9 +3,17 @@ import { validationResult } from "express-validator"; // CHANGE: faltaba — sub
 import Ranking from "../models/Ranking.js";
 import User from "../models/user.js";
 import RankingMatch from "../models/RankingMatch.js";
+import Season from "../models/Season.js"; // CHANGE (NUEVO): lo usa getRoundOverview
 import { isAtLeast18 } from "../helpers/dateHelpers.js";
 // CHANGE: añadido closeRound — closeRoundNow lo llamaba sin importarlo (ReferenceError → 500)
-import { closeRound, generateRankingRoundProposal, resolveSeason } from "../services/rankingServices.js";
+// CHANGE (NUEVO): añadidos findPendingProposalRound y findOpenPublishedRound (guardas de rondas)
+import {
+    closeRound,
+    findOpenPublishedRound,
+    findPendingProposalRound,
+    generateRankingRoundProposal,
+    resolveSeason
+} from "../services/rankingServices.js";
 // CHANGE: faltaba — submitRankingResult usa sumGames y computeRatingDelta sin importarlos (ReferenceError → 500)
 import { computeRatingDelta, sumGames } from "../utils/rankingEngine.js";
 
@@ -160,47 +168,320 @@ export const unRegisterRanking = async(req, res) =>{
     }
 }
 
-export const generateRoundProposal = async(req, res) =>{
-    try {
+// =====================================================================
+// CHANGE (NUEVO): helpers de rondas para el flujo admin
+// =====================================================================
 
-        if(req.user.role !== 'admin'){
-            return res.status(400).json({
-                ok: false,
-                message: 'You are not authorized to generate rankings'
-            })
+// Mensajes que lanza resolveSeason → código HTTP correcto (antes todo era 500).
+const SEASON_ERROR_STATUS = {
+    'Season not found': 404,
+    'There is no active season configured': 400
+};
+
+const handleSeasonError = (error, res, fallbackMessage) => {
+    const status = SEASON_ERROR_STATUS[error?.message];
+    if (status) {
+        return res.status(status).json({ ok: false, message: error.message });
+    }
+    console.log(error);
+    return res.status(500).json({ ok: false, message: fallbackMessage });
+};
+
+// CHANGE (NUEVO): orden de la clasificación: activos por posición, luego
+// suspendidos y al final retirados.
+const STANDING_STATUS_ORDER = { active: 0, suspended: 1, retired: 2 };
+
+const publicPlayer = (user) => user
+    ? { _id: user._id, name: user.name, lastname: user.lastname, profilePicture: user.profilePicture }
+    : null; // usuario borrado
+
+/**
+ * CHANGE (NUEVO): clasificación actual de una temporada (solo para la vista
+ * admin: incluye rating interno y puntos de penalización). Solo se envían
+ * nombre, apellido y foto de cada jugador.
+ */
+const getSeasonStandings = async (seasonId) => {
+    const docs = await Ranking.find({ season: seasonId })
+        .select('userId rank rating penaltyPoints status lastRoundPlayed suspendedUntilRound')
+        .populate('userId', 'name lastname profilePicture.url')
+        .lean();
+
+    return docs
+        .map(r => ({
+            _id: r._id,
+            player: publicPlayer(r.userId),
+            rank: r.rank,
+            rating: r.rating,
+            penaltyPoints: r.penaltyPoints ?? 0,
+            status: r.status,
+            lastRoundPlayed: r.lastRoundPlayed ?? 0,
+            suspendedUntilRound: r.suspendedUntilRound ?? null
+        }))
+        .sort((a, b) =>
+            (STANDING_STATUS_ORDER[a.status] ?? 3) - (STANDING_STATUS_ORDER[b.status] ?? 3) ||
+            a.rank - b.rank
+        );
+};
+
+/**
+ * CHANGE (NUEVO): jugadores inscritos al ranking que todavía NO tienen Ranking
+ * doc en esta temporada. Mismo filtro que generateRankingRoundProposal
+ * ({ isRanked: true, isActive: true }), así la lista coincide exactamente con
+ * quién entrará (en la última posición) en la próxima propuesta.
+ */
+const getPlayersPendingEntry = async (seasonId) => {
+    const existingUserIds = await Ranking.find({ season: seasonId }).distinct('userId');
+
+    const users = await User.find({
+        isRanked: true,
+        isActive: true,
+        _id: { $nin: existingUserIds }
+    })
+        .select('name lastname profilePicture.url rankingRegisteredAt')
+        .sort({ rankingRegisteredAt: 1 })
+        .lean();
+
+    return users.map(u => ({ ...publicPlayer(u), rankingRegisteredAt: u.rankingRegisteredAt ?? null }));
+};
+
+/**
+ * CHANGE (NUEVO): GET /ranking/rounds/:seasonId?round=N (solo admin)
+ * Devuelve la temporada, el resumen de todas sus rondas y los partidos de la
+ * ronda seleccionada (por defecto, la última). Si la ronda es una propuesta
+ * sin publicar, incluye además los jugadores elegibles que se han quedado sin
+ * rival (bye). Solo se envían los campos necesarios: nunca email, teléfono,
+ * wallet, notas, etc.
+ */
+export const getRoundOverview = async (req, res) => {
+    try {
+        const { seasonId } = req.params;
+        const requestedRound = req.query.round ? Number(req.query.round) : null;
+
+        const season = await Season.findById(seasonId)
+            .select('name type year status nextRoundCloseDate roundCloseTime roundIntervalDays startDate endDate')
+            .lean();
+
+        if (!season) {
+            return res.status(404).json({ ok: false, message: 'Season not found' });
         }
 
-        const {seasonId, round} = req.body;
+        const roundsAgg = await RankingMatch.aggregate([
+            { $match: { season: season._id } },
+            {
+                $group: {
+                    _id: '$round',
+                    total: { $sum: 1 },
+                    published: { $max: { $cond: ['$published', 1, 0] } },
+                    pendingResults: {
+                        $sum: {
+                            $cond: [{ $and: ['$published', { $eq: ['$status', 'scheduled'] }] }, 1, 0]
+                        }
+                    }
+                }
+            },
+            { $sort: { _id: -1 } }
+        ]);
 
-        const result = await generateRankingRoundProposal({seasonId, round})
+        const rounds = roundsAgg.map(r => ({
+            round: r._id,
+            total: r.total,
+            published: r.published === 1,
+            pendingResults: r.pendingResults
+        }));
+
+        if (requestedRound && !rounds.some(r => r.round === requestedRound)) {
+            return res.status(404).json({ ok: false, message: 'Round not found for this season' });
+        }
+
+        const selectedRound = requestedRound ?? rounds[0]?.round ?? null;
+
+        let matches = [];
+        let unpaired = [];
+
+        if (selectedRound) {
+            matches = await RankingMatch.find({ season: season._id, round: selectedRound })
+                .select('round playerA playerB ratingBefore status published winner sets superTieBreak resultSource playedAt')
+                .populate('playerA', 'name lastname profilePicture.url')
+                .populate('playerB', 'name lastname profilePicture.url')
+                .sort({ createdAt: 1 })
+                .lean();
+
+            const isProposal = matches.length > 0 && matches.every(m => !m.published);
+
+            if (isProposal) {
+                const pairedIds = new Set(
+                    matches.flatMap(m => [String(m.playerA?._id ?? m.playerA), String(m.playerB?._id ?? m.playerB)])
+                );
+
+                // Mismo criterio de elegibilidad que generateRankingRoundProposal
+                const eligible = await Ranking.find({
+                    season: season._id,
+                    status: 'active',
+                    $or: [
+                        { suspendedUntilRound: null },
+                        { suspendedUntilRound: { $lte: selectedRound } }
+                    ]
+                })
+                    .select('userId rating')
+                    .populate('userId', 'name lastname profilePicture.url')
+                    .lean();
+
+                unpaired = eligible
+                    .filter(r => r.userId && !pairedIds.has(String(r.userId._id)))
+                    .map(r => ({
+                        _id: r.userId._id,
+                        name: r.userId.name,
+                        lastname: r.userId.lastname,
+                        profilePicture: r.userId.profilePicture,
+                        rating: r.rating
+                    }));
+            }
+        }
+
+        // CHANGE (NUEVO): clasificación de la temporada (Ranking docs) + jugadores
+        // inscritos (isRanked) que aún no tienen Ranking doc en esta temporada.
+        const [pendingRound, openRound, standings, pendingPlayers] = await Promise.all([
+            findPendingProposalRound(season._id),
+            findOpenPublishedRound(season._id),
+            getSeasonStandings(season._id),
+            season.status === 'active' ? getPlayersPendingEntry(season._id) : []
+        ]);
 
         return res.status(200).json({
             ok: true,
-            message: 'Round proposed, please review and approve to publish when ready',
-            ...result
+            season,
+            rounds,
+            selectedRound,
+            matches,
+            unpaired,
+            pendingRound,
+            openRound,
+            standings,      // CHANGE (NUEVO)
+            pendingPlayers  // CHANGE (NUEVO)
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ ok: false, message: 'Unable to load the ranking rounds' });
+    }
+};
+
+export const generateRoundProposal = async(req, res) =>{
+    try {
+
+        // CHANGE: 403 (antes 400 — no es un error de la petición, es de permisos)
+        if(req.user.role !== 'admin'){
+            return res.status(403).json({
+                ok: false,
+                message: 'You are not authorized to generate ranking rounds'
+            })
+        }
+
+        // CHANGE (SEGURIDAD): `round` YA NO se lee del body. Antes el admin (o
+        // cualquiera manipulando la petición) podía mandar un número de ronda
+        // arbitrario (ej. 1 otra vez) y crear partidos en una ronda ya jugada.
+        // Ahora el número de ronda lo calcula siempre el servidor.
+        // seasonId pasa a ser obligatorio (validado en proposeRoundValidator).
+        const {seasonId} = req.body;
+
+        const season = await resolveSeason(seasonId);
+
+        // CHANGE (NUEVO): solo se proponen rondas de la temporada activa
+        if (season.status !== 'active') {
+            return res.status(400).json({
+                ok: false,
+                message: 'Rounds can only be proposed for the active season'
+            })
+        }
+
+        // CHANGE (BUG): NUEVO — antes, pulsar "proponer" dos veces creaba partidos
+        // duplicados encima de la propuesta anterior.
+        const pendingRound = await findPendingProposalRound(season._id);
+        if (pendingRound) {
+            return res.status(409).json({
+                ok: false,
+                message: `Round ${pendingRound} has already been proposed and is not published yet. Publish it or discard it first.`
+            })
+        }
+
+        // CHANGE (NUEVO): no se propone la siguiente ronda mientras la actual sigue abierta
+        const openRound = await findOpenPublishedRound(season._id);
+        if (openRound) {
+            return res.status(409).json({
+                ok: false,
+                message: `Round ${openRound} is still in progress. The next round is proposed when it closes.`
+            })
+        }
+
+        const result = await generateRankingRoundProposal({seasonId: season._id})
+
+        // CHANGE (NUEVO): con menos de 2 jugadores elegibles no se crea ningún partido
+        if (!result.matches.length) {
+            return res.status(400).json({
+                ok: false,
+                message: 'Not enough eligible players to create a round (at least 2 are needed)'
+            })
+        }
+
+        // CHANGE: antes se devolvía `...result` (documento Season completo + todos
+        // los partidos). El frontend recarga con GET /rounds/:seasonId, así que
+        // solo se devuelve lo mínimo.
+        return res.status(200).json({
+            ok: true,
+            message: `Round ${result.round} proposed. Please review it and publish it when ready.`,
+            round: result.round,
+            matchesCreated: result.matches.length,
+            byePlayer: result.byePlayer
         })
         
     } catch (error) {
-        return res.status(500).json({
-            ok: false,
-            message: 'Unable to generate round proposal'
-        })
+        // CHANGE: antes todo error era 500 sin log
+        return handleSeasonError(error, res, 'Unable to generate round proposal');
     }
 }
 
 export const publishRankingRound = async(req, res) =>{
     try {
 
+        // CHANGE: 403 (antes 400)
         if(req.user.role !== 'admin'){
-            return res.status(400).json({
+            return res.status(403).json({
                 ok: false,
-                message: 'You are not authorized publish ranking round'
+                message: 'You are not authorized to publish ranking rounds'
             })
         }
 
+        // CHANGE: seasonId y round validados en roundActionValidator (round → entero)
         const {seasonId, round} = req.body;
 
         const season = await resolveSeason(seasonId);
+
+        // CHANGE (NUEVO): solo se publica en la temporada activa
+        if (season.status !== 'active') {
+            return res.status(400).json({
+                ok: false,
+                message: 'Rounds can only be published for the active season'
+            })
+        }
+
+        // CHANGE (SEGURIDAD): NUEVO — antes se podía mandar CUALQUIER número de
+        // ronda. Ahora solo se publica la propuesta pendiente actual.
+        const pendingRound = await findPendingProposalRound(season._id);
+        if (!pendingRound || pendingRound !== round) {
+            return res.status(404).json({
+                ok: false,
+                message: 'There is no unpublished proposal for this round'
+            })
+        }
+
+        // CHANGE (NUEVO): nunca dos rondas abiertas a la vez
+        const openRound = await findOpenPublishedRound(season._id);
+        if (openRound && openRound !== round) {
+            return res.status(409).json({
+                ok: false,
+                message: `Round ${openRound} is still in progress. Close it before publishing a new round.`
+            })
+        }
 
         const result = await RankingMatch.updateMany(
             {season: season._id, round, published: false},
@@ -209,18 +490,60 @@ export const publishRankingRound = async(req, res) =>{
 
         return res.status(200).json({
             ok: true,
-            message: 'Round published',
+            message: `Round ${round} published`,
             matchesPublished: result.modifiedCount
         })
 
         
     } catch (error) {
-        return res.status(500).json({
-            ok: false,
-            message: 'Unable to generate round proposal'
-        })
+        // CHANGE: antes devolvía el mensaje equivocado ('Unable to generate round proposal')
+        return handleSeasonError(error, res, 'Unable to publish the ranking round');
     }
 }
+
+/**
+ * CHANGE (NUEVO): POST /ranking/rounds/discard (solo admin)
+ * Borra una propuesta SIN PUBLICAR para poder generar otra. Nunca toca partidos
+ * publicados (los jugadores ya los han visto y pueden tener resultado).
+ * Los Ranking docs creados al proponer (jugadores nuevos) se mantienen: son
+ * válidos y se reutilizan en la siguiente propuesta.
+ */
+export const discardRoundProposal = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ ok: false, message: 'You are not authorized to discard ranking rounds' });
+        }
+
+        const { seasonId, round } = req.body;
+
+        const season = await resolveSeason(seasonId);
+
+        const publishedInRound = await RankingMatch.exists({ season: season._id, round, published: true });
+        if (publishedInRound) {
+            return res.status(409).json({ ok: false, message: 'This round has already been published and cannot be discarded' });
+        }
+
+        const result = await RankingMatch.deleteMany({
+            season: season._id,
+            round,
+            published: false,
+            status: 'scheduled'
+        });
+
+        if (!result.deletedCount) {
+            return res.status(404).json({ ok: false, message: 'There is no unpublished proposal for this round' });
+        }
+
+        return res.status(200).json({
+            ok: true,
+            message: `Proposal for round ${round} discarded`,
+            matchesDiscarded: result.deletedCount
+        });
+
+    } catch (error) {
+        return handleSeasonError(error, res, 'Unable to discard the round proposal');
+    }
+};
 
 export const closeRoundNow = async (req, res) => {
     try {

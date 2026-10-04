@@ -1,24 +1,3 @@
-// 🟢 ARCHIVO COMPLETO: client/src/pages/season/RankingNewSeason.jsx
-// (antes lo llamé CreateSeason.jsx — mismo componente, renombrado y con el layout rediseñado)
-// Ruta: /admin/seasons/new (solo admin, dentro de AdminOnlyRoute)
-//
-// 🟢 CAMBIOS respecto a tu versión:
-//   - Cabecera con el degradado de la app + botón "Back" visible (antes era
-//     un icono type="text" gris casi invisible sobre fondo blanco).
-//   - Título con <Title> (antes <Text level={3}>: Text NO acepta `level`).
-//   - Formulario en Card, dividido en 2 secciones + vista previa del calendario.
-//   - Botones de acción al pie, alineados a la derecha (apilados en móvil).
-//
-// [NUEVO] CAMBIOS DE ESTA ENTREGA (registrationDeadline):
-//   - Campo "Registration deadline" (fecha + hora, hora de Madrid), opcional como en el schema.
-//   - Validación: debe ser futura y anterior al cierre de la primera ronda.
-//   - Se envía como ISO (UTC) calculado en hora de Madrid, no con la zona del navegador.
-//   - Vista previa muestra el cierre de inscripción.
-//   - Bug corregido en navigate: faltaba la "/" inicial en 'admin/seasons'.
-//
-// [CAMBIO] Requiere client/src/actions/ranking.js (newSeason) — antes el comentario decía actions/season.js
-// Nota antd: `styles={{ body: ... }}` en Card necesita antd >= 5.14;
-// en versiones anteriores usa `bodyStyle={{ ... }}`.
 
 import { useMemo, useState } from "react";
 import {

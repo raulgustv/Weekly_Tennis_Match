@@ -1,8 +1,8 @@
-import RankingHeader from '../../components/ranking/RankingHeader'
+import RankingHeader from '../../components/SeasonRanking/RankingHeader'
 import { useAuth } from '../../context'
-import RankedUser from '../../components/ranking/RankedUser'
+import RankedUser from '../../components/SeasonRanking/RankedUser'
 import { Grid } from 'antd'
-import RankRegisterForm from '../../components/ranking/RankRegisterForm'
+import RankRegisterForm from '../../components/SeasonRanking/RankRegisterForm'
 
 
 const RankingRegistration = () => {

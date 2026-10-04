@@ -27,6 +27,30 @@ const getNextRoundNumber = async (seasonId) => {
     return (lastMatch?.round || 0) + 1;
 };
 
+// CHANGE (NUEVO): ronda propuesta y AÚN SIN PUBLICAR de la temporada (o null).
+// La usan el controller (bloquear una 2ª propuesta encima → antes se creaban
+// partidos duplicados) y closeRound (hueco nº 7: el cron generaba otra propuesta
+// encima de una que el admin no había publicado → partidos huérfanos).
+export const findPendingProposalRound = async (seasonId) => {
+    const pending = await RankingMatch.findOne({ season: seasonId, published: false })
+        .sort({ round: -1 })
+        .select('round')
+        .lean();
+    return pending?.round ?? null;
+};
+
+// CHANGE (NUEVO): ronda PUBLICADA que todavía tiene partidos sin resultado
+// ('scheduled'), es decir, la ronda en juego (o null). Sirve para no proponer
+// la siguiente ronda mientras la actual sigue abierta (habría dos rondas
+// publicadas a la vez y closeRound penalizaría las dos).
+export const findOpenPublishedRound = async (seasonId) => {
+    const open = await RankingMatch.findOne({ season: seasonId, published: true, status: 'scheduled' })
+        .sort({ round: -1 })
+        .select('round')
+        .lean();
+    return open?.round ?? null;
+};
+
 /**
  * Asegura un Ranking doc por cada usuario isRanked (seed desde ntrplvl),
  * empareja evitando repetir rival de las últimas 2 rondas, y crea los
@@ -158,7 +182,18 @@ export const closeRound = async ({ seasonId } = {}) => {
         );
     }
 
-    const nextRoundResult = await generateRankingRoundProposal({ seasonId: season._id });
+    // CHANGE (BUG, hueco nº 7): antes se generaba SIEMPRE una propuesta nueva. Si el
+    // admin no había publicado la anterior, quedaban dos propuestas sin publicar
+    // (y al publicar una ronda con la otra pendiente, partidos huérfanos). Ahora,
+    // si ya hay una propuesta pendiente, se conserva y NO se genera otra: el admin
+    // la publica o la descarta desde la página de rondas.
+    // Importante: NO se lanza error aquí, porque si closeRound fallara el cron
+    // no avanzaría nextRoundCloseDate y volvería a intentarlo cada minuto.
+    const pendingRound = await findPendingProposalRound(season._id);
+
+    const nextRoundResult = pendingRound
+        ? { season, round: pendingRound, matches: [], byePlayer: null, reusedPendingProposal: true }
+        : await generateRankingRoundProposal({ seasonId: season._id });
 
     // El instante en que cerró esta ronda es también el instante en que
     // ABRE la que se acaba de proponer.

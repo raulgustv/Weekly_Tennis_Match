@@ -24,9 +24,11 @@ import WalletAdmin from '../pages/wallet/WalletAdmin'
 import Help from '../pages/information/Help'
 import NotificationsPage from '../pages/notifications/NotificationsPage'
 import ConfirmAccountDeletion from '../components/profile/ConfirmAccountDeletion'
-import RankingRegistration from '../pages/ranking/RankingRegistration'
-import RankingSeason from '../pages/ranking/RankingSeason'
-import RankingNewSeason from '../pages/ranking/RankingNewSeason'
+import RankingRegistration from '../pages/SeasonRanking/RankingRegistration'
+import RankingSeason from '../pages/SeasonRanking/RankingSeason'
+import RankingNewSeason from '../pages/SeasonRanking/RankingNewSeason'
+import RankingRounds from '../pages/Ranking/RankingRounds'
+
 
 const AppRouter = () => {
   return (
@@ -73,6 +75,7 @@ const AppRouter = () => {
                 <Route index path='dashboard' element={<AdminDashboard />} />
                 <Route index path='seasons' element={<RankingSeason />} />
                 <Route index path='new-season' element={<RankingNewSeason />} />
+                <Route index path='seasons/:id/rounds' element={<RankingRounds />} />
                 <Route path='add-court' element={<AddCourt />} />
                 <Route path='matches' element={<Matches />} />
                 <Route path='view-matches' element={<MatchesTable />} />
