@@ -33,14 +33,14 @@ export const createSeason = async (req, res) => {
             return res.status(403).json({ ok: false, message: 'You are not authorized to create a season' });
         }
 
-        const { name, year, type, roundIntervalDays, roundCloseTime, nextRoundCloseDate } = req.body;
+        const { name, year, type, roundIntervalDays, roundCloseTime, nextRoundCloseDate, registrationDeadline } = req.body;
 
         if (!name || !year || !type) {
             return res.status(400).json({ ok: false, message: 'name, year and type are required' });
         }
 
         const season = new Season({
-            name, year, type,
+            name, year, type, registrationDeadline,
             roundIntervalDays: roundIntervalDays || 14,
             roundCloseTime: roundCloseTime || '21:00',
             createdBy: req.user.id

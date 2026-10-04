@@ -42,6 +42,9 @@ const seasonSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    registrationDeadline:{
+        type: Date,
+    },
     createdBy: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',

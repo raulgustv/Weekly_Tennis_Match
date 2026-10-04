@@ -9,7 +9,14 @@
 //   - Formulario en Card, dividido en 2 secciones + vista previa del calendario.
 //   - Botones de acción al pie, alineados a la derecha (apilados en móvil).
 //
-// Requiere client/src/actions/season.js (createSeason).
+// [NUEVO] CAMBIOS DE ESTA ENTREGA (registrationDeadline):
+//   - Campo "Registration deadline" (fecha + hora, hora de Madrid), opcional como en el schema.
+//   - Validación: debe ser futura y anterior al cierre de la primera ronda.
+//   - Se envía como ISO (UTC) calculado en hora de Madrid, no con la zona del navegador.
+//   - Vista previa muestra el cierre de inscripción.
+//   - Bug corregido en navigate: faltaba la "/" inicial en 'admin/seasons'.
+//
+// [CAMBIO] Requiere client/src/actions/ranking.js (newSeason) — antes el comentario decía actions/season.js
 // Nota antd: `styles={{ body: ... }}` en Card necesita antd >= 5.14;
 // en versiones anteriores usa `bodyStyle={{ ... }}`.
 
@@ -44,6 +51,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import { newSeason } from "../../actions/ranking";
+// [NUEVO] Helpers de hora de Madrid. Ruta deducida de la tuya en RankingStatCard
+// (components/ranking → "../utils/Madridtime.js" = src/components/utils/Madridtime.js).
+import { buildMadridMoment, fmtDateTime } from "../../components/utils/Madridtime.js";
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -53,6 +63,11 @@ const SEASON_TYPES = ["Winter", "Spring", "Summer", "Fall"];
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/; // 24h HH:mm
 const CURRENT_YEAR = new Date().getFullYear();
 const PREVIEW_ROUNDS = 4;
+
+// [NUEVO] Convierte el valor dayjs del DatePicker (fecha + hora elegidas) a un Date real
+// interpretando esa fecha/hora como hora de Madrid, independientemente de la zona del navegador.
+const toMadridDate = (value) =>
+    value ? buildMadridMoment(value.format("YYYY-MM-DD"), value.format("HH:mm")) : null;
 
 // Título de sección reutilizable (icono + título + subtítulo)
 const SectionHeader = ({ icon, title, subtitle }) => (
@@ -92,6 +107,7 @@ const RankingNewSeason = () => {
     const closeTime = Form.useWatch("roundCloseTime", form);
     const interval = Form.useWatch("roundIntervalDays", form);
     const seasonName = Form.useWatch("name", form);
+    const registrationDeadline = Form.useWatch("registrationDeadline", form); // [NUEVO]
 
     const isNotSunday = !!closeDate && closeDate.day() !== 0;
     const validTime = TIME_REGEX.test(closeTime || "");
@@ -104,27 +120,55 @@ const RankingNewSeason = () => {
         );
     }, [closeDate, interval, validTime]);
 
-    const handleSubmit = async (values) => {        
-        if(loading) return;
-        setLoading(true)
+    // [NUEVO] Regla del campo registrationDeadline:
+    // opcional; si se rellena → futura y anterior al cierre de la primera ronda (ambas en hora de Madrid)
+    const registrationDeadlineRule = ({ getFieldValue }) => ({
+        validator: (_, value) => {
+            if (!value) return Promise.resolve();
 
-        try {   
-            const {data} = await newSeason({
+            const deadline = toMadridDate(value);
+            if (!deadline || deadline.getTime() <= Date.now()) {
+                return Promise.reject(new Error("The registration deadline must be in the future"));
+            }
+
+            const firstClose = getFieldValue("nextRoundCloseDate");
+            const firstCloseTime = getFieldValue("roundCloseTime");
+            if (firstClose && TIME_REGEX.test(firstCloseTime || "")) {
+                const firstRoundClose = buildMadridMoment(firstClose.format("YYYY-MM-DD"), firstCloseTime);
+                if (firstRoundClose && deadline.getTime() >= firstRoundClose.getTime()) {
+                    return Promise.reject(
+                        new Error("Registration must close before the first round closes")
+                    );
+                }
+            }
+            return Promise.resolve();
+        },
+    });
+
+    const handleSubmit = async (values) => {
+        if (loading) return;
+        setLoading(true);
+
+        try {
+            // [NUEVO] ISO en UTC calculado como hora de Madrid; undefined si no se rellenó (JSON lo omite)
+            const deadline = toMadridDate(values.registrationDeadline);
+
+            const { data } = await newSeason({
                 name: values.name.trim(),
                 year: values.year,
                 type: values.type,
                 roundCloseTime: values.roundCloseTime.trim(),
                 roundIntervalDays: values.roundIntervalDays,
-                nextRoundCloseDate: values.nextRoundCloseDate.format("YYYY-MM-DD")
-            })  
-            toast.success(`Season ${data?.season?.name} has been successfully created`)
-            navigate(data?.season?._id ? `/admin/seasons/${data?.season?._id}` : 'admin/seasons' )
+                nextRoundCloseDate: values.nextRoundCloseDate.format("YYYY-MM-DD"),
+                registrationDeadline: deadline ? deadline.toISOString() : undefined, // [NUEVO]
+            });
+            toast.success(`Season ${data?.season?.name} has been successfully created`);
+            // [CAMBIO] faltaba la "/" inicial: 'admin/seasons' navegaba de forma relativa a una ruta incorrecta
+            navigate("/admin/seasons");
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Error creating season')
-            
-            //setLoading(false)
-        }finally{
-            setLoading(false)
+            toast.error(error?.response?.data?.message || "Error creating season");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -295,6 +339,24 @@ const RankingNewSeason = () => {
                                     </Form.Item>
                                 </Col>
                             </Row>
+
+                            {/* [NUEVO] Cierre de inscripción (opcional, hora de Madrid).
+                                dependencies: se revalida si cambia la fecha/hora de la primera ronda */}
+                            <Form.Item
+                                label="Registration deadline"
+                                name="registrationDeadline"
+                                dependencies={["nextRoundCloseDate", "roundCloseTime"]}
+                                extra="Madrid time. Players cannot sign up for the season after this moment."
+                                rules={[registrationDeadlineRule]}
+                            >
+                                <DatePicker
+                                    size="large"
+                                    style={{ width: "100%" }}
+                                    showTime={{ format: "HH:mm", minuteStep: 5 }}
+                                    format="ddd, DD MMM YYYY HH:mm"
+                                    disabledDate={(current) => current && current < dayjs().startOf("day")}
+                                />
+                            </Form.Item>
                         </Card>
                     </Col>
 
@@ -315,6 +377,20 @@ const RankingNewSeason = () => {
                             >
                                 {seasonName?.trim() || "Untitled season"}
                             </Text>
+
+                            {/* [NUEVO] Cierre de inscripción en la vista previa */}
+                            <Flex
+                                align="center"
+                                gap={8}
+                                style={{ background: "#F5F5F5", borderRadius: 10, padding: "8px 12px", marginBottom: 16 }}
+                            >
+                                <ClockCircleOutlined style={{ color: "#1E7F43" }} />
+                                <Text style={{ fontSize: 13 }}>
+                                    {registrationDeadline
+                                        ? `Registration closes: ${fmtDateTime(toMadridDate(registrationDeadline))}`
+                                        : "No registration deadline set"}
+                                </Text>
+                            </Flex>
 
                             {previewDates.length ? (
                                 <>

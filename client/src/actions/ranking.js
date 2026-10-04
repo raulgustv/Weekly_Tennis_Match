@@ -18,3 +18,8 @@ export const newSeason = async(values) =>{
     const data = await axiosInstance.post('/season', values)
     return data;
 }
+
+export const getSeasons = async() => {
+    const {data} = await axiosInstance.get('/season');
+    return data;
+}
