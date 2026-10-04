@@ -60,3 +60,36 @@ export const discardRound = async(seasonId, round) =>{
     const {data} = await axiosInstance.post('/ranking/rounds/discard', { seasonId, round });
     return data;
 }
+
+// =====================================================================
+// CHANGE (NUEVO): vista del jugador (pestañas de /ranking)
+// =====================================================================
+
+// CHANGE (NUEVO): mi partido de la ronda publicada + mi posición + historial
+export const getMyRankingMatch = async() =>{
+    const {data} = await axiosInstance.get('/ranking/me/match');
+    return data;
+}
+
+// CHANGE (NUEVO): clasificación pública de la temporada activa
+export const getRankingStandings = async() =>{
+    const {data} = await axiosInstance.get('/ranking/standings');
+    return data;
+}
+
+// CHANGE (NUEVO): enviar el resultado de mi partido.
+// payload = { matchId, sets: [{gamesA, gamesB}, {gamesA, gamesB}], superTieBreak: {played, pointsA, pointsB} }
+// (A/B son los del partido en BD — RankingResultModal traduce "yo/rival" → A/B)
+export const submitRankingResult = async(payload) =>{
+    const {data} = await axiosInstance.post('/ranking/matches/result', payload);
+    return data;
+}
+
+// CHANGE (NUEVO): partidos publicados de la temporada activa (todos los jugadores).
+// round opcional: sin él, el servidor devuelve la última ronda publicada.
+export const getPublicRoundMatches = async(round) =>{
+    const {data} = await axiosInstance.get('/ranking/matches', {
+        params: round ? { round } : {}
+    });
+    return data;
+}

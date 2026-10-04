@@ -5,7 +5,8 @@ import { writeLimiter, adminLimiter, readLimiter } from '../config/expressLimit.
 // CHANGE: añadido validateObjectId (valida :seasonId)
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 // CHANGE: añadidos getRoundOverview y discardRoundProposal
-import { closeRoundNow, discardRoundProposal, generateRoundProposal, getRoundOverview, publishRankingRound, rankingRegistration, submitRankingResult, unRegisterRanking } from '../controller/ranking.js';
+// CHANGE (NUEVO): añadidos getMyRankingMatch, getPublicStandings y getPublicRoundMatches (vista del jugador)
+import { closeRoundNow, discardRoundProposal, generateRoundProposal, getMyRankingMatch, getPublicRoundMatches, getPublicStandings, getRoundOverview, publishRankingRound, rankingRegistration, submitRankingResult, unRegisterRanking } from '../controller/ranking.js';
 // CHANGE: añadidos proposeRoundValidator, roundActionValidator y roundOverviewValidator
 import { proposeRoundValidator, registerForRankingValidator, roundActionValidator, roundOverviewValidator, submitRankingResultValidator } from '../validator/rankingValidator.js';
 
@@ -15,6 +16,14 @@ router.post("/register", protect, requireVerification, writeLimiter, registerFor
 
 
 router.post("/unregister", protect, writeLimiter, unRegisterRanking)
+
+// CHANGE (NUEVO): vista del jugador — su partido de la ronda publicada + historial
+router.get("/me/match", protect, readLimiter, getMyRankingMatch);
+// CHANGE (NUEVO): clasificación pública de la temporada activa (sin rating ni penalizaciones)
+router.get("/standings", protect, readLimiter, getPublicStandings);
+// CHANGE (NUEVO): partidos publicados de la temporada activa (todos los jugadores). ?round=N opcional
+// (roundOverviewValidator ya valida `round` como entero ≥ 1 en la query)
+router.get("/matches", protect, readLimiter, roundOverviewValidator, validateFields, getPublicRoundMatches);
 
 // CHANGE (NUEVO): resumen de rondas + partidos de una ronda (solo admin)
 router.get("/rounds/:seasonId", protect, verifyAdmin, readLimiter, validateObjectId("seasonId"), roundOverviewValidator, validateFields, getRoundOverview);

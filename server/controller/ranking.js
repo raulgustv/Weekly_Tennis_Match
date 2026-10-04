@@ -4,7 +4,8 @@ import Ranking from "../models/Ranking.js";
 import User from "../models/user.js";
 import RankingMatch from "../models/RankingMatch.js";
 import Season from "../models/Season.js"; // CHANGE (NUEVO): lo usa getRoundOverview
-import { isAtLeast18 } from "../helpers/dateHelpers.js";
+// CHANGE (NUEVO): añadido buildMadridDateTime — lo usa getMyRankingMatch (fecha/hora de cierre de la ronda)
+import { buildMadridDateTime, isAtLeast18 } from "../helpers/dateHelpers.js";
 // CHANGE: añadido closeRound — closeRoundNow lo llamaba sin importarlo (ReferenceError → 500)
 // CHANGE (NUEVO): añadidos findPendingProposalRound y findOpenPublishedRound (guardas de rondas)
 import {
@@ -562,6 +563,287 @@ export const closeRoundNow = async (req, res) => {
     }
 };
 
+// =====================================================================
+// CHANGE (NUEVO): vista del JUGADOR — su partido de la ronda + clasificación
+// =====================================================================
+
+// Estados con resultado definitivo (cuentan para W-L de la clasificación)
+const FINISHED_MATCH_STATUSES = ['played', 'walkover', 'admin_resolved'];
+
+/**
+ * CHANGE (NUEVO): un partido visto desde el jugador que lo pide.
+ * Nunca se envían ratingBefore/ratingDelta/marginMultiplier/penaltiesIssued/
+ * confirmedBy: el rating es interno (solo admin). El teléfono del rival SOLO
+ * se incluye si `includeOpponentPhone` (partido publicado de la ronda actual
+ * y aún 'scheduled'); en el historial nunca.
+ */
+const toPlayerMatchView = (match, userId, includeOpponentPhone = false) => {
+    const playerAId = String(match.playerA?._id ?? match.playerA);
+    const mySide = playerAId === String(userId) ? 'A' : 'B';
+    const opponentDoc = mySide === 'A' ? match.playerB : match.playerA;
+
+    // populate devuelve null si el rival borró su cuenta
+    const opponent = opponentDoc && opponentDoc._id
+        ? {
+            _id: opponentDoc._id,
+            name: opponentDoc.name,
+            lastname: opponentDoc.lastname,
+            profilePicture: opponentDoc.profilePicture,
+            ...(includeOpponentPhone && match.status === 'scheduled' ? { phone: opponentDoc.phone || null } : {})
+        }
+        : null;
+
+    const winnerId = match.winner ? String(match.winner) : null;
+    const firstReporter = match.confirmedBy?.[0] ? String(match.confirmedBy[0]) : null;
+
+    return {
+        _id: match._id,
+        round: match.round,
+        status: match.status,
+        mySide,                       // 'A' | 'B' → el front pinta los sets como "yo - rival"
+        opponent,
+        sets: match.sets || [],
+        superTieBreak: match.superTieBreak?.played ? match.superTieBreak : { played: false },
+        result: winnerId ? (winnerId === String(userId) ? 'won' : 'lost') : null,
+        resultSource: winnerId ? match.resultSource : null,
+        reportedBy: match.resultSource === 'Player' && firstReporter
+            ? (firstReporter === String(userId) ? 'me' : 'opponent')
+            : null,
+        playedAt: match.playedAt
+    };
+};
+
+/**
+ * CHANGE (NUEVO): GET /ranking/me/match (cualquier usuario logueado)
+ * Temporada activa, posición del jugador, su partido de la ronda publicada más
+ * reciente (con el teléfono del rival mientras esté por jugar) y su historial
+ * de la temporada. Las propuestas SIN publicar nunca se exponen aquí.
+ */
+export const getMyRankingMatch = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const season = await Season.findOne({ status: 'active' })
+            .select('name type year nextRoundCloseDate roundCloseTime roundIntervalDays')
+            .lean();
+
+        if (!season) {
+            return res.status(200).json({ ok: true, season: null, myRanking: null, currentRound: null, currentMatch: null, history: [] });
+        }
+
+        const roundCloseAt = season.nextRoundCloseDate
+            ? buildMadridDateTime(season.nextRoundCloseDate, season.roundCloseTime)?.toDate() ?? null
+            : null;
+
+        const [myRankingDoc, latestPublished] = await Promise.all([
+            Ranking.findOne({ season: season._id, userId })
+                .select('rank status penaltyPoints suspendedUntilRound')
+                .lean(),
+            RankingMatch.findOne({ season: season._id, published: true })
+                .sort({ round: -1 })
+                .select('round')
+                .lean()
+        ]);
+
+        const currentRound = latestPublished?.round ?? null;
+
+        // Penalizaciones propias: son del propio jugador, se las mostramos a él (nunca a otros)
+        const myRanking = myRankingDoc
+            ? {
+                rank: myRankingDoc.status === 'active' ? myRankingDoc.rank : null,
+                status: myRankingDoc.status,
+                penaltyPoints: myRankingDoc.penaltyPoints ?? 0,
+                suspendedUntilRound: myRankingDoc.suspendedUntilRound ?? null
+            }
+            : null;
+
+        const matches = await RankingMatch.find({
+            season: season._id,
+            published: true,
+            $or: [{ playerA: userId }, { playerB: userId }]
+        })
+            .select('round playerA playerB sets superTieBreak winner status resultSource confirmedBy playedAt')
+            .populate('playerA', 'name lastname profilePicture.url phone')
+            .populate('playerB', 'name lastname profilePicture.url phone')
+            .sort({ round: -1 })
+            .limit(30)
+            .lean();
+
+        const currentDoc = currentRound ? matches.find(m => m.round === currentRound) : null;
+
+        return res.status(200).json({
+            ok: true,
+            season: {
+                _id: season._id,
+                name: season.name,
+                type: season.type,
+                year: season.year,
+                roundCloseAt
+            },
+            myRanking,
+            currentRound,
+            currentMatch: currentDoc ? toPlayerMatchView(currentDoc, userId, true) : null,
+            history: matches
+                .filter(m => m.round !== currentRound)
+                .map(m => toPlayerMatchView(m, userId, false))
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ ok: false, message: 'Unable to load your ranking match' });
+    }
+};
+
+/**
+ * CHANGE (NUEVO): GET /ranking/standings (cualquier usuario logueado)
+ * Clasificación pública de la temporada activa: posición, nombre, foto y
+ * partidos jugados/ganados/perdidos. Solo jugadores 'active' (los suspendidos
+ * pierden la posición según el Reglamento). Sin rating ni penalizaciones.
+ */
+export const getPublicStandings = async (req, res) => {
+    try {
+        const season = await Season.findOne({ status: 'active' })
+            .select('name type year')
+            .lean();
+
+        if (!season) {
+            return res.status(200).json({ ok: true, season: null, standings: [] });
+        }
+
+        const [rankingDocs, recordAgg] = await Promise.all([
+            Ranking.find({ season: season._id, status: 'active' })
+                .select('userId rank')
+                .populate('userId', 'name lastname profilePicture.url')
+                .sort({ rank: 1 })
+                .lean(),
+            RankingMatch.aggregate([
+                {
+                    $match: {
+                        season: season._id,
+                        published: true,
+                        winner: { $ne: null },
+                        status: { $in: FINISHED_MATCH_STATUSES }
+                    }
+                },
+                { $project: { winner: 1, players: ['$playerA', '$playerB'] } },
+                { $unwind: '$players' },
+                {
+                    $group: {
+                        _id: '$players',
+                        played: { $sum: 1 },
+                        won: { $sum: { $cond: [{ $eq: ['$players', '$winner'] }, 1, 0] } }
+                    }
+                }
+            ])
+        ]);
+
+        const recordByUser = new Map(recordAgg.map(r => [String(r._id), r]));
+
+        const standings = rankingDocs.map(r => {
+            const record = r.userId ? recordByUser.get(String(r.userId._id)) : null;
+            const played = record?.played ?? 0;
+            const won = record?.won ?? 0;
+            return {
+                _id: r._id,
+                rank: r.rank,
+                player: publicPlayer(r.userId),
+                played,
+                won,
+                lost: played - won
+            };
+        });
+
+        return res.status(200).json({ ok: true, season, standings });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ ok: false, message: 'Unable to load the ranking standings' });
+    }
+};
+
+/**
+ * CHANGE (NUEVO): GET /ranking/matches?round=N (cualquier usuario logueado)
+ * Partidos PUBLICADOS de la temporada activa, ronda a ronda (por defecto la
+ * última publicada), para que todos los jugadores vean quién juega con quién
+ * y los resultados. Solo nombre, apellido y foto de cada jugador: nunca
+ * teléfono, email, rating, ratingDelta ni penalizaciones. Las propuestas sin
+ * publicar nunca salen aquí.
+ */
+export const getPublicRoundMatches = async (req, res) => {
+    try {
+        const requestedRound = req.query.round ? Number(req.query.round) : null;
+
+        const season = await Season.findOne({ status: 'active' })
+            .select('name type year')
+            .lean();
+
+        if (!season) {
+            return res.status(200).json({ ok: true, season: null, rounds: [], selectedRound: null, matches: [] });
+        }
+
+        const roundsAgg = await RankingMatch.aggregate([
+            { $match: { season: season._id, published: true } },
+            {
+                $group: {
+                    _id: '$round',
+                    total: { $sum: 1 },
+                    finished: { $sum: { $cond: [{ $in: ['$status', FINISHED_MATCH_STATUSES] }, 1, 0] } }
+                }
+            },
+            { $sort: { _id: -1 } }
+        ]);
+
+        const rounds = roundsAgg.map(r => ({ round: r._id, total: r.total, finished: r.finished }));
+
+        if (requestedRound && !rounds.some(r => r.round === requestedRound)) {
+            return res.status(404).json({ ok: false, message: 'Round not found' });
+        }
+
+        const selectedRound = requestedRound ?? rounds[0]?.round ?? null;
+
+        if (!selectedRound) {
+            return res.status(200).json({ ok: true, season, rounds, selectedRound: null, matches: [] });
+        }
+
+        const docs = await RankingMatch.find({ season: season._id, round: selectedRound, published: true })
+            .select('round playerA playerB sets superTieBreak winner status playedAt createdAt')
+            .populate('playerA', 'name lastname profilePicture.url')
+            .populate('playerB', 'name lastname profilePicture.url')
+            .sort({ createdAt: 1 })
+            .lean();
+
+        const matches = docs.map(m => {
+            const winnerId = m.winner ? String(m.winner) : null;
+            const aId = m.playerA?._id ? String(m.playerA._id) : null;
+            const bId = m.playerB?._id ? String(m.playerB._id) : null;
+            return {
+                _id: m._id,
+                round: m.round,
+                status: m.status,
+                playerA: publicPlayer(m.playerA),
+                playerB: publicPlayer(m.playerB),
+                sets: m.sets || [],
+                superTieBreak: m.superTieBreak?.played
+                    ? { played: true, pointsA: m.superTieBreak.pointsA, pointsB: m.superTieBreak.pointsB }
+                    : { played: false },
+                winner: winnerId ? (winnerId === aId ? 'A' : winnerId === bId ? 'B' : null) : null,
+                playedAt: m.playedAt
+            };
+        });
+
+        return res.status(200).json({ ok: true, season, rounds, selectedRound, matches });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ ok: false, message: 'Unable to load the round matches' });
+    }
+};
+
+// CHANGE (NUEVO): normaliza el súper tie break que se guarda. Antes se guardaba
+// `superTieBreak || match.superTieBreak` tal cual venía del body.
+const buildSuperTieBreak = (setsTied, superTieBreak) => setsTied
+    ? { played: true, pointsA: Number(superTieBreak.pointsA), pointsB: Number(superTieBreak.pointsB) }
+    : { played: false, pointsA: null, pointsB: null };
 
 export const submitRankingResult = async (req, res) => {
     const session = await mongoose.startSession();
@@ -572,21 +854,34 @@ export const submitRankingResult = async (req, res) => {
             return res.status(400).json({ ok: false, message: errors.array()[0].msg });
         }
  
-        const { matchId, sets, superTieBreak } = req.body;
+        const { matchId, superTieBreak } = req.body;
+        // CHANGE: los games se pasan a Number (el validator los da por buenos como
+        // enteros, pero podían llegar como string "10" > "9" → comparación de texto)
+        const sets = req.body.sets.map(s => ({ gamesA: Number(s.gamesA), gamesB: Number(s.gamesB) }));
         const userId = req.user.id;
  
-        const match = await RankingMatch.findById(matchId);
+        // CHANGE (SEGURIDAD, hueco nº 10): antes el partido se leía FUERA de la
+        // transacción. Si los dos jugadores enviaban casi a la vez, los dos veían
+        // 'scheduled' y el rating se aplicaba DOS veces. Ahora se lee DENTRO de la
+        // transacción: o el segundo ve 'played', o MongoDB aborta su escritura por
+        // conflicto (se responde 409 más abajo).
+        session.startTransaction();
+
+        const match = await RankingMatch.findById(matchId).session(session);
  
         if (!match) {
+            await session.abortTransaction();
             return res.status(404).json({ ok: false, message: 'Ranking match not found' });
         }
  
         if (![match.playerA.toString(), match.playerB.toString()].includes(userId)) {
+            await session.abortTransaction();
             return res.status(403).json({ ok: false, message: 'You are not a participant in this match' });
         }
  
         // CHANGE (SEGURIDAD): NUEVO — no se aceptan resultados de propuestas sin publicar
         if (!match.published) {
+            await session.abortTransaction();
             return res.status(400).json({ ok: false, message: 'This match has not been published yet' });
         }
 
@@ -594,19 +889,29 @@ export const submitRankingResult = async (req, res) => {
         // podía enviar resultado a un partido 'disputed' (saltándose al admin tras el
         // cierre), 'cancelled' o 'walkover'. Ahora solo 'scheduled'.
         if (match.status !== 'scheduled') {
-            return res.status(400).json({ ok: false, message: 'This match is closed and no longer accepts results' });
+            await session.abortTransaction();
+            // CHANGE: mensaje más claro (el caso típico es que el rival ya lo envió)
+            return res.status(409).json({ ok: false, message: 'A result has already been recorded for this match or it is closed' });
         }
- 
-        session.startTransaction();
+
+        // CHANGE (SEGURIDAD): NUEVO — solo partidos de la temporada ACTIVA. Al activar
+        // otra temporada, los partidos 'scheduled' de la anterior se quedaban abiertos.
+        const seasonIsActive = await Season.exists({ _id: match.season, status: 'active' }).session(session);
+        if (!seasonIsActive) {
+            await session.abortTransaction();
+            return res.status(400).json({ ok: false, message: 'This season is closed and no longer accepts results' });
+        }
  
         const setsWonByA = sets.filter(s => s.gamesA > s.gamesB).length;
         const setsWonByB = sets.length - setsWonByA;
+        const setsTied = setsWonByA === setsWonByB; // CHANGE: se reutiliza para guardar el STB
 
         // CHANGE (BUG CRÍTICO): antes `winnerIsA = setsWonByA > setsWonByB` → con 1-1 en
         // sets ganaba SIEMPRE el jugador B. Ahora, con empate en sets, decide el súper
         // tie break (obligatorio en ese caso, a 10 con diferencia de 2).
+        // (El validator ya exige formato estricto; esto queda como segunda barrera.)
         let winnerIsA;
-        if (setsWonByA !== setsWonByB) {
+        if (!setsTied) {
             winnerIsA = setsWonByA > setsWonByB;
         } else {
             const pointsA = Number(superTieBreak?.pointsA);
@@ -652,7 +957,7 @@ export const submitRankingResult = async (req, res) => {
         rankingB.lastRoundPlayed = match.round;
  
         match.sets = sets;
-        match.superTieBreak = superTieBreak || match.superTieBreak;
+        match.superTieBreak = buildSuperTieBreak(setsTied, superTieBreak); // CHANGE: antes `superTieBreak || match.superTieBreak`
         match.winner = winnerIsA ? match.playerA : match.playerB;
         match.status = 'played';
         match.resultSource = 'Player'; // CHANGE (CRÍTICO): antes 'player' — el enum es ['Player','Admin'] → ValidationError → TODO resultado daba 500
@@ -680,17 +985,25 @@ export const submitRankingResult = async (req, res) => {
  
         await session.commitTransaction();
  
+        // CHANGE (SEGURIDAD): antes se devolvía el documento `match` completo y
+        // `ratingDelta`. El rating es interno (solo admin) → el jugador no lo ve.
+        // El frontend recarga con GET /ranking/me/match.
         return res.status(200).json({
             ok: true,
-            message: 'Result recorded',
-            match,
-            ratingDelta: { playerA: deltaA, playerB: deltaB }
+            message: 'Result recorded. Thanks for reporting it!'
         });
  
     } catch (error) {
         if (session.inTransaction()) {
             await session.abortTransaction();
         }
+
+        // CHANGE (NUEVO): conflicto de escritura (el rival envió el resultado a la
+        // vez) → 409 con mensaje claro en vez de 500. El rating se aplica UNA vez.
+        if (error?.hasErrorLabel?.('TransientTransactionError') || error?.code === 112) {
+            return res.status(409).json({ ok: false, message: 'Your opponent has just submitted the result for this match. Please refresh.' });
+        }
+
         console.log(error)
         return res.status(500).json({ ok: false, message: 'Internal error submitting the ranking result' });
     } finally {
