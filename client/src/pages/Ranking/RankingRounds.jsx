@@ -1,17 +1,3 @@
-// [NUEVO ARCHIVO] src/pages/ranking/RankingRounds.jsx
-// Ruta: /admin/seasons/:id/rounds (solo admin, dentro de AdminRoute)
-// Se entra desde el botón "Manage rounds" de cada RankingStatCard.
-//
-// Flujo admin: proponer ronda → revisar partidos → publicar / descartar.
-// La página solo gestiona estado y llamadas a la API; la UI está en:
-//   - components/ranking/RankingRoundHeader.jsx   (temporada, selector, acciones)
-//   - components/ranking/RankingRoundMatchList.jsx (rejilla de partidos + sin rival)
-//   - components/ranking/RankingRoundMatchCard.jsx (un partido)
-//   - components/ranking/RankingStandingsTable.jsx (clasificación)  [NUEVO]
-//
-// Seguridad: todas las reglas (solo admin, solo temporada activa, una sola
-// propuesta pendiente, no publicar/descartar rondas arbitrarias) se aplican en
-// el SERVIDOR. Lo que se oculta/deshabilita aquí es solo comodidad visual.
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Flex, Tabs } from "antd"; // [CAMBIO] añadido Tabs (pestañas Matches / Standings)
@@ -20,13 +6,10 @@ import { activateSeason, discardRound, getRoundOverview, proposeRound, publishRo
 import RankingStandingsTable from "../../components/Ranking/RankingStandingsTable";
 import RankingRoundMatchList from "../../components/Ranking/RankingRoundList";
 import RankingRoundHeader from "../../components/Ranking/RankingRoundHeader";
-// [CAMBIO] NUEVO: modal para fijar/corregir resultados (disputas, errores)
 import RankingAdminResultModal from "../../components/modals/RankingAdminResultModal";
-// [CAMBIO] NUEVO: modal para extender/adelantar el cierre de la ronda (lluvia, festivos...)
 import RankingRoundCloseModal from "../../components/modals/RankingRoundCloseModal";
 
-// El backend responde { message } en los controllers, pero validateFields
-// responde un ARRAY de express-validator (422) → se contemplan los dos formatos.
+
 const getErrorMessage = (error, fallback) => {
     const data = error?.response?.data;
     if (Array.isArray(data)) return data[0]?.msg || fallback;

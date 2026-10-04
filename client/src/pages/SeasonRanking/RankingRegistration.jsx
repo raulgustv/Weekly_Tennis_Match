@@ -8,6 +8,13 @@ import RankingRoundMatches from '../../components/RankingUser/RankingRoundMatche
 import RankPublickStands from '../../components/RankingUser/RankingPublicStands'
 import RankingMyMatch from '../../components/RankingUser/RankingMyMatch'
 // [CAMBIO] NUEVO: partidos públicos de cada ronda (todos los jugadores los ven)
+// [CAMBIO] NUEVO: página "under construction" (misma ruta que usabas en RankingRounds;
+// ajústala si RankingConstruction.jsx no está en la misma carpeta que este archivo)
+import RankingConstruction from './RankingConstruction'
+
+// [CAMBIO] NUEVO: false = los jugadores ven "under construction". Cambiar a true al lanzar.
+// Solo oculta la UI en el navegador: la API del ranking debe seguir protegida en el servidor.
+const RELEASE_READY = false;
 
 
 const RankingRegistration = () => {
@@ -17,6 +24,12 @@ const RankingRegistration = () => {
     const { useBreakpoint } = Grid;
     const screens = useBreakpoint();
     const isMobile = !screens.md;
+
+    // [CAMBIO] NUEVO: retorno temprano DESPUÉS de los hooks (las reglas de hooks exigen
+    // llamarlos siempre en el mismo orden). Así las pestañas no se montan y no hacen peticiones.
+    if (!RELEASE_READY) {
+        return <RankingConstruction section="Season ranking" />
+    }
 
     return (
         <>
