@@ -1,0 +1,401 @@
+/* [NUEVO ARCHIVO] src/styles/rankingScoreboard.css
+   Estilos y animaciones de RankingMatchScoreboard.jsx (marcador del partido de ranking).
+   Todas las clases llevan el prefijo `mtc-sb-` para no chocar con otros estilos.
+   Con "reducir movimiento" activado en el sistema, no hay animaciones (ver final). */
+
+/* ---------- Banner de resultado ---------- */
+.mtc-sb-banner {
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* Ganador: degradado de marca con brillo dorado */
+.mtc-sb-banner--won {
+    background: linear-gradient(120deg, #0B2C3D 0%, #13506B 55%, #1E7F43 100%);
+    color: #fff;
+    animation: mtc-sb-pop-in 520ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+/* Barrido de luz que cruza el banner una vez */
+.mtc-sb-banner--won::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(244, 208, 63, 0.35) 50%, transparent 65%);
+    transform: translateX(-100%);
+    animation: mtc-sb-shine 1400ms ease-out 450ms 1 both;
+    pointer-events: none;
+}
+
+/* Perdedor: tono suave, sin brillo, entrada tranquila */
+.mtc-sb-banner--lost {
+    background: #F4F7F9;
+    border: 1px solid #E3E9ED;
+    color: #0B2C3D;
+    animation: mtc-sb-fade-up 600ms ease-out both;
+}
+
+.mtc-sb-banner-icon {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+}
+
+.mtc-sb-banner--won .mtc-sb-banner-icon {
+    background: rgba(244, 208, 63, 0.18);
+    color: #F4D03F;
+    box-shadow: 0 0 0 0 rgba(244, 208, 63, 0.55);
+    animation: mtc-sb-trophy 900ms cubic-bezier(0.3, 1.5, 0.5, 1) 200ms both,
+               mtc-sb-pulse 1800ms ease-out 1100ms 2;
+}
+
+.mtc-sb-banner--lost .mtc-sb-banner-icon {
+    background: #E6EDF1;
+    color: #13506B;
+}
+
+.mtc-sb-banner-title {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.2px;
+}
+
+.mtc-sb-banner-sub {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-top: 2px;
+}
+
+/* ---------- Confeti (solo ganador) ---------- */
+.mtc-sb-confetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.mtc-sb-confetti span {
+    position: absolute;
+    top: -12px;
+    left: var(--x);
+    width: 7px;
+    height: 12px;
+    border-radius: 2px;
+    background: var(--c);
+    opacity: 0;
+    animation: mtc-sb-confetti-fall 1600ms cubic-bezier(0.25, 0.6, 0.4, 1) var(--d) 1 forwards;
+}
+
+.mtc-sb-confetti span:nth-child(3n) {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%; /* bolitas de tenis */
+}
+
+/* ---------- Marcador ---------- */
+.mtc-sb-board {
+    border-radius: 12px;
+    border: 1px solid #E8EEF1;
+    overflow: hidden;
+    background: #fff;
+}
+
+.mtc-sb-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) repeat(var(--cols), 52px);
+    align-items: center;
+    min-height: 48px;
+    padding-right: 8px; /* aire para la pastilla del STB en el borde */
+}
+
+.mtc-sb-row + .mtc-sb-row {
+    border-top: 1px solid #F0F3F5;
+}
+
+.mtc-sb-row--head {
+    min-height: 30px;
+    background: #FAFBFC;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #8A9AA5;
+}
+
+.mtc-sb-row--winner {
+    background: linear-gradient(90deg, rgba(30, 127, 67, 0.07), transparent 70%);
+}
+
+.mtc-sb-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    min-width: 0;
+    font-weight: 500;
+    color: #0B2C3D;
+}
+
+.mtc-sb-row--winner .mtc-sb-player {
+    font-weight: 700;
+}
+
+.mtc-sb-player-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mtc-sb-cell {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-size: 18px;
+    font-weight: 500;
+    color: #A3B1BA;
+    animation: mtc-sb-cell-in 380ms ease-out var(--d, 0ms) both;
+}
+
+.mtc-sb-cell--win {
+    color: #0B2C3D;
+    font-weight: 800;
+}
+
+/* Columna del súper tie break: pastilla dorada */
+.mtc-sb-head-stb {
+    justify-self: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #FDF6D8;
+    color: #9A7B00;
+    font-weight: 700;
+}
+
+.mtc-sb-stb {
+    justify-self: center;
+    min-width: 40px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    background: #FBFCFD;
+    border: 1px dashed #E3D58A;
+    font-size: 15px;
+}
+
+.mtc-sb-stb.mtc-sb-cell--win {
+    background: #FDF6D8;
+    border: 1px solid #F4D03F;
+    color: #6B5500;
+}
+
+.mtc-sb-footer {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+    color: #8A9AA5;
+    padding: 8px 2px 0;
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes mtc-sb-pop-in {
+    0% { opacity: 0; transform: scale(0.92) translateY(6px); }
+    100% { opacity: 1; transform: none; }
+}
+
+@keyframes mtc-sb-fade-up {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: none; }
+}
+
+@keyframes mtc-sb-shine {
+    to { transform: translateX(100%); }
+}
+
+@keyframes mtc-sb-trophy {
+    0% { transform: scale(0) rotate(-25deg); }
+    70% { transform: scale(1.15) rotate(8deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes mtc-sb-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(244, 208, 63, 0.55); }
+    100% { box-shadow: 0 0 0 14px rgba(244, 208, 63, 0); }
+}
+
+@keyframes mtc-sb-cell-in {
+    0% { opacity: 0; transform: scale(0.6); }
+    100% { opacity: 1; transform: none; }
+}
+
+@keyframes mtc-sb-confetti-fall {
+    0% { opacity: 1; transform: translateY(0) rotate(0); }
+    100% { opacity: 0; transform: translateY(110px) translateX(var(--dx)) rotate(var(--r)); }
+}
+
+/* Accesibilidad: sin animaciones si el usuario lo pide en su sistema */
+@media (prefers-reduced-motion: reduce) {
+    .mtc-sb-banner--won,
+    .mtc-sb-banner--won::after,
+    .mtc-sb-banner--lost,
+    .mtc-sb-banner-icon,
+    .mtc-sb-cell {
+        animation: none !important;
+    }
+    .mtc-sb-confetti {
+        display: none;
+    }
+}
+
+/* =====================================================================
+   [NUEVO] Mini marcador (RankingMiniScore.jsx) — historial y partidos de la ronda.
+   Más discreto que el marcador grande: sin banner ni confeti.
+   ===================================================================== */
+.mtc-ms-card {
+    position: relative;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #E8EEF1;
+    padding: 10px 12px 10px 16px;
+    overflow: hidden;
+    transition: box-shadow 180ms ease, transform 180ms ease;
+    animation: mtc-sb-fade-up 360ms ease-out var(--d, 0ms) both;
+}
+
+.mtc-ms-card:hover {
+    box-shadow: 0 6px 18px rgba(11, 44, 61, 0.08);
+    transform: translateY(-1px);
+}
+
+/* Barra lateral de color según el resultado */
+.mtc-ms-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent, #D5DEE4);
+}
+
+.mtc-ms-card--won { --accent: #1E7F43; background: linear-gradient(90deg, rgba(30, 127, 67, 0.05), #fff 45%); }
+.mtc-ms-card--lost { --accent: #E5A3A3; }
+.mtc-ms-card--pending { --accent: #4DA3FF; }
+.mtc-ms-card--disputed { --accent: #FA8C16; }
+.mtc-ms-card--mine { border-color: #B7E1C6; }
+
+.mtc-ms-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.mtc-ms-chip {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #8A9AA5;
+}
+
+.mtc-ms-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.mtc-ms-badge--won { background: #E7F5EC; color: #1E7F43; }
+.mtc-ms-badge--lost { background: #FBEDED; color: #B54848; }
+.mtc-ms-badge--pending { background: #EAF4FF; color: #2F6FB3; }
+.mtc-ms-badge--disputed { background: #FFF4E6; color: #B46200; }
+.mtc-ms-badge--neutral { background: #F0F3F5; color: #5F7380; }
+
+.mtc-ms-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) repeat(var(--cols, 0), 30px);
+    align-items: center;
+    column-gap: 4px;
+    min-height: 32px;
+}
+
+.mtc-ms-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: #3D5563;
+    font-size: 14px;
+}
+
+.mtc-ms-row--winner .mtc-ms-player {
+    color: #0B2C3D;
+    font-weight: 700;
+}
+
+.mtc-ms-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mtc-ms-you {
+    font-size: 10px;
+    font-weight: 700;
+    color: #1E7F43;
+    background: #E7F5EC;
+    border-radius: 4px;
+    padding: 0 5px;
+    flex: 0 0 auto;
+}
+
+.mtc-ms-cell {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    color: #A3B1BA;
+}
+
+.mtc-ms-cell--win {
+    color: #0B2C3D;
+    font-weight: 800;
+}
+
+.mtc-ms-stb {
+    justify-self: center;
+    min-width: 28px;
+    border-radius: 7px;
+    font-size: 12px;
+    padding: 1px 4px;
+    border: 1px dashed #E3D58A;
+}
+
+.mtc-ms-stb.mtc-ms-cell--win {
+    background: #FDF6D8;
+    border: 1px solid #F4D03F;
+    color: #6B5500;
+}
+
+.mtc-ms-vs {
+    text-align: center;
+    font-size: 12px;
+    color: #A3B1BA;
+    padding: 4px 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mtc-ms-card { animation: none !important; transition: none; }
+}
