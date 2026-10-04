@@ -6,8 +6,9 @@ import { adminLimiter, readLimiter } from '../config/expressLimit.js';
 import { activateSeason, createSeason, listSeasons, updateRoundCloseDate } from '../controller/season.js';
 // CHANGE (NUEVO): + validateFields
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
+import { roundCloseDateValidator } from '../validator/SeasonValidator.js';
 // CHANGE (NUEVO): validador del cambio de fecha de cierre
-import { roundCloseDateValidator } from '../validator/seasonValidator.js';
+
 
 const router = Router();
 
