@@ -1,4 +1,4 @@
-import { body, query } from 'express-validator'; // CHANGE: añadido `query` (roundOverviewValidator)
+import { body, param, query } from 'express-validator'; // CHANGE: añadido `query` (roundOverviewValidator) // CHANGE (NUEVO): + `param` (adminResultValidator)
 
 // server/validator/rankingValidator.js
 // Mismo estilo que server/validator/userValidator.js. Mensajes en inglés,
@@ -171,4 +171,18 @@ export const roundOverviewValidator = [
         .optional()
         .isInt({ min: 1 }).withMessage('Invalid round number')
         .toInt()
+];
+// CHANGE (NUEVO): PUT /ranking/matches/:id/result (solo admin)
+// Mismas reglas de marcador que el jugador (se reutilizan las cadenas de
+// submitRankingResultValidator sin la de matchId, que aquí va en la URL)
+// + motivo obligatorio, que queda guardado en el partido como auditoría.
+export const adminResultValidator = [
+    param('id').isMongoId().withMessage('Invalid match id'),
+    ...submitRankingResultValidator.slice(1),
+    body('reason')
+        .isString().withMessage('A reason is required')
+        .bail()
+        .trim()
+        .notEmpty().withMessage('Please explain why you are setting or changing this result')
+        .isLength({ max: 300 }).withMessage('Reason cannot exceed 300 characters')
 ];

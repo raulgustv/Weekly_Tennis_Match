@@ -2,8 +2,10 @@
 // Card de UN partido de ranking (1 vs 1) dentro de una ronda: jugadores,
 // rating de cada uno, diferencia de rating, estado y resultado si existe.
 // Solo lo usa RankingRoundMatchList (vista de admin).
-import { Card, Flex, Tag, Typography } from "antd";
-import { CrownFilled } from "@ant-design/icons";
+// [CAMBIO] + Button, Tooltip (botón de editar resultado y nota del admin)
+import { Button, Card, Flex, Tag, Tooltip, Typography } from "antd";
+// [CAMBIO] + EditOutlined, InfoCircleOutlined
+import { CrownFilled, EditOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { BRAND } from "../../helpers/seasonConsants.js";
 import ProfilePicture from "../uploads/ProfilePicture.jsx";
 
@@ -58,7 +60,11 @@ const PlayerRow = ({ player, rating, isWinner }) => (
     </Flex>
 );
 
-const RankingRoundMatchCard = ({ match, index }) => {
+// [CAMBIO] NUEVO: estados en los que el admin puede fijar/corregir el resultado (igual que el servidor)
+const EDITABLE_STATUSES = ["scheduled", "played", "disputed", "admin_resolved", "walkover"];
+
+// [CAMBIO] NUEVO prop `onEditResult` (opcional): si llega, se muestra el botón de editar
+const RankingRoundMatchCard = ({ match, index, onEditResult }) => {
     const statusKey = !match?.published && match?.status === "scheduled" ? "proposed" : match?.status;
     const status = MATCH_STATUS_META[statusKey] || { label: match?.status || "Unknown", color: "default" };
 
@@ -113,6 +119,30 @@ const RankingRoundMatchCard = ({ match, index }) => {
                         </Text>
                     )}
                 </Flex>
+
+                {/* [CAMBIO] NUEVO: nota de auditoría del admin + botón para fijar/corregir el resultado */}
+                {(match?.notes || (onEditResult && match?.published && EDITABLE_STATUSES.includes(match?.status))) && (
+                    <Flex justify="space-between" align="center" gap={8}>
+                        {match?.notes ? (
+                            <Tooltip title={<span style={{ whiteSpace: "pre-line" }}>{match.notes}</span>}>
+                                <Text type="secondary" style={{ fontSize: 12, cursor: "help" }}>
+                                    <InfoCircleOutlined /> Admin note
+                                </Text>
+                            </Tooltip>
+                        ) : <span />}
+                        {onEditResult && match?.published && EDITABLE_STATUSES.includes(match?.status) && (
+                            <Button
+                                size="small"
+                                type={match.status === "disputed" ? "primary" : "default"}
+                                danger={match.status === "disputed"}
+                                icon={<EditOutlined />}
+                                onClick={() => onEditResult(match)}
+                            >
+                                {["scheduled", "disputed"].includes(match.status) ? "Set result" : "Edit result"}
+                            </Button>
+                        )}
+                    </Flex>
+                )}
             </Flex>
         </Card>
     );

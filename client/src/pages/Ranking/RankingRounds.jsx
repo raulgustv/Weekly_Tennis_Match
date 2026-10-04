@@ -20,6 +20,10 @@ import { activateSeason, discardRound, getRoundOverview, proposeRound, publishRo
 import RankingStandingsTable from "../../components/Ranking/RankingStandingsTable";
 import RankingRoundMatchList from "../../components/Ranking/RankingRoundList";
 import RankingRoundHeader from "../../components/Ranking/RankingRoundHeader";
+// [CAMBIO] NUEVO: modal para fijar/corregir resultados (disputas, errores)
+import RankingAdminResultModal from "../../components/modals/RankingAdminResultModal";
+// [CAMBIO] NUEVO: modal para extender/adelantar el cierre de la ronda (lluvia, festivos...)
+import RankingRoundCloseModal from "../../components/modals/RankingRoundCloseModal";
 
 // El backend responde { message } en los controllers, pero validateFields
 // responde un ARRAY de express-validator (422) → se contemplan los dos formatos.
@@ -52,6 +56,8 @@ const RankingRounds = () => {
     const [actionLoading, setActionLoading] = useState(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [activeTab, setActiveTab] = useState("matches"); // [NUEVO] pestaña visible
+    const [editingMatch, setEditingMatch] = useState(null);
+    const [closeDateOpen, setCloseDateOpen] = useState(false); // [CAMBIO] NUEVO: modal de fecha de cierre // [CAMBIO] NUEVO: partido cuyo resultado edita el admin
 
     // Recarga forzada tras una acción (propose/publish/discard/activate)
     const reload = useCallback((round = null) => {
@@ -128,6 +134,7 @@ const RankingRounds = () => {
                 onPublish={handlePublish}
                 onDiscard={handleDiscard}
                 onActivate={handleActivate}
+                onEditCloseDate={() => setCloseDateOpen(true)} // [CAMBIO] NUEVO
             />
 
             {/* [CAMBIO] Antes solo se mostraba RankingRoundMatchList. Ahora dos pestañas:
@@ -147,6 +154,8 @@ const RankingRounds = () => {
                                 selectedRound={overview.selectedRound}
                                 loading={loading}
                                 error={error}
+                                // [CAMBIO] NUEVO: solo en la temporada activa (el servidor también lo exige)
+                                onEditResult={overview.season?.status === "active" ? setEditingMatch : undefined}
                             />
                         ),
                     },
@@ -165,6 +174,34 @@ const RankingRounds = () => {
                     },
                 ]}
             />
+
+            {/* [CAMBIO] NUEVO: cambiar la fecha de cierre; al guardar se recarga (la cabecera muestra la nueva fecha) */}
+            {closeDateOpen && overview.season && (
+                <RankingRoundCloseModal
+                    key={`${overview.season._id}-${overview.season.nextRoundCloseDate}`}
+                    open
+                    season={overview.season}
+                    onClose={() => setCloseDateOpen(false)}
+                    onSaved={() => {
+                        setCloseDateOpen(false);
+                        reload(overview.selectedRound);
+                    }}
+                />
+            )}
+
+            {/* [CAMBIO] NUEVO: al guardar se recarga la misma ronda (resultado + clasificación) */}
+            {editingMatch && (
+                <RankingAdminResultModal
+                    key={editingMatch._id}
+                    open
+                    match={editingMatch}
+                    onClose={() => setEditingMatch(null)}
+                    onSaved={() => {
+                        setEditingMatch(null);
+                        reload(overview.selectedRound);
+                    }}
+                />
+            )}
         </Flex>
     );
 };

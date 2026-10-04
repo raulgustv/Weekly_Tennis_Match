@@ -9,6 +9,7 @@ import {
     CheckCircleOutlined,
     ClockCircleOutlined,
     DeleteOutlined,
+    EditOutlined, // [CAMBIO] NUEVO: botón cambiar fecha de cierre
     PlayCircleOutlined,
     ThunderboltOutlined,
 } from "@ant-design/icons";
@@ -45,6 +46,7 @@ const RankingRoundHeader = ({
     onPublish,
     onDiscard,
     onActivate,
+    onEditCloseDate, // [CAMBIO] NUEVO (opcional): abre el modal para cambiar la fecha de cierre
 }) => {
     const screens = useBreakpoint();
     const isMobile = !screens.md;
@@ -78,13 +80,25 @@ const RankingRoundHeader = ({
                     </Tag>
                 </Flex>
 
-                <Flex align="center" gap={8} style={{ marginTop: 6 }}>
+                {/* [CAMBIO] + wrap y botón "Change" (solo temporada activa) */}
+                <Flex align="center" gap={8} wrap style={{ marginTop: 6 }}>
                     <ClockCircleOutlined style={{ color: BRAND.gold }} />
                     <Text style={{ color: "rgba(255,255,255,0.85)" }}>
                         {nextClose
                             ? `Next round closes: ${fmtDateTime(nextClose)} (Madrid time)`
                             : "No round close date set"}
                     </Text>
+                    {isActive && onEditCloseDate && (
+                        <Button
+                            size="small"
+                            ghost
+                            icon={<EditOutlined />}
+                            onClick={onEditCloseDate}
+                            disabled={busy}
+                        >
+                            Change
+                        </Button>
+                    )}
                 </Flex>
             </div>
 

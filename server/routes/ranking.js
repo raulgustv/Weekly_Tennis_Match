@@ -6,9 +6,10 @@ import { writeLimiter, adminLimiter, readLimiter } from '../config/expressLimit.
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 // CHANGE: añadidos getRoundOverview y discardRoundProposal
 // CHANGE (NUEVO): añadidos getMyRankingMatch, getPublicStandings y getPublicRoundMatches (vista del jugador)
-import { closeRoundNow, discardRoundProposal, generateRoundProposal, getMyRankingMatch, getPublicRoundMatches, getPublicStandings, getRoundOverview, publishRankingRound, rankingRegistration, submitRankingResult, unRegisterRanking } from '../controller/ranking.js';
+import { adminSetRankingResult, closeRoundNow, discardRoundProposal, generateRoundProposal, getMyRankingMatch, getPublicRoundMatches, getPublicStandings, getRoundOverview, publishRankingRound, rankingRegistration, submitRankingResult, unRegisterRanking } from '../controller/ranking.js';
 // CHANGE: añadidos proposeRoundValidator, roundActionValidator y roundOverviewValidator
-import { proposeRoundValidator, registerForRankingValidator, roundActionValidator, roundOverviewValidator, submitRankingResultValidator } from '../validator/rankingValidator.js';
+// CHANGE (NUEVO): + adminResultValidator
+import { adminResultValidator, proposeRoundValidator, registerForRankingValidator, roundActionValidator, roundOverviewValidator, submitRankingResultValidator } from '../validator/rankingValidator.js';
 
 const router = Router();
 
@@ -36,6 +37,9 @@ router.post("/rounds/discard", protect, verifyAdmin, adminLimiter, roundActionVa
 router.post("/rounds/close", protect, verifyAdmin, adminLimiter, closeRoundNow);
 
 router.post("/matches/result", protect, writeLimiter, submitRankingResultValidator, validateFields, submitRankingResult);
+
+// CHANGE (NUEVO): el admin fija o corrige el resultado de un partido (disputas, errores)
+router.put("/matches/:id/result", protect, verifyAdmin, adminLimiter, adminResultValidator, validateFields, adminSetRankingResult);
 
 
 

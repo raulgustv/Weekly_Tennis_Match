@@ -93,3 +93,17 @@ export const getPublicRoundMatches = async(round) =>{
     });
     return data;
 }
+
+// CHANGE (NUEVO): el admin fija o corrige el resultado de un partido (disputas, errores).
+// payload = { sets: [{gamesA, gamesB}, {gamesA, gamesB}], superTieBreak: {played, pointsA, pointsB}, reason }
+export const adminSetRankingResult = async(matchId, payload) =>{
+    const {data} = await axiosInstance.put(`/ranking/matches/${encodeURIComponent(matchId)}/result`, payload);
+    return data;
+}
+
+// CHANGE (NUEVO): el admin mueve el cierre de la ronda en juego (lluvia, festivos...).
+// values = { nextRoundCloseDate: 'YYYY-MM-DD', roundCloseTime: 'HH:mm' } (hora de Madrid)
+export const updateRoundCloseDate = async(seasonId, values) =>{
+    const {data} = await axiosInstance.patch(`/season/${encodeURIComponent(seasonId)}/round-close`, values);
+    return data;
+}

@@ -12,7 +12,8 @@ const { Title, Text } = Typography;
 
 const fullName = (p) => [p?.name, p?.lastname].filter(Boolean).join(" ") || "Unknown player";
 
-const RankingRoundMatchList = ({ matches = [], unpaired = [], selectedRound = null, loading = false, error = null }) => {
+// [CAMBIO] NUEVO prop `onEditResult` (se pasa tal cual a cada card; si no llega, no hay botón)
+const RankingRoundMatchList = ({ matches = [], unpaired = [], selectedRound = null, loading = false, error = null, onEditResult }) => {
     const isProposal = matches.length > 0 && matches.every((m) => !m.published);
 
     if (loading) {
@@ -41,6 +42,15 @@ const RankingRoundMatchList = ({ matches = [], unpaired = [], selectedRound = nu
                 Round {selectedRound} matches ({matches.length})
             </Title>
 
+            {/* [CAMBIO] NUEVO: aviso de partidos disputados pendientes de decisión del admin */}
+            {matches.some((m) => m.status === "disputed") && (
+                <Alert
+                    type="error"
+                    showIcon
+                    title={`${matches.filter((m) => m.status === "disputed").length} disputed match(es) in this round waiting for your decision`}
+                />
+            )}
+
             {isProposal && (
                 <Alert
                     type="warning"
@@ -55,7 +65,7 @@ const RankingRoundMatchList = ({ matches = [], unpaired = [], selectedRound = nu
                 <Row gutter={[16, 16]}>
                     {matches.map((match, index) => (
                         <Col key={match._id} xs={24} md={12} xl={8}>
-                            <RankingRoundMatchCard match={match} index={index} />
+                            <RankingRoundMatchCard match={match} index={index} onEditResult={onEditResult} /> {/* [CAMBIO] + onEditResult */}
                         </Col>
                     ))}
                 </Row>

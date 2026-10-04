@@ -301,7 +301,7 @@ export const getRoundOverview = async (req, res) => {
 
         if (selectedRound) {
             matches = await RankingMatch.find({ season: season._id, round: selectedRound })
-                .select('round playerA playerB ratingBefore status published winner sets superTieBreak resultSource playedAt')
+                .select('round playerA playerB ratingBefore status published winner sets superTieBreak resultSource playedAt notes') // CHANGE: + notes (motivo de la corrección del admin)
                 .populate('playerA', 'name lastname profilePicture.url')
                 .populate('playerB', 'name lastname profilePicture.url')
                 .sort({ createdAt: 1 })
@@ -1006,6 +1006,162 @@ export const submitRankingResult = async (req, res) => {
 
         console.log(error)
         return res.status(500).json({ ok: false, message: 'Internal error submitting the ranking result' });
+    } finally {
+        session.endSession();
+    }
+};
+
+// =====================================================================
+// CHANGE (NUEVO): el ADMIN corrige o fija el resultado de un partido
+// (partidos 'disputed' tras el cierre, resultados mal reportados, etc.)
+// =====================================================================
+
+// Estados cuyo resultado puede fijar/corregir el admin. 'cancelled' no:
+// un partido cancelado no tiene resultado que corregir.
+const ADMIN_EDITABLE_STATUSES = ['scheduled', 'played', 'disputed', 'admin_resolved', 'walkover'];
+
+/**
+ * CHANGE (NUEVO): PUT /ranking/matches/:id/result (solo admin)
+ * Body: { sets, superTieBreak, reason } — mismo formato estricto que el jugador
+ * (lo valida adminResultValidator) + motivo obligatorio (queda en `notes`).
+ *
+ * Rating: si el partido ya tenía resultado, primero se DESHACE el cambio de
+ * rating que aplicó (match.ratingDelta) y después se aplica el nuevo,
+ * calculado con los ratings actuales. Así un partido nunca cuenta dos veces.
+ * Las penalizaciones del cierre NO se tocan (Reglamento: si nadie reporta,
+ * ambos reciben 1 punto aunque luego decida el admin).
+ * Todo dentro de una transacción; el partido se lee dentro de ella.
+ */
+export const adminSetRankingResult = async (req, res) => {
+    const session = await mongoose.startSession();
+
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ ok: false, message: 'You are not authorized to edit ranking results' });
+        }
+
+        const { id } = req.params;
+        const { superTieBreak, reason } = req.body;
+        const sets = req.body.sets.map(s => ({ gamesA: Number(s.gamesA), gamesB: Number(s.gamesB) }));
+
+        session.startTransaction();
+
+        const match = await RankingMatch.findById(id).session(session);
+
+        if (!match) {
+            await session.abortTransaction();
+            return res.status(404).json({ ok: false, message: 'Ranking match not found' });
+        }
+
+        if (!match.published) {
+            await session.abortTransaction();
+            return res.status(400).json({ ok: false, message: 'This match has not been published yet' });
+        }
+
+        if (!ADMIN_EDITABLE_STATUSES.includes(match.status)) {
+            await session.abortTransaction();
+            return res.status(400).json({ ok: false, message: 'The result of a cancelled match cannot be edited' });
+        }
+
+        // Solo temporada activa: los ratings de temporadas cerradas no se reabren
+        const seasonIsActive = await Season.exists({ _id: match.season, status: 'active' }).session(session);
+        if (!seasonIsActive) {
+            await session.abortTransaction();
+            return res.status(400).json({ ok: false, message: 'Results can only be edited for the active season' });
+        }
+
+        // Ganador (el validator ya garantiza formato estricto y STB válido con 1-1)
+        const setsWonByA = sets.filter(s => s.gamesA > s.gamesB).length;
+        const setsTied = setsWonByA === 1;
+        const winnerIsA = setsTied
+            ? Number(superTieBreak.pointsA) > Number(superTieBreak.pointsB)
+            : setsWonByA === 2;
+
+        const [rankingA, rankingB] = await Promise.all([
+            Ranking.findOne({ userId: match.playerA, season: match.season }).session(session),
+            Ranking.findOne({ userId: match.playerB, season: match.season }).session(session)
+        ]);
+
+        if (!rankingA || !rankingB) {
+            await session.abortTransaction();
+            return res.status(400).json({ ok: false, message: 'One of the players has no ranking entry for this season' });
+        }
+
+        // 1) Deshacer el rating del resultado anterior (si lo hubo)
+        const prevDeltaA = Number(match.ratingDelta?.playerA);
+        const prevDeltaB = Number(match.ratingDelta?.playerB);
+        const hadPreviousDelta = Number.isFinite(prevDeltaA) && Number.isFinite(prevDeltaB) && match.ratingDelta?.playerA !== null;
+        if (hadPreviousDelta) {
+            rankingA.rating -= prevDeltaA;
+            rankingB.rating -= prevDeltaB;
+        }
+
+        // 2) Aplicar el nuevo resultado
+        const { gamesWinner, gamesLoser } = sumGames(sets, winnerIsA);
+        const { winnerDelta, loserDelta, multiplier } = computeRatingDelta({
+            ratingWinner: winnerIsA ? rankingA.rating : rankingB.rating,
+            ratingLoser: winnerIsA ? rankingB.rating : rankingA.rating,
+            gamesWinner,
+            gamesLoser
+        });
+
+        const deltaA = winnerIsA ? winnerDelta : loserDelta;
+        const deltaB = winnerIsA ? loserDelta : winnerDelta;
+
+        rankingA.rating += deltaA;
+        rankingB.rating += deltaB;
+        rankingA.lastRoundPlayed = Math.max(rankingA.lastRoundPlayed || 0, match.round);
+        rankingB.lastRoundPlayed = Math.max(rankingB.lastRoundPlayed || 0, match.round);
+
+        const previousStatus = match.status;
+        const previousScore = match.sets?.length
+            ? match.sets.map(s => `${s.gamesA}-${s.gamesB}`).join(' ') + (match.superTieBreak?.played ? ` [${match.superTieBreak.pointsA}-${match.superTieBreak.pointsB}]` : '')
+            : 'no result';
+
+        match.sets = sets;
+        match.superTieBreak = setsTied
+            ? { played: true, pointsA: Number(superTieBreak.pointsA), pointsB: Number(superTieBreak.pointsB) }
+            : { played: false, pointsA: null, pointsB: null };
+        match.winner = winnerIsA ? match.playerA : match.playerB;
+        match.status = 'admin_resolved';
+        match.resultSource = 'Admin';
+        match.resolvedBy = req.user._id;
+        match.playedAt = match.playedAt || new Date();
+        match.marginMultiplier = multiplier;
+        match.ratingDelta = { playerA: deltaA, playerB: deltaB };
+        // Rastro de auditoría: quién, cuándo, qué había antes y por qué (máx. 500, límite del modelo)
+        const auditLine = `[${new Date().toISOString()}] Admin ${req.user._id}: ${previousStatus} (${previousScore}) → admin_resolved. Reason: ${reason}`;
+        // La entrada más reciente primero; se conservan las anteriores mientras quepan
+        match.notes = (match.notes ? `${auditLine}\n${match.notes}` : auditLine).slice(0, 500);
+
+        await Promise.all([
+            match.save({ session }),
+            rankingA.save({ session }),
+            rankingB.save({ session })
+        ]);
+
+        // Mismo recálculo de posiciones que submitRankingResult
+        const standings = await Ranking.find({ season: match.season, status: 'active' })
+            .sort({ rating: -1 })
+            .session(session);
+
+        await Promise.all(standings.map((doc, index) =>
+            Ranking.updateOne({ _id: doc._id }, { $set: { rank: index + 1 } }, { session })
+        ));
+
+        await session.commitTransaction();
+
+        return res.status(200).json({ ok: true, message: 'Result saved by the administration' });
+
+    } catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        if (error?.hasErrorLabel?.('TransientTransactionError') || error?.code === 112) {
+            return res.status(409).json({ ok: false, message: 'This match was updated at the same time by someone else. Please refresh and try again.' });
+        }
+        console.log(error);
+        return res.status(500).json({ ok: false, message: 'Internal error saving the result' });
     } finally {
         session.endSession();
     }
