@@ -31,6 +31,14 @@ export const togglePayment = async(matchId, userId) =>{
     return data;
 }
 
+// 🔵 NUEVO: cambia el método de pago de un jugador en un partido.
+// PUT /admin/payment-method/:matchId/:userId  body: { method }
+export const updatePaymentMethod = async(matchId, userId, method) =>{
+    const {data} = await axiosInstance.put(`/admin/payment-method/${matchId}/${userId}`, {method});
+
+    return data;
+}
+
 export const viewPlayer = async(id) =>{
     const {data} = await axiosInstance.get(`/user/${id}`);
 

@@ -1,6 +1,7 @@
 import {Router} from 'express';
 import { protect, verifyAdmin, verifyBookerOrAdmin } from '../middlewares/auth.js';
-import {  adminAdjustNTRP, closeMatch, getAdmins, removePlayerMatch, toggleAdminRole, togglePaymentStatus, togglePlayerActivation, updatePaymentRecepient } from '../controller/admin.js';
+// 🔵 CAMBIO: se importa updatePlayerPaymentMethod (nuevo)
+import {  adminAdjustNTRP, closeMatch, getAdmins, removePlayerMatch, toggleAdminRole, togglePaymentStatus, togglePlayerActivation, updatePaymentRecepient, updatePlayerPaymentMethod } from '../controller/admin.js';
 import { validateObjectId } from '../middlewares/validateFields.js';
 
 
@@ -14,7 +15,11 @@ router.post('/adjust-ntrp/:userId', protect,verifyAdmin, validateObjectId("userI
 router.post('/remove-player/:matchId/:playerId', protect, verifyBookerOrAdmin, validateObjectId("playerId"), removePlayerMatch)
 
 router.post('/add-admin', protect, verifyAdmin, toggleAdminRole)
-router.put('/payment/:matchId/:userId', protect, verifyBookerOrAdmin, togglePaymentStatus)
+// 🔵 CAMBIO: se añade validateObjectId para matchId y userId (antes un id
+// mal formado llegaba al controlador y acababa en CastError -> 500).
+router.put('/payment/:matchId/:userId', protect, verifyBookerOrAdmin, validateObjectId("matchId"), validateObjectId("userId"), togglePaymentStatus)
+// 🔵 NUEVO: cambiar el método de pago de un jugador (pre y post partido).
+router.put('/payment-method/:matchId/:userId', protect, verifyBookerOrAdmin, validateObjectId("matchId"), validateObjectId("userId"), updatePlayerPaymentMethod)
 
 //wallet
 router.get('/get-admin', protect, verifyAdmin, getAdmins)

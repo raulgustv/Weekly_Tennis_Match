@@ -12,13 +12,13 @@ import {
   Typography,
   Empty,
   Tag,
-  Switch,
+  // 🔵 CAMBIO: se quita Switch de aquí, ahora vive en PlayerPaymentControls.jsx
   Popconfirm,
   Tooltip, // 🔵 CAMBIO: nuevo — explica por qué "Generate matches" está deshabilitado
 } from "antd";
 import {
   ArrowLeftOutlined,
-  ExclamationCircleOutlined,
+  // 🔵 CAMBIO: se quita ExclamationCircleOutlined (solo lo usaba el Tag de pago que se movió)
   EditOutlined,
   UserDeleteOutlined,
   ThunderboltOutlined, // 🔵 CAMBIO: icono para el botón "Generate matches"
@@ -26,12 +26,20 @@ import {
 import dayjs from "dayjs";
 import MatchDetails from "./MatchDetails";
 import { useAuth } from "../../context/AuthContext";
-import { togglePayment, adminRemovePlayer } from "../../actions/admin";
+// 🔵 CAMBIO: se añade updatePaymentMethod (acción nueva)
+import { togglePayment, adminRemovePlayer, updatePaymentMethod } from "../../actions/admin";
 import colors from "../../themes/colors";
 import ProfilePicture from "../uploads/ProfilePicture";
 import CourtDetail from "./CourtDetail";
 import { toast } from "react-toastify";
 import { getMatchStartDateTime } from "../../helpers/time"; // 🔵 CAMBIO: mismo helper que ya usa el countdown de MatchesTable.jsx
+// 🔵 NUEVO: componentes de pagos. Rutas ajustadas a donde los tienes
+// (directamente en components/matches/, sin la carpeta payments/).
+import PlayerPaymentControls from "./PlayerPaymentControls";
+import MatchPaymentCard from "./MatchPaymentCard";
+// 🔵 NUEVO: botones "Share" y "Show only my match"
+import ShareMatchButton from "./ShareMatchButton";
+import MyMatchFilterButton from "./MyMatchFilterButton";
 
 const { Title, Text } = Typography;
 
@@ -49,6 +57,7 @@ const MatchPlayers = () => {
   const [removingId, setRemovingId] = useState(null); // 🔵 CAMBIO: nuevo, para el loading del botón "quitar"
   const [pageLoading, setPageLoading] = useState(false)
   const [generating, setGenerating] = useState(false); // 🔵 CAMBIO: nuevo, para el loading del botón "Generate matches"
+  const [onlyMine, setOnlyMine] = useState(false); // 🔵 NUEVO: filtro "Show only my match"
 
   // 🔵 CAMBIO: variable nueva, evita repetir la condición admin/booker por todo el componente
   const canManage = user?.role === 'admin' || user?.role === 'booker';
@@ -83,6 +92,23 @@ const MatchPlayers = () => {
       toast.error(response?.data?.message || 'Error setting user payment')
       setLoading(false)
     } finally { setLoading(false) }
+  }
+
+  // 🔵 NUEVO: handler para cambiar el método de pago de un jugador.
+  // Llama a PUT /admin/payment-method/:matchId/:userId. Si el cambio implica
+  // wallet, el backend hace el cobro/reembolso dentro de una transacción.
+  const handleChangePaymentMethod = async (userId, method) => {
+    try {
+      setLoading(true)
+      await updatePaymentMethod(match._id, userId, method)
+      toast.success('Payment method updated')
+      const updated = await getMatch(id)
+      setMatch(updated)
+    } catch ({ response }) {
+      toast.error(response?.data?.message || 'Error updating payment method')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // 🔵 CAMBIO: handler nuevo. Llama a la acción adminRemovePlayer, que ya
@@ -139,6 +165,29 @@ const MatchPlayers = () => {
   // Igual que isLessThan12h en el backend: se permite generar aunque hoursUntilMatch
   // sea negativo (el partido ya empezó), solo se bloquea si aún faltan más de 12h.
   const withinGenerateWindow = hoursUntilMatch !== null && hoursUntilMatch <= 12;
+
+  // 🔵 NUEVO: emparejamientos en los que participa el usuario logueado
+  // (en teamA, teamB o como jugador con bye). Los players vienen populados
+  // como objetos, byePlayer puede venir como id sin popular: se cubren ambos.
+  const getId = (p) => String(p?._id || p || "");
+  const isMyGeneratedMatch = (m) => {
+    const me = String(user?._id || "");
+    if (!me) return false;
+    return [
+      m?.teamA?.player1,
+      m?.teamA?.player2,
+      m?.teamB?.player1,
+      m?.teamB?.player2,
+      m?.byePlayer,
+    ].some((p) => p && getId(p) === me);
+  };
+  const myGeneratedMatches = (match?.generatedMatches || []).filter(isMyGeneratedMatch);
+  // Solo tiene sentido el botón si juego en alguno y hay más de uno que ocultar.
+  const canFilterMine =
+    myGeneratedMatches.length > 0 &&
+    myGeneratedMatches.length < (match?.generatedMatches?.length ?? 0);
+  const visibleGeneratedMatches =
+    onlyMine && canFilterMine ? myGeneratedMatches : (match?.generatedMatches || []);
 
   return (
     <div style={{ padding: 20 }}>
@@ -212,6 +261,23 @@ const MatchPlayers = () => {
         </Col>
       </Row>
 
+      {/* 🔵 NUEVO: fila de acciones — "Share" siempre visible (cualquier
+          estado); "Show only my match" solo cuando hay emparejamientos
+          generados visibles (Ready / Playing) y el usuario juega en alguno. */}
+      <Row gutter={[12, 12]} style={{ marginBottom: 24 }}>
+        <Col xs={12} md={4}>
+          <ShareMatchButton match={match} />
+        </Col>
+        {isReady && canFilterMine && (
+          <Col xs={12} md={5}>
+            <MyMatchFilterButton
+              onlyMine={onlyMine}
+              onToggle={() => setOnlyMine((prev) => !prev)}
+            />
+          </Col>
+        )}
+      </Row>
+
       <Row style={{ marginBottom: 32 }}>
         <Col md={12} sm={24} >
           <CourtDetail courts={match.courts} />
@@ -221,13 +287,31 @@ const MatchPlayers = () => {
       {/* READY STATE */}
       {isReady ? (
         <Row gutter={[24, 24]}>
-          {match.generatedMatches?.map((m, index) => (
+          {/* 🔵 CAMBIO: antes match.generatedMatches?.map(...). Ahora usa la
+              lista filtrada (todos, o solo el mío si está activo el filtro). */}
+          {visibleGeneratedMatches.map((m, index) => (
             <Col key={index} xs={24} sm={12} lg={12}>
               {/* 🔵 CAMBIO: prop nueva currentUserId — permite a MatchDetails resaltar
                   al jugador logueado dentro del emparejamiento generado */}
               <MatchDetails match={m} currentUserId={user?._id} />
             </Col>
           ))}
+
+          {/* 🔵 NUEVO: control de pagos post-partido (Ready / Playing). Antes,
+              en este estado la lista de jugadores desaparecía y no había forma
+              de marcar pagos ni cambiar el método. */}
+          {canManage && (
+            <Col xs={24}>
+              <MatchPaymentCard
+                players={match.players}
+                paymentMethods={match.paymentMethods}
+                matchStatus={match.status}
+                loading={loading}
+                onTogglePaid={handleTogglePayment}
+                onChangeMethod={handleChangePaymentMethod}
+              />
+            </Col>
+          )}
         </Row>
       ) : (
         <Row gutter={[24, 24]}>
@@ -293,19 +377,16 @@ const MatchPlayers = () => {
                               marginLeft: "auto",
                             }}
                           >
-                            <Tag
-                              color={p?.payment?.status === 'unpaid' ? 'warning' : 'success'}
-                              icon={<ExclamationCircleOutlined />}
-                            >
-                              <strong>{p?.payment?.method}</strong>
-                            </Tag>
-
-                            <Switch
-                              checked={p?.payment?.status === "paid"}
-                              checkedChildren="paid"
-                              unCheckedChildren="unpaid"
-                              onChange={() => handleTogglePayment(p?.user?._id)}
+                            {/* 🔵 CAMBIO: antes aquí había un <Tag> con el método y un
+                                <Switch> paid/unpaid escritos a mano. Ahora es un componente
+                                aparte que además permite cambiar el método de pago. */}
+                            <PlayerPaymentControls
+                              player={p}
+                              paymentMethods={match.paymentMethods}
+                              matchStatus={match.status}
                               loading={loading}
+                              onTogglePaid={handleTogglePayment}
+                              onChangeMethod={handleChangePaymentMethod}
                             />
 
                             {/* 🔵 CAMBIO: botón nuevo — antes admin/booker no tenían

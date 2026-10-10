@@ -10,7 +10,10 @@ import {
     Typography,
     Grid,
 } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+// 🔵 CAMBIO: se añade EyeOutlined para el botón "Details"
+import { ReloadOutlined, EyeOutlined } from "@ant-design/icons";
+// 🔵 NUEVO: para navegar al detalle del partido
+import { useNavigate } from "react-router-dom";
 import { useMatches } from "../../context/MatchContext";
 import dayjs from "dayjs";
 import {
@@ -31,6 +34,7 @@ import ExportToExcel from "../../components/common/ExportExcel";
 
 const MatchesTable = () => {
     const { matches, fetchMatches, loadMatches } = useMatches();
+    const navigate = useNavigate(); // 🔵 NUEVO
     const { Timer } = Statistic;
 
     const { useBreakpoint } = Grid;
@@ -366,6 +370,20 @@ const MatchesTable = () => {
                     </Button>
                 ),
         },
+        // 🔵 NUEVO: columna "Details" — abre /match/details/:id (MatchPlayers),
+        // donde se gestionan los pagos y el método de pago de cada jugador.
+        {
+            title: "Details",
+            key: "details",
+            render: (r) => (
+                <Button
+                    icon={<EyeOutlined />}
+                    onClick={() => navigate(`/match/details/${r._id}`)}
+                >
+                    View details
+                </Button>
+            ),
+        },
     ];
 
     /* -------------------------------------------------- */
@@ -514,6 +532,15 @@ const MatchesTable = () => {
                                 )}
                             </Flex>
                         )}
+
+                        {/* 🔵 NUEVO: botón "View details" en la vista móvil */}
+                        <Button
+                            block
+                            icon={<EyeOutlined />}
+                            onClick={() => navigate(`/match/details/${r._id}`)}
+                        >
+                            View details
+                        </Button>
 
                         {/* Courts */}
                         <Flex
