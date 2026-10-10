@@ -344,57 +344,341 @@ export const toggleAdminRole = async(req, res) =>{
     
 }
 
+/* ===================================================================== */
+/* 🔵 CAMBIO (nuevo bloque): helpers y constantes compartidos por         */
+/* togglePaymentStatus y updatePlayerPaymentMethod.                       */
+/* ===================================================================== */
+
+// 🔵 NUEVO: estados del partido en los que NO se permite tocar pagos.
+// Solo "Closed": en el resto (Open, Full, Ready, Playing, Played, Cancelled)
+// admin/booker pueden marcar pagos y cambiar el método.
+const PAYMENT_LOCKED_STATUSES = ['Closed'];
+
+// 🔵 NUEVO: estados en los que NO se puede cobrar con wallet. Coincide con la
+// regla que ya se muestra al usuario en Wallet.jsx: "Wallet funds are intended
+// for future matches only and cannot be used to pay for matches that have
+// already been played". "Cancelled" también: no tiene sentido cobrar del
+// wallet un partido que no se juega. Pasar DE wallet a otro método
+// (reembolso) sí se permite en todos los estados no bloqueados.
+const WALLET_CHARGE_BLOCKED_STATUSES = ['Played', 'Closed', 'Cancelled'];
+
+// 🔵 NUEVO: error con código HTTP, para responder 400/404/409 con un mensaje
+// controlado en vez de un 500 genérico (y sin filtrar errores internos).
+const httpError = (status, message) => {
+    const error = new Error(message);
+    error.status = status;
+    return error;
+};
+
+// 🔵 CAMBIO: togglePaymentStatus reescrito. Cambios respecto al original:
+//  1. Devolvía 500 para errores de validación ("Match or user not provided",
+//     "Player not found") -> ahora 400/404.
+//  2. Bloquea partidos cerrados (Closed).
+//  3. Bloquea el toggle si el método es "booker" o "wallet": el estado de un
+//     pago wallet lo marca el movimiento real de saldo (se cobra al unirse).
+//     Antes se podía poner un pago wallet en "unpaid" sin devolver el dinero,
+//     dejando datos incoherentes. Para wallet, ahora se usa "cambiar método".
+//  4. Update atómico condicionado al estado actual: si dos admins pulsan a la
+//     vez, el segundo recibe 409 en vez de deshacer el cambio del primero.
+//  5. Rellena confirmedAt / confirmedBy (ya existían en el esquema y nunca se
+//     usaban) -> deja trazabilidad de quién confirmó el pago.
 export const togglePaymentStatus = async(req, res) =>{
-    const {matchId, userId} = req.params;  
+    const {matchId, userId} = req.params;
 
     try {
 
-        if(!matchId || !userId){
-            return res.status(500).json({
-                ok: false,
-                message: 'Match or user not provided'
-            })
-        }
-
         const match = await Match.findOne(
             {_id: matchId, "players.user": userId},
-            {'players.$': 1, date: 1}
+            {'players.$': 1, date: 1, status: 1} // 🔵 CAMBIO: se añade status
         );
 
         if(!match || !match.players.length){
-             return res.status(500).json({
-                ok: false,
-                message: 'Player not found for this match'
-            })
+            throw httpError(404, 'Player not found for this match'); // 🔵 CAMBIO: era 500
         }
 
-        const player = match?.players[0];
-        const currentStatus = player.payment.status;
+        // 🔵 NUEVO
+        if (PAYMENT_LOCKED_STATUSES.includes(match.status)) {
+            throw httpError(400, 'Payments cannot be edited for a closed match');
+        }
+
+        const player = match.players[0];
+        const currentMethod = player.payment?.method;
+        const currentStatus = player.payment?.status;
+
+        // 🔵 NUEVO
+        if (currentMethod === 'booker') {
+            throw httpError(400, "The booker's payment cannot be changed");
+        }
+
+        // 🔵 NUEVO
+        if (currentMethod === 'wallet') {
+            throw httpError(400, 'Wallet payments are settled automatically. Change the payment method instead.');
+        }
+
         const newStatus = currentStatus === "paid" ? "unpaid" : "paid";
 
-        // update atómico — solo cambia el status, nada de wallet
-        const updatedMatch = await Match.findOneAndUpdate(
-            {_id: matchId, "players.user": userId},
-            {
-                $set:{
-                    "players.$.payment.status": newStatus
+        // 🔵 CAMBIO: update atómico condicionado al método y estado actuales
+        // (antes solo filtraba por usuario) + confirmedAt / confirmedBy.
+        const update = newStatus === 'paid'
+            ? {
+                $set: {
+                    "players.$.payment.status": newStatus,
+                    "players.$.payment.confirmedAt": new Date(),
+                    "players.$.payment.confirmedBy": req.user._id
                 }
-            }, {new: true}
-        )
+            }
+            : {
+                $set: { "players.$.payment.status": newStatus },
+                $unset: {
+                    "players.$.payment.confirmedAt": "",
+                    "players.$.payment.confirmedBy": ""
+                }
+            };
+
+        const updatedMatch = await Match.findOneAndUpdate(
+            {
+                _id: matchId,
+                players: {
+                    $elemMatch: {
+                        user: userId,
+                        "payment.method": currentMethod,
+                        "payment.status": currentStatus
+                    }
+                }
+            },
+            update,
+            {new: true}
+        );
+
+        // 🔵 NUEVO
+        if (!updatedMatch) {
+            throw httpError(409, 'This payment was updated by someone else. Please refresh and try again.');
+        }
 
         return res.status(200).json({
             message: "Payment status updated",
             updatedMatch
         })
-        
+
     } catch (error) {
         console.log(error)
-        return res.status(500).json({
+        // 🔵 CAMBIO: respeta el código del httpError; si es un error inesperado
+        // responde 500 con mensaje genérico (no se expone error.message interno).
+        return res.status(error.status || 500).json({
             ok: false,
-            message: 'Error updating payment status'
+            message: error.status ? error.message : 'Error updating payment status'
         })
     }
 }
+
+// 🔵 NUEVO (función completa): PUT /admin/payment-method/:matchId/:userId
+// body: { method }
+// Permite a admin/booker cambiar el método de pago de un JUGADOR (no backup),
+// tanto antes como después del partido. Reglas:
+//  - Solo métodos configurados en el propio partido (match.paymentMethods),
+//    igual que valida joinMatch. "booker" nunca se puede asignar ni cambiar.
+//  - DE wallet a otro método: se devuelve el importe al wallet del jugador
+//    (WalletTransaction "refund") y el pago queda "unpaid" hasta que el
+//    admin confirme el nuevo pago con el switch.
+//  - DE otro método A wallet: se cobra del wallet (WalletTransaction
+//    "match_payment") y queda "paid". Requiere walletPaymentAllowed del
+//    creador del partido y saldo suficiente. Bloqueado en Played/Cancelled.
+//  - Partidos "Closed": no se puede editar nada.
+//  - Entre métodos que no son wallet (p.ej. bizum -> revolut): se mantiene
+//    el estado paid/unpaid que ya tenía (es una corrección del método).
+//  - Todo dentro de una transacción; el update del partido está condicionado
+//    al método actual para evitar dobles cobros/reembolsos por peticiones
+//    simultáneas (doble clic, dos admins a la vez).
+export const updatePlayerPaymentMethod = async (req, res) => {
+    const { matchId, userId } = req.params;
+    const { method } = req.body || {};
+
+    if (typeof method !== 'string' || !method.trim()) {
+        return res.status(400).json({
+            ok: false,
+            message: 'Payment method is required'
+        });
+    }
+
+    const newMethod = method.trim().toLowerCase();
+
+    if (newMethod === 'booker') {
+        return res.status(400).json({
+            ok: false,
+            message: 'This payment method cannot be assigned manually'
+        });
+    }
+
+    const session = await mongoose.startSession();
+    let updatedMatch = null;
+
+    try {
+        await session.withTransaction(async () => {
+
+            const match = await Match.findById(matchId)
+                .populate('createdBy', 'walletPaymentAllowed')
+                .session(session);
+
+            if (!match) {
+                throw httpError(404, 'Match not found');
+            }
+
+            if (PAYMENT_LOCKED_STATUSES.includes(match.status)) {
+                throw httpError(400, 'Payments cannot be edited for a closed match');
+            }
+
+            const player = match.players.find(
+                p => p.user?.toString() === userId.toString()
+            );
+
+            if (!player) {
+                throw httpError(404, 'Player not found for this match');
+            }
+
+            const currentMethod = player.payment?.method;
+            const currentStatus = player.payment?.status;
+
+            if (currentMethod === 'booker') {
+                throw httpError(400, "The booker's payment method cannot be changed");
+            }
+
+            if (currentMethod === newMethod) {
+                throw httpError(400, 'The player already has this payment method');
+            }
+
+            const isAllowedMethod = match.paymentMethods.some(pm => pm.type === newMethod);
+
+            if (!isAllowedMethod) {
+                throw httpError(400, 'This payment method is not available for this match');
+            }
+
+            // Importe guardado al unirse; si no existe (partidos antiguos), se
+            // calcula igual que en joinMatch (redondeado a 2 decimales).
+            const storedAmount = Number(player.payment?.amount);
+            const amount = storedAmount > 0
+                ? storedAmount
+                : Math.round((match.price / match.maxPlayers) * 100) / 100;
+
+            const formattedDate = new Date(match.date).toLocaleDateString("es-ES");
+
+            let newStatus = currentStatus === 'paid' ? 'paid' : 'unpaid';
+
+            // --- Validaciones de wallet ANTES de mover dinero ---
+            if (newMethod === 'wallet') {
+                if (WALLET_CHARGE_BLOCKED_STATUSES.includes(match.status)) {
+                    throw httpError(400, 'Wallet funds cannot be used to pay for a match that has already been played or was cancelled');
+                }
+
+                if (!match.createdBy?.walletPaymentAllowed) {
+                    throw httpError(400, 'Wallet payment is not available for this match');
+                }
+            }
+
+            // --- 1. Actualización atómica del partido (condicionada al método actual) ---
+            if (newMethod === 'wallet') newStatus = 'paid';
+            if (currentMethod === 'wallet') newStatus = 'unpaid';
+
+            const confirmationUpdate = newStatus === 'paid'
+                ? (currentStatus === 'paid'
+                    ? {} // ya estaba pagado: se conserva quién/cuándo lo confirmó
+                    : {
+                        $set: {
+                            "players.$.payment.confirmedAt": new Date(),
+                            "players.$.payment.confirmedBy": req.user._id
+                        }
+                    })
+                : {
+                    $unset: {
+                        "players.$.payment.confirmedAt": "",
+                        "players.$.payment.confirmedBy": ""
+                    }
+                };
+
+            updatedMatch = await Match.findOneAndUpdate(
+                {
+                    _id: matchId,
+                    players: {
+                        $elemMatch: {
+                            user: userId,
+                            "payment.method": currentMethod
+                        }
+                    }
+                },
+                {
+                    $set: {
+                        "players.$.payment.method": newMethod,
+                        "players.$.payment.status": newStatus,
+                        "players.$.payment.amount": amount,
+                        ...(confirmationUpdate.$set || {})
+                    },
+                    ...(confirmationUpdate.$unset ? { $unset: confirmationUpdate.$unset } : {})
+                },
+                { new: true, session }
+            );
+
+            if (!updatedMatch) {
+                throw httpError(409, 'This payment was updated by someone else. Please refresh and try again.');
+            }
+
+            // --- 2. Movimientos de wallet ---
+            if (currentMethod === 'wallet') {
+                await User.findByIdAndUpdate(
+                    userId,
+                    { $inc: { walletBalance: amount } },
+                    { session }
+                );
+
+                await WalletTransaction.create([{
+                    user: userId,
+                    amount,
+                    type: "refund",
+                    status: "confirmed",
+                    note: `Refund - payment method changed by admin/booker ${formattedDate}`,
+                    match: match._id
+                }], { session });
+            }
+
+            if (newMethod === 'wallet') {
+                // Descuento atómico: solo se aplica si el saldo alcanza.
+                const charged = await User.findOneAndUpdate(
+                    { _id: userId, walletBalance: { $gte: amount } },
+                    { $inc: { walletBalance: -amount } },
+                    { new: true, session }
+                );
+
+                if (!charged) {
+                    // Aborta la transacción completa (incluido el paso 1).
+                    throw httpError(400, "The player's wallet balance is insufficient");
+                }
+
+                await WalletTransaction.create([{
+                    user: userId,
+                    amount: -amount,
+                    type: "match_payment",
+                    status: "confirmed",
+                    note: `Match payment - method changed by admin/booker ${formattedDate}`,
+                    match: match._id
+                }], { session });
+            }
+        });
+
+        return res.status(200).json({
+            ok: true,
+            message: 'Payment method updated',
+            updatedMatch
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(error.status || 500).json({
+            ok: false,
+            message: error.status ? error.message : 'Error updating payment method'
+        });
+    } finally {
+        session.endSession();
+    }
+};
+
 export const getAdmins = async(req, res) =>{
     try {
 
