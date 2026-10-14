@@ -5,6 +5,8 @@ import { Button, Space, Spin, Typography } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import "../../styles/Loader.css";
 import TennisLoader from "../../components/Animations/TennisLoader";
+// 🔵 CAMBIO: import del nuevo aviso de suspensión (componente en su propia carpeta)
+import SuspensionNotice from "../../components/dashboard/SuspensionNotice";
 
 const { Title } = Typography;
 
@@ -13,12 +15,18 @@ const UserDashboard = () => {
   const { openMatches, loadOpenMatches, fetchOpenMatches } = useMatches();
   const { user } = useAuth();
 
+
+
   const openMatch = openMatches.filter(
-    (match) => match.status !== "Played"  
+    (match) => match.status !== "Played"
   );
 
   return (
     <>
+      {/* 🔵 CAMBIO: aviso de suspensión arriba del todo.
+          Si el usuario no está suspendido, el componente no pinta nada. */}
+      <SuspensionNotice user={user} />
+
       <Space
         style={{
           width: "100%",
