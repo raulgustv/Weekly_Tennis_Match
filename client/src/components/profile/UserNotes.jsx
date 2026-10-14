@@ -89,7 +89,7 @@ const UserNotes = ({ userId, isSuspended }) => {
                     <>
                         Suspend user{" "}
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            (User will be suspended for 7 days)
+                            (User will be suspended for 15 days)
                         </Typography.Text>
                     </>
                 )}

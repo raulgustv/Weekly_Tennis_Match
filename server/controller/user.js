@@ -763,7 +763,7 @@ export const suspendUser = async(req, res) =>{
 
         const {id} = req.params;
 
-        const {note, days = 7} = req.body;
+        const {note, days = 15} = req.body;
 
         const user = await User.findById(id);
 
