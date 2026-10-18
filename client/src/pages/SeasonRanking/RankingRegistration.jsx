@@ -14,7 +14,7 @@ import RankingConstruction from './RankingConstruction'
 
 // [CAMBIO] NUEVO: false = los jugadores ven "under construction". Cambiar a true al lanzar.
 // Solo oculta la UI en el navegador: la API del ranking debe seguir protegida en el servidor.
-const RELEASE_READY = false;
+const RELEASE_READY = true;
 
 
 const RankingRegistration = () => {
