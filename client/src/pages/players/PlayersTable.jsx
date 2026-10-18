@@ -486,7 +486,7 @@ const PlayersTable = ({ players, loading, fetchPlayers }) => {
                 style={{ marginBottom: 12 }}
             >
                 <Input.Search
-                    placeholder="Buscar jugador por nombre o apellido"
+                    placeholder="Search for a player by name and lastname"
                     allowClear
                     value={searchTerm}
                     onChange={(e) =>
