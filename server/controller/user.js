@@ -696,12 +696,12 @@ export const getMeAuth = async (req, res) => {
 
 export const adminNote = async(req, res) =>{
     const {id} = req.params;
-    const {note} = req.body;
+    const {note, kind, category} = req.body;
     const {role} = req.user;
 
     try {
 
-        if(role !== 'admin') return res.satus(404).json({
+        if(role !== 'admin') return res.satus(403).json({
             oK: false,
             message: 'You are not authorized to access this resource'
         });
@@ -713,21 +713,25 @@ export const adminNote = async(req, res) =>{
             message: 'User not found'
         })
 
+        const isWarning = kind === 'warning'
+
         user.notesHistory.push({
             note,
+            kind: isWarning ? 'warning' : 'note',
+            category: isWarning ? category : null,
             createdBy: req.user._id
         });
 
         await user.save();
 
         res.status(200).json({
-            message: "Note added successfully",
+            message: isWarning ? 'Warning added successfully' : 'Note added sucessfully',
             notesHistory: user.notesHistory
         })
 
         
     } catch (error) {
-        return res.satus(404).json({
+        return res.satus(500).json({
             oK: false,
             message: 'Internal error adding note'
         })
@@ -763,7 +767,7 @@ export const suspendUser = async(req, res) =>{
 
         const {id} = req.params;
 
-        const {note, days = 15} = req.body;
+        const {note, days , category} = req.body;
 
         const user = await User.findById(id);
 
@@ -777,9 +781,14 @@ export const suspendUser = async(req, res) =>{
         user.suspendedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
 
         user.suspendedBy = req.user._id;
+        user.suspensionCategory = category;
+        user.suspensionNote = note
 
         user.notesHistory.push({
             note,
+            kind: 'suspension',
+            category,
+            days,
             createdBy: req.user._id
         });
 
@@ -789,9 +798,7 @@ export const suspendUser = async(req, res) =>{
             ok: true,
             message: `User suspended for ${days} day(s).`,
             suspendedUntil: user.suspendedUntil
-        })
-
-        
+        })        
         
     } catch (error) {
         console.log(error)

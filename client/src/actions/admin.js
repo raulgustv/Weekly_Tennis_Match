@@ -45,14 +45,17 @@ export const viewPlayer = async(id) =>{
     return data;
 }
 
-export const addUserNote = async(id, note) =>{
-    const {data} = await axiosInstance.post(`/user/${id}`, {note})
+export const addUserNote = async(id, note, kind='note', category=null) =>{
+
+    const payload = kind === 'warning' ? {note, kind, category} : {note}
+
+    const {data} = await axiosInstance.post(`/user/${id}`, payload)
 
     return data;
 } 
 
-export const addSuspension = async(id, note) => {
-    const {data} = await axiosInstance.post(`/user/suspend/${id}`, {note})
+export const addSuspension = async(id, note, days, category) => {
+    const {data} = await axiosInstance.post(`/user/suspend/${id}`, {note, days, category})
     return data;
 }
 

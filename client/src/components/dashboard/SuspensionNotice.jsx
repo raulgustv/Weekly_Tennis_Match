@@ -18,47 +18,25 @@
 import { Alert, Statistic, Typography } from "antd";
 import { StopOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { getCategoryLabel } from "../../helpers/sanctions";
 
 const { Timer } = Statistic;
 const { Text } = Typography;
 
-// Debe coincidir con el `days = 7` por defecto de suspendUser en el servidor
-const SUSPENSION_DAYS = 15;
 
-// Margen para emparejar la fecha de la nota con el inicio de la suspensión
-const MATCH_TOLERANCE_MS = 60 * 1000; // 1 minuto
-
-const getSuspensionReason = (notesHistory, suspendedUntil) => {
-    if (!Array.isArray(notesHistory) || !suspendedUntil) return null;
-
-    const suspensionStart =
-        new Date(suspendedUntil).getTime() -
-        SUSPENSION_DAYS * 24 * 60 * 60 * 1000;
-
-    // Se recorre al revés para quedarnos con la más reciente que coincida
-    for (let i = notesHistory.length - 1; i >= 0; i--) {
-        const n = notesHistory[i];
-        if (!n?.at || typeof n?.note !== "string") continue;
-
-        const diff = Math.abs(new Date(n.at).getTime() - suspensionStart);
-
-        if (diff <= MATCH_TOLERANCE_MS && n.note.trim()) {
-            return n.note.trim();
-        }
-    }
-
-    return null;
-};
 
 const SuspensionNotice = ({ user }) => {
+
+    console.log(user)
+
     const isSuspended =
         user?.suspendedUntil &&
         new Date(user.suspendedUntil) > new Date();
 
     if (!isSuspended) return null;
 
-    const reason = getSuspensionReason(user?.notesHistory, user?.suspendedUntil);
-
+    const categoryLabel = user?.suspensionCategory ? getCategoryLabel(user.suspensionCategory) : null;
+    const note = typeof user?.suspensionNote === 'string' ? user?.suspensionNote.trim() : "";
     return (
         <Alert
             type="error"
@@ -76,11 +54,11 @@ const SuspensionNotice = ({ user }) => {
                         .
                     </Text>
 
-                    {/* El texto de la nota se pinta como texto plano (React lo escapa),
-                        nunca con dangerouslySetInnerHTML */}
-                    {reason && (
-                        <Text style={{ display: "block", marginTop: 8 }}>
-                            <Text strong>Reason:</Text> {reason}
+                    {(categoryLabel || note) && (
+                        <Text style={{display: 'block', marginTop: 0}}>
+                            <Text strong>Reason: </Text> {categoryLabel}
+                            {categoryLabel && note ? " - ": ""}
+                            {note}
                         </Text>
                     )}
 
@@ -99,7 +77,7 @@ const SuspensionNotice = ({ user }) => {
                         type="secondary"
                         style={{ display: "block", marginTop: 8, fontSize: 12 }}
                     >
-                        If you think this is a mistake, please contact an administrator.
+                        If you think this is a mistake, please contact an administrator through Whatsapp.
                     </Text>
                 </div>
             }
