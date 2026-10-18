@@ -41,6 +41,20 @@ const adjustmentHistorySchema = new mongoose.Schema({
     }
 }, { _id: false })
 
+const termsAcceptanceSchema = new mongoose.Schema({
+    version: {
+        type: String,
+        required: true
+    },
+    acceptedAt: {
+        type: Date,
+        default: Date.now()
+    }, 
+    userAgent:{
+        type: String
+    }
+}, {_id: false})
+
 const noteHistorySchema = new mongoose.Schema({
     note: {
         type: String,
@@ -151,6 +165,18 @@ const userSchema = new mongoose.Schema({
     termsAndConditions: {
         type: Boolean,
         default: false
+    },
+    termsVersion:{
+        type: String,
+        default: null
+    },
+    termsAcceptedAt:{
+        type: Date,
+        default: null
+    },
+    termsAcceptanceHistory:{
+        type: [termsAcceptanceSchema],
+        default: []
     },
     isFirstLogin: {
         type: Boolean,

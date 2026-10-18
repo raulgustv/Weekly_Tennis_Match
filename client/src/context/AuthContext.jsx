@@ -16,14 +16,25 @@ export const AuthProvider = ({ children }) => {
     // NUNCA se persiste, NUNCA se prende desde tryRestoreSession
     const [justRegistered, setJustRegistered] = useState(false);
 
+    //TERMS AND CONDITIONS
+    const [termsUpdateRequired, setTermsUpdateRequired] = useState(false)
+    const [currentTermsVersion, setCurrentTermsVersion] = useState(null)
+
     // trae los datos del usuario asumiendo que el access token ya está seteado en memoria
     const loadUser = useCallback(async () => {
+
         try {
             const res = await getUserAuth();
-            setUser(res.data.user);   // ✅ backend manda { ok, user }
+            setUser(res.data.user);   //  backend manda { ok, user }
+
+            //terms and conditions new
+            setTermsUpdateRequired(res.data.termsUpdateRequired === true)
+            setCurrentTermsVersion(res.data.currentTermsVersion || null)
         } catch (error) {
             setAccessToken(null);
             setUser(null);
+            setTermsUpdateRequired(false)
+            setCurrentTermsVersion(null)
         }
     }, []);
 
@@ -81,6 +92,8 @@ export const AuthProvider = ({ children }) => {
         setOnSessionExpired(() => {
             setUser(null);
             setJustRegistered(false);
+            setTermsUpdateRequired(false)
+            setCurrentTermsVersion(null)
         });
 
         return () => setOnSessionExpired(null);
@@ -135,6 +148,9 @@ export const AuthProvider = ({ children }) => {
             setAccessToken(null);
             setUser(null);
             setJustRegistered(false);
+
+            setTermsUpdateRequired(false)
+            setCurrentTermsVersion(null)
         }
     };
 
@@ -148,7 +164,9 @@ export const AuthProvider = ({ children }) => {
                 logout,
                 loadUser,
                 justRegistered,
-                dismissJustRegistered
+                dismissJustRegistered,
+                termsUpdateRequired,
+                currentTermsVersion
             }}
         >
             {children}

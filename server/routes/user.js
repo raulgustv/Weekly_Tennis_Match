@@ -1,9 +1,9 @@
 import {Router} from 'express';
-import { refresh, login, logout, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote, userNotes, suspendUser, verifyAccount, resendVerification } from '../controller/user.js';
+import { refresh, login, logout, register, viewAllUsers, viewUser, resetPassword, resetPasswordEmail, completeProfile, validateEmail, completeOnboarding, getMeAuth, adminNote, userNotes, suspendUser, verifyAccount, resendVerification, acceptTerms, termStats } from '../controller/user.js';
 import { googleValidator, loginValidator, noteValidator, registerValidator, suspendValidator } from '../validator/userValidator.js';
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 import { protect, verifyAdmin } from '../middlewares/auth.js';
-import { adminLimiter, authLimiter, changePasswordLimiter, readLimiter, refreshLimiter, registerLimiter, resendVerificationLimiter } from '../config/expressLimit.js';
+import { adminLimiter, authLimiter, changePasswordLimiter, readLimiter, refreshLimiter, registerLimiter, resendVerificationLimiter, writeLimiter } from '../config/expressLimit.js';
 //import { verify } from 'crypto';
 
 
@@ -32,7 +32,8 @@ router.get('/notes/:id', protect, verifyAdmin, userNotes)
 
 router.post('/suspend/:id', protect, verifyAdmin, validateObjectId("id"), suspendValidator, validateFields , suspendUser)
 
-
+router.post('/terms/accept', protect, writeLimiter, acceptTerms)
+router.get('/terms/stats', protect, verifyAdmin, readLimiter, termStats)
 
 
 export default router;

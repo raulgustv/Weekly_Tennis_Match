@@ -27,7 +27,7 @@ const { Text } = Typography;
 
 const SuspensionNotice = ({ user }) => {
 
-    console.log(user)
+    //console.log(user)
 
     const isSuspended =
         user?.suspendedUntil &&
