@@ -49,8 +49,8 @@ const TermsUpdateModal = ({ open, currentVersion }) => {
     return (
         <>
             <Modal
-                title="New T&C"
-                open={true}
+                title="New Terms and Conditions available"
+                open={open}
                 centered
                 closable={false}
                 keyboard={false}

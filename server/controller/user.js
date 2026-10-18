@@ -860,9 +860,10 @@ export const acceptTerms = async(req, res) =>  {
         ).select('termsVersion termsAcceptedAt');
 
         if(!user){
-            return res.status(400).json({
+            return res.status(200).json({
                 ok: false,
-                message: 'User not found'
+                message: 'Terms and Conditions already accepted',
+                termsVersion: TERMS_VERSION
             })
         }
 
