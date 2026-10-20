@@ -140,13 +140,13 @@ const TermsAndConditions = ({ open, readButton, setOpenModal, setDisabledCheck, 
                     </Paragraph>
 
                     <Paragraph>
-                      <b>2. Late arrival (31 minutes or more)</b><br />
+                      <b>2. Late arrival (31 minutes to an hour)</b><br />
                       1st time: 21-day suspension · 2nd time: 60-day suspension.
                     </Paragraph>
 
                     <Paragraph>
-                      <b>3. No-show</b><br />
-                      Not showing up to a confirmed match: 30-day suspension.
+                      <b>3. No-show or more than an hour late</b><br />
+                      Not showing up to a confirmed match: 30-day suspension. Coming over an hour late is also considered as no a no-show since the second hour needs all four players to be available
                     </Paragraph>
 
                     <Paragraph>
@@ -262,13 +262,13 @@ const TermsAndConditions = ({ open, readButton, setOpenModal, setDisabledCheck, 
                     </Paragraph>
 
                     <Paragraph>
-                      <b>2. Retraso de 31 minutos o más</b><br />
+                      <b>2. Retraso de 31 minutos o 1 hora</b><br />
                       1ª vez: suspensión de 21 días · 2ª vez: suspensión de 60 días.
                     </Paragraph>
 
                     <Paragraph>
-                      <b>3. No presentarse</b><br />
-                      No acudir a un partido confirmado: suspensión de 30 días.
+                      <b>3. No presentarse o llegar más de una hora tarde</b><br />
+                      No acudir a un partido confirmado: suspensión de 30 días. Llegar más de una hora tarde se considera no presentarse ya que se requiren 4 jugadores listos en la segunda hora
                     </Paragraph>
 
                     <Paragraph>
