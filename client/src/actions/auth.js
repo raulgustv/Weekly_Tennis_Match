@@ -81,6 +81,12 @@ export const confirmAccountDelete = async(token) =>{
     return data;
 }
 
+export const acceptTerms = async() =>{
+    const {data} = await axiosInstance.post('user/terms/accept', {accept: true})
+
+    return data;
+}
+
 
 // export const uploadProfilePicture = async(req, res) =>{
 

@@ -49,6 +49,10 @@ const ProfileViewAdmin = () => {
         player?.suspendedUntil &&
         new Date(player.suspendedUntil) > new Date();
 
+    const handleSuspend = (suspendedUntil) =>{
+        setPlayer(prev => ({...prev, suspendedUntil}))
+    }
+
 
     const isLoading = !user || !ntrpHistory
 
@@ -116,7 +120,11 @@ const ProfileViewAdmin = () => {
                 </Col>
 
                 <Col xs={24} md={12} lg={12}>
-                    <UserNotes userId={id} isSuspended={isSuspended} />
+                    <UserNotes
+                        userId={id}
+                        isSuspended={isSuspended}
+                        onSuspended={handleSuspend}
+                    />
                 </Col>
 
 

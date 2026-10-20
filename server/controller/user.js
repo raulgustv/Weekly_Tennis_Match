@@ -7,7 +7,9 @@ import { PUBLIC_USER_FIELDS } from "../utils/userProjections.js";
 import { generateVerificationCode, hashVerificationCode } from "../helpers/accountVerification.js";
 
 
+
 const REFRESH_GRACE_MS = 20 * 1000; // 20 segundos
+export const TERMS_VERSION = 'v1';
 
 export const validateEmail = async(req, res) =>{
     try {
@@ -62,6 +64,8 @@ export const register = async (req, res) => {
             });
         }
 
+        const termsAcceptedAt = new Date();
+
         const user = await User.create({
             name,
             lastname,
@@ -71,7 +75,14 @@ export const register = async (req, res) => {
             ntrplvl,
             gender,
             country,
-            termsAndConditions
+            termsAndConditions: true,
+            termsVersion: TERMS_VERSION,
+            termsAcceptedAt,
+            termsAcceptanceSchema: [{
+                version: TERMS_VERSION,
+                acceptedAt: termsAcceptedAt,
+                userAgent: (req.headers['user-agent'] || '').slice(0, 300)
+            }]
         });
 
         const accessToken = generateToken(user);
@@ -683,7 +694,10 @@ export const getMeAuth = async (req, res) => {
     try {
         return res.status(200).json({
             ok: true,
-            user: req.user   // ya viene con PUBLIC_USER_FIELDS desde protect
+            user: req.user,
+            termsUpdateRequired: req.user.termsVersion !== TERMS_VERSION,
+            currentTermsVersion: TERMS_VERSION
+
         });
     } catch (error) {
         console.log(error);
@@ -696,12 +710,12 @@ export const getMeAuth = async (req, res) => {
 
 export const adminNote = async(req, res) =>{
     const {id} = req.params;
-    const {note} = req.body;
+    const {note, kind, category} = req.body;
     const {role} = req.user;
 
     try {
 
-        if(role !== 'admin') return res.satus(404).json({
+        if(role !== 'admin') return res.satus(403).json({
             oK: false,
             message: 'You are not authorized to access this resource'
         });
@@ -713,21 +727,25 @@ export const adminNote = async(req, res) =>{
             message: 'User not found'
         })
 
+        const isWarning = kind === 'warning'
+
         user.notesHistory.push({
             note,
+            kind: isWarning ? 'warning' : 'note',
+            category: isWarning ? category : null,
             createdBy: req.user._id
         });
 
         await user.save();
 
         res.status(200).json({
-            message: "Note added successfully",
+            message: isWarning ? 'Warning added successfully' : 'Note added sucessfully',
             notesHistory: user.notesHistory
         })
 
         
     } catch (error) {
-        return res.satus(404).json({
+        return res.satus(500).json({
             oK: false,
             message: 'Internal error adding note'
         })
@@ -763,7 +781,7 @@ export const suspendUser = async(req, res) =>{
 
         const {id} = req.params;
 
-        const {note, days = 15} = req.body;
+        const {note, days , category} = req.body;
 
         const user = await User.findById(id);
 
@@ -777,9 +795,14 @@ export const suspendUser = async(req, res) =>{
         user.suspendedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
 
         user.suspendedBy = req.user._id;
+        user.suspensionCategory = category;
+        user.suspensionNote = note
 
         user.notesHistory.push({
             note,
+            kind: 'suspension',
+            category,
+            days,
             createdBy: req.user._id
         });
 
@@ -789,15 +812,100 @@ export const suspendUser = async(req, res) =>{
             ok: true,
             message: `User suspended for ${days} day(s).`,
             suspendedUntil: user.suspendedUntil
-        })
-
-        
+        })        
         
     } catch (error) {
         console.log(error)
         res.status(500).json({
             ok: false,
             message: 'Unable to suspend user'
+        })
+    }
+}
+
+export const acceptTerms = async(req, res) =>  {
+    try {
+
+        const {accept} = req.body;
+
+        if(accept !== true){
+            return res.status(400).json({
+                ok: false,
+                message: 'You must accept Terms and Conditions to continue'
+            })
+        }
+
+        const now = new Date();
+
+        const user = await User.findOneAndUpdate(
+            {_id: req.user._id, termsVersion: {$ne: TERMS_VERSION}},
+            {
+                $set:{
+                    termsAndConditions: true,
+                    termsVersion: TERMS_VERSION,
+                    termsAcceptedAt: now
+                },
+                $push:{
+                    termsAcceptanceHistory:{
+                        $each: [{
+                            version: TERMS_VERSION,
+                            acceptedAt: now,
+                            userAgent: (req.headers['user-agent'] || '').slice(0, 300)
+                        }],
+                        $slice: -20
+                    }
+                }
+            },
+            {new: true}
+        ).select('termsVersion termsAcceptedAt');
+
+        if(!user){
+            return res.status(200).json({
+                ok: false,
+                message: 'Terms and Conditions already accepted',
+                termsVersion: TERMS_VERSION
+            })
+        }
+
+        return res.status(200).json({
+            ok: true,
+            message: 'Terms and conditions accepted',
+            termsVersion: user.termsVersion,
+            termsAcceptedAt: user.termsAcceptedAt
+        })
+        
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({
+            ok: false,
+            message: 'Error accepting new terms and conditions'
+        })
+    }
+}
+
+export const termStats = async(req,res) =>{
+    try {
+
+        const activeFilter = {isActive: true, isDeleted: {$ne: true}}
+
+        const [totalUsers, accepted] = await Promise.all([
+            User.countDocuments(activeFilter),
+            User.countDocuments({...activeFilter, termsVersion: TERMS_VERSION})
+        ]);
+
+        return res.status(200).json({
+            ok: true,
+            currentVersion: TERMS_VERSION,
+            totalUsers,
+            accepted,
+            pending: totalUsers - accepted
+        })
+        
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({
+            ok: false,
+            message: 'Internal error obtaining Terms and Conditions stats'
         })
     }
 }

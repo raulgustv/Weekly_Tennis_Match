@@ -1,6 +1,7 @@
 import {
     body
 } from 'express-validator';
+import { SANCTION_CATEGORIES, SUSPENSION_DAYS_OPTIONS } from '../utils/sanctionCategories.js';
 
 export const registerValidator = [
     body("name")
@@ -70,5 +71,36 @@ export const noteValidator = [
     body("note")
     .trim()
     .notEmpty().withMessage("Note is required")
-    .isLength({max: 1000}).withMessage("Note cannot exceed 1000 characters")
-];
+    .isLength({max: 1000}).withMessage("Note cannot exceed 1000 characters"),
+
+    body("kind")
+    .optional()
+    .isIn(['note', 'warning']).withMessage("Invalid note type"),
+
+    body("category")
+    .if(body("kind").equals("warning"))
+    .notEmpty().withMessage("A reason is required for a warning")
+    .bail()
+    .isIn(SANCTION_CATEGORIES).withMessage("Invalid reason")
+]
+
+export const suspendValidator = [
+    body("note")
+    .trim()
+    .notEmpty().withMessage("Note is required")
+    .isLength({max: 1000}).withMessage("Note cannot exceed 1000 characters"),
+
+    body("category")
+    .notEmpty().withMessage("Category reason is required")
+    .bail()
+    .isIn(SANCTION_CATEGORIES).withMessage("Invalid reason"),
+    
+    body("days")
+    .notEmpty().withMessage("Days length required")
+    .isLength({max: 1000}).withMessage("Suspension days are required")
+    .bail()
+    .isInt().withMessage("Invalid suspension length")
+    .bail()
+    .isIn(SUSPENSION_DAYS_OPTIONS).withMessage("Invalid suspension length")
+    .toInt()
+]

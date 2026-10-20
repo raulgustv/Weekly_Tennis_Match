@@ -677,7 +677,7 @@ const MatchesTable = () => {
                 style={{ margin: "12px 0" }}
             >
                 <DatePicker
-                    placeholder="Filtrar por fecha"
+                    placeholder="Filter by date"
                     allowClear
                     value={filterDate}
                     onChange={(date) =>

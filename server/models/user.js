@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from 'bcryptjs';
+import { SANCTION_CATEGORIES } from "../utils/sanctionCategories.js";
+
 
 const sessionSchema = new mongoose.Schema({
     refreshTokenHash: { type: String, required: true },
@@ -39,6 +41,20 @@ const adjustmentHistorySchema = new mongoose.Schema({
     }
 }, { _id: false })
 
+const termsAcceptanceSchema = new mongoose.Schema({
+    version: {
+        type: String,
+        required: true
+    },
+    acceptedAt: {
+        type: Date,
+        default: Date.now()
+    }, 
+    userAgent:{
+        type: String
+    }
+}, {_id: false})
+
 const noteHistorySchema = new mongoose.Schema({
     note: {
         type: String,
@@ -51,6 +67,20 @@ const noteHistorySchema = new mongoose.Schema({
     at: {
         type: Date,
         default: Date.now
+    },
+    kind: {
+        type: String,
+        enum: ['note', 'warning', 'suspension'],
+        default: 'note'
+    },
+    category: {
+        type: String,
+        enum: SANCTION_CATEGORIES,
+        default: null
+    }, 
+    days: {
+        type: Number,
+        default: null
     }
 }, { _id: true })
 
@@ -136,6 +166,18 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    termsVersion:{
+        type: String,
+        default: null
+    },
+    termsAcceptedAt:{
+        type: Date,
+        default: null
+    },
+    termsAcceptanceHistory:{
+        type: [termsAcceptanceSchema],
+        default: []
+    },
     isFirstLogin: {
         type: Boolean,
         default: true
@@ -193,6 +235,16 @@ const userSchema = new mongoose.Schema({
     suspendedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
+        default: null
+    },
+    suspensionCategory: {
+        type: String,
+        enum: SANCTION_CATEGORIES,
+        default: null
+    },
+    suspensionNote: {
+        type: String,
+        trim: true,
         default: null
     },
     nextAppFeedbakMilestone: {

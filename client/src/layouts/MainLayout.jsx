@@ -39,13 +39,14 @@ import { useFeedback } from "../context/FeedbackContext";
 import Notifications from "../components/notifications/Notifications";
 import AlertNotVerified from "../components/utils/AlertNotVerified";
 import VerifyAccountModal from "../components/modals/VerifyAccountModal";
+import TermsUpdateModal from "../components/modals/TermsUpdateModal";
 
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
 
 const MainLayout = () => {
-  const { user, logout, justRegistered, dismissJustRegistered, loadUser } = useAuth();
+  const { user, logout, justRegistered, dismissJustRegistered, loadUser, termsUpdateRequired, currentTermsVersion } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,123 +83,123 @@ const MainLayout = () => {
 
   const menuItems = isAdmin
     ? [
-        {
-          key: "/admin/dashboard",
-          icon: (
-            <HomeOutlined style={{ color: "#4DA3FF" }} />
-          ),
-          label: "Admin dashboard",
-        },
-        {
-          key: "/games",
-          icon: (
-            <DribbbleOutlined style={{ color: "#52C41A" }} />
-          ),
-          label: "Games",
-        },
-        {
-          key: "/vote",
-          icon: (
-            <FlagOutlined style={{ color: "#1677FF" }} />
-          ),
-          label: "Vote matches",
-        },
-        rankingMenuItem,
-        {
-          key: 'admin-ranking',
-          icon: (<CalendarOutlined  style={{color: "#F4D03F"}} />),
-          label: 'Ranking Administration',
-          children: [
-            {
-              key: '/admin/new-season',
-              label: 'Create new season'
-            },
-            {
-              key: '/admin/seasons',
-              label: 'Seasons'
-            }
-          ]
-        },
-        {
-          key: "/manage-courts",
-          icon: (
-            <CompassFilled style={{ color: "#13C2C2" }} />
-          ),
-          label: "Manage courts",
-          children: [
-            {
-              key: "/admin/add-court",
-              label: "Add & manage courts",
-            },
-          ],
-        },
-        {
-          key: "/admin-matches",
-          icon: (
-            <TrophyFilled style={{ color: "#FADB14" }} />
-          ),
-          label: "Match administration",
-          children: [
-            {
-              key: "/admin/matches",
-              label: "New match",
-            },
-            {
-              key: "/admin/view-matches",
-              label: "View matches",
-            },
-          ],
-        },
-        {
-          key: "/admin-players",
-          icon: (
-            <ContactsOutlined style={{ color: "#FF7875" }} />
-          ),
-          label: "User administration",
-          children: [
-            {
-              key: "/admin/players",
-              label: "Players",
-            },
-            {
-              key: "/profile",
-              label: "View admin profile",
-            },
-          ],
-        },
-        {
-          key: "/admin-wallet",
-          icon: (
-            <WalletOutlined style={{ color: "#e7eb6d" }} />
-          ),
-          label: "Wallet administration",
-          children: [
-            {
-              key: "/admin/transactions",
-              label: "Transaction admin",
-            },
-            {
-              key: "/wallet",
-              label: "View wallet",
-            },
-          ],
-        },
-        {
-          key: "/notifications",
-          icon: (
-            <BellOutlined style={{ color: "#8B5CF6" }} />
-          ),
-          label: "Manage Notifications",
-          children: [
-            {
-              key: "/admin/notifications",
-              label: "Create a notification",
-            },
-          ],
-        },
-      ]
+      {
+        key: "/admin/dashboard",
+        icon: (
+          <HomeOutlined style={{ color: "#4DA3FF" }} />
+        ),
+        label: "Admin dashboard",
+      },
+      {
+        key: "/games",
+        icon: (
+          <DribbbleOutlined style={{ color: "#52C41A" }} />
+        ),
+        label: "Games",
+      },
+      {
+        key: "/vote",
+        icon: (
+          <FlagOutlined style={{ color: "#1677FF" }} />
+        ),
+        label: "Vote matches",
+      },
+      rankingMenuItem,
+      {
+        key: 'admin-ranking',
+        icon: (<CalendarOutlined style={{ color: "#F4D03F" }} />),
+        label: 'Ranking Administration',
+        children: [
+          {
+            key: '/admin/new-season',
+            label: 'Create new season'
+          },
+          {
+            key: '/admin/seasons',
+            label: 'Seasons'
+          }
+        ]
+      },
+      {
+        key: "/manage-courts",
+        icon: (
+          <CompassFilled style={{ color: "#13C2C2" }} />
+        ),
+        label: "Manage courts",
+        children: [
+          {
+            key: "/admin/add-court",
+            label: "Add & manage courts",
+          },
+        ],
+      },
+      {
+        key: "/admin-matches",
+        icon: (
+          <TrophyFilled style={{ color: "#FADB14" }} />
+        ),
+        label: "Match administration",
+        children: [
+          {
+            key: "/admin/matches",
+            label: "New match",
+          },
+          {
+            key: "/admin/view-matches",
+            label: "View matches",
+          },
+        ],
+      },
+      {
+        key: "/admin-players",
+        icon: (
+          <ContactsOutlined style={{ color: "#FF7875" }} />
+        ),
+        label: "User administration",
+        children: [
+          {
+            key: "/admin/players",
+            label: "Players",
+          },
+          {
+            key: "/profile",
+            label: "View admin profile",
+          },
+        ],
+      },
+      {
+        key: "/admin-wallet",
+        icon: (
+          <WalletOutlined style={{ color: "#e7eb6d" }} />
+        ),
+        label: "Wallet administration",
+        children: [
+          {
+            key: "/admin/transactions",
+            label: "Transaction admin",
+          },
+          {
+            key: "/wallet",
+            label: "View wallet",
+          },
+        ],
+      },
+      {
+        key: "/notifications",
+        icon: (
+          <BellOutlined style={{ color: "#8B5CF6" }} />
+        ),
+        label: "Manage Notifications",
+        children: [
+          {
+            key: "/admin/notifications",
+            label: "Create a notification",
+          },
+        ],
+      },
+    ]
     : isBooker
-    ? [
+      ? [
         {
           key: "/games",
           icon: (
@@ -246,7 +247,7 @@ const MainLayout = () => {
           label: "Wallet administration",
         },
       ]
-    : [
+      : [
         {
           key: "/games",
           icon: (
@@ -522,6 +523,11 @@ const MainLayout = () => {
               dismissJustRegistered();
               await loadUser();
             }}
+          />
+
+          <TermsUpdateModal
+              open={termsUpdateRequired}
+              currentVersion={currentTermsVersion}
           />
 
           <Outlet />
