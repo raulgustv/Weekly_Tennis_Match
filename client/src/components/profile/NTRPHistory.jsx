@@ -1,10 +1,22 @@
-import { Button, Timeline, Typography } from "antd";
+import { Button, Timeline, Typography, Tag } from "antd"; // CHANGE: añadido Tag
 import {
     ArrowDownOutlined,
     ArrowUpOutlined,
     MinusOutlined,
+    TrophyOutlined, // 🆕 CHANGE: tag "Ranking match"
+    ToolOutlined,   // 🆕 CHANGE: tag "Admin adjustment"
+    TeamOutlined,   // 🆕 CHANGE: tag "Doubles"
 } from "@ant-design/icons";
 import { useState } from "react";
+
+// 🆕 CHANGE (tags NTRP): tag por tipo de ajuste. 'other' (reasons desconocidos) no lleva tag.
+// `item.category` lo calcula useNTRPAdjustment a partir del `reason` del backend.
+const REASON_TAGS = {
+    ranking: { label: "Ranking match", color: "gold", icon: <TrophyOutlined /> },
+    doubles: { label: "Doubles match", color: "blue", icon: <TeamOutlined /> },
+    admin: { label: "Admin adjustment", color: "purple", icon: <ToolOutlined /> },
+};
+// ⬆️ FIN CHANGE
 
 const NTRPHistory = ({ ntrpHistory }) => {
 
@@ -39,6 +51,9 @@ const NTRPHistory = ({ ntrpHistory }) => {
                             const isUp = item.totalChange > 0;
                             const isDown = item.totalChange < 0;
 
+                            // 🆕 CHANGE (tags NTRP): tag de esta línea (undefined → sin tag)
+                            const reasonTag = REASON_TAGS[item.category];
+
                             return {
                                 color: isUp
                                     ? "green"
@@ -72,6 +87,19 @@ const NTRPHistory = ({ ntrpHistory }) => {
                                             {isUp ? "+" : ""}
                                             {item.totalChange.toFixed(2)}
                                         </Text>
+
+                                        {/* 🆕 CHANGE (tags NTRP): tag según el origen del ajuste
+                                            (antes solo había tag para ranking con item.isRankingMatch) */}
+                                        {reasonTag && (
+                                            <Tag
+                                                color={reasonTag.color}
+                                                icon={reasonTag.icon}
+                                                style={{ marginLeft: 8, borderRadius: 999 }}
+                                            >
+                                                {reasonTag.label}
+                                            </Tag>
+                                        )}
+                                        {/* ⬆️ FIN CHANGE */}
                                     </div>
                                 ),
                             };
