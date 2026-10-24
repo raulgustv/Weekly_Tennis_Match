@@ -21,6 +21,11 @@ const adjustmentHistorySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Match"
     },
+    rankingMatch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RankingMatch",
+        default: null
+    },
     change: {
         type: Number,
         required: true

@@ -59,6 +59,46 @@ export const computeRatingDelta = ({
     }
 }
 
+//NTRP CHANGES
+const NTRP_K = 0.10;
+const NTRP_MAX_DELTA_PER_MATCH = 0.15;
+const NTRP_MIN = 1;
+const NTRP_MAX = 5;
+
+const round2 = (value) => Math.round(value * 100) / 100;
+
+const clampNtrp = (value) => Math.min(NTRP_MAX, Math.max(NTRP_MIN, value));
+
+export const computeNtrpDelta = ({ntrpWinner, ntrpLoser,gamesWinner,gamesLoser,K = NTRP_K}) => {
+    const nW = Number(ntrpWinner);
+    const nL = Number(ntrpLoser);
+
+    if(!Number.isFinite(nW) || !Number.isFinite(nL) || nW <= 0 || nL <= 0){
+        return null;
+    }
+
+    const expectedWinner = expectedScore(nW * NTRP_TO_RATING_SPREAD, nL * NTRP_TO_RATING_SPREAD);
+    const multiplier = marginMultiplier(gamesWinner, gamesLoser)
+
+    const rawDelta = K * multiplier * (1 - expectedWinner);
+    const delta = round2(Math.min(NTRP_MAX_DELTA_PER_MATCH, Math.max(0, rawDelta)));
+
+    const newNtrpWinner = round2(clampNtrp(nW + delta))
+    const newNtrpLoser = round2(clampNtrp(nL - delta))
+
+    return {
+        winnerDelta: round2(newNtrpWinner - nW),
+        loserDelta: round2(newNtrpLoser - nL),
+        newNtrpWinner,
+        newNtrpLoser,
+        multiplier
+    }
+}
+
+export const undoNtrpDelta = (currentNtrp, previousDelta) =>{
+    return round2(clampNtrp(Number(currentNtrp) - Number(previousDelta)))
+}
+
 //matchPairing antirepeticion
 const getId = (p) => p.userId?.toString?.() ?? p._id?.toString?.() ?? p.toString();
 

@@ -127,6 +127,14 @@ const rankingMatchSchema = new mongoose.Schema({
         type: Number,
         default: null
     },
+    ntrpBefore: {
+        playerA: {type: Number, default: null},
+        playerB: {type: Number, default: null}
+    },
+    ntrpDelta: {
+        playerA: {type: Number, default: null},
+        playerB: {type: Number, default: null}
+    },
     penaltiesIssued:{
         type: [penaltyIssueSchema],
         default: []
