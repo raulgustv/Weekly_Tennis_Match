@@ -16,7 +16,7 @@ import {
     resolveSeason
 } from "../services/rankingServices.js";
 // CHANGE: faltaba — submitRankingResult usa sumGames y computeRatingDelta sin importarlos (ReferenceError → 500)
-import { computeRatingDelta, sumGames } from "../utils/rankingEngine.js";
+import { computeNtrpDelta, computeRatingDelta, sumGames, undoNtrpDelta } from "../utils/rankingEngine.js";
 
 // CHANGE: versión del reglamento aceptada. Constante en vez de string suelto
 // dentro del controller; si cambia el reglamento, se sube aquí.
@@ -955,6 +955,27 @@ export const submitRankingResult = async (req, res) => {
         rankingB.rating += deltaB;
         rankingA.lastRoundPlayed = match.round;
         rankingB.lastRoundPlayed = match.round;
+
+        //NTRP Change adjustment
+        const [ntrpUserA, ntrpUserB] = await Promise.all([
+            User.findById(match.playerA).select('ntrplvl').session(session).lean(),
+            User.findById(match.playerB).select('ntrplvl').session(session).lean()
+        ]);
+
+        const ntrpBeforeA = ntrpUserA?.ntrplvl ?? null;
+        const ntrpBeforeB = ntrpUserB?.ntrplvl ?? null;
+
+        const ntrpResult = (ntrpUserA && ntrpUserB) ? computeNtrpDelta({
+            ntrpWinner: winnerIsA ? ntrpBeforeA : ntrpBeforeB,
+            ntrpLoser: winnerIsA ? ntrpBeforeB : ntrpBeforeA,
+            gamesWinner,
+            gamesLoser
+        }) : null;
+
+        const ntrpDeltaA = ntrpResult ? (winnerIsA ? ntrpResult.winnerDelta : ntrpResult.loserDelta) : null;
+        const ntrpDeltaB = ntrpResult ? (winnerIsA ? ntrpResult.loserDelta : ntrpResult.winnerDelta) : null;
+        const ntrpAfterA = ntrpResult ? (winnerIsA ? ntrpResult.newNtrpWinner : ntrpResult.newNtrpLoser) : null;
+        const ntrpAfterB = ntrpResult ? (winnerIsA ? ntrpResult.newNtrpLoser : ntrpResult.newNtrpWinner) : null;
  
         match.sets = sets;
         match.superTieBreak = buildSuperTieBreak(setsTied, superTieBreak); // CHANGE: antes `superTieBreak || match.superTieBreak`
@@ -964,17 +985,64 @@ export const submitRankingResult = async (req, res) => {
         match.playedAt = new Date();
         match.marginMultiplier = multiplier;
         match.ratingDelta = { playerA: deltaA, playerB: deltaB };
+
+        match.ntrpBefore = {playerA: ntrpBeforeA, playerB: ntrpBeforeB}
+        match.ntrpDelta = {playerA: ntrpDeltaA, playerB: ntrpDeltaB}
  
         if (!match.confirmedBy.map(String).includes(userId)) {
             match.confirmedBy.push(userId);
         }
- 
+
+                // =================================================================
+        // 🆕 CHANGE (Ranking → NTRP): NTRP + entrada en el historial con
+        // reason 'Ranking-match' (el tag que verá el frontend). Si el cambio
+        // real es 0 (p. ej. ya estaba en 5.0, o el delta redondea a 0.00) no
+        // se crea entrada vacía en el historial de ese jugador.
+        // =================================================================
+        const ntrpUpdates = [];
+
+        if (ntrpResult) {
+            const now = new Date();
+
+            const ntrpChanges = [
+                { userId: match.playerA, previous: ntrpBeforeA, change: ntrpDeltaA, current: ntrpAfterA },
+                { userId: match.playerB, previous: ntrpBeforeB, change: ntrpDeltaB, current: ntrpAfterB }
+            ];
+
+            for (const c of ntrpChanges) {
+                if (!c.change) continue;
+
+                ntrpUpdates.push(
+                    User.updateOne(
+                        { _id: c.userId },
+                        {
+                            $set: { ntrplvl: c.current },
+                            $push: {
+                                adjustmentHistory: {
+                                    rankingMatch: match._id,
+                                    previousNTRP: c.previous,
+                                    change: c.change,
+                                    currentNTRP: c.current,
+                                    reason: 'Ranking-match',
+                                    at: now
+                                }
+                            }
+                        },
+                        { session }
+                    )
+                );
+            }
+        }
+        // ⬆️ FIN CHANGE (Ranking → NTRP)
+
         await Promise.all([
             match.save({ session }),
             rankingA.save({ session }),
-            rankingB.save({ session })
+            rankingB.save({ session }),
+            ...ntrpUpdates // 🆕 CHANGE (Ranking → NTRP)
         ]);
  
+
         const standings = await Ranking.find({ season: match.season, status: 'active' })
             .sort({ rating: -1 })
             .session(session);
@@ -1113,6 +1181,47 @@ export const adminSetRankingResult = async (req, res) => {
         rankingA.lastRoundPlayed = Math.max(rankingA.lastRoundPlayed || 0, match.round);
         rankingB.lastRoundPlayed = Math.max(rankingB.lastRoundPlayed || 0, match.round);
 
+
+                // =================================================================
+        // 🆕 CHANGE (Ranking → NTRP): misma idea que el rating —
+        // 1) deshacer el ajuste de NTRP que aplicó el resultado anterior
+        //    (match.ntrpDelta), 2) calcular el nuevo sobre el NTRP resultante.
+        // Así un partido nunca cuenta dos veces en el NTRP.
+        // =================================================================
+        const [ntrpUserA, ntrpUserB] = await Promise.all([
+            User.findById(match.playerA).select('ntrplvl').session(session).lean(),
+            User.findById(match.playerB).select('ntrplvl').session(session).lean()
+        ]);
+
+        // null en partidos anteriores a esta función, walkovers o sin resultado → nada que deshacer
+        const prevNtrpDeltaA = match.ntrpDelta?.playerA;
+        const prevNtrpDeltaB = match.ntrpDelta?.playerB;
+        const hadPrevNtrpA = Number.isFinite(prevNtrpDeltaA);
+        const hadPrevNtrpB = Number.isFinite(prevNtrpDeltaB);
+
+        // NTRP "base" de cada jugador = el actual sin el ajuste de este partido
+        const ntrpBaseA = ntrpUserA?.ntrplvl != null
+            ? (hadPrevNtrpA ? undoNtrpDelta(ntrpUserA.ntrplvl, prevNtrpDeltaA) : ntrpUserA.ntrplvl)
+            : null;
+        const ntrpBaseB = ntrpUserB?.ntrplvl != null
+            ? (hadPrevNtrpB ? undoNtrpDelta(ntrpUserB.ntrplvl, prevNtrpDeltaB) : ntrpUserB.ntrplvl)
+            : null;
+
+        const ntrpResult = (ntrpBaseA != null && ntrpBaseB != null)
+            ? computeNtrpDelta({
+                ntrpWinner: winnerIsA ? ntrpBaseA : ntrpBaseB,
+                ntrpLoser: winnerIsA ? ntrpBaseB : ntrpBaseA,
+                gamesWinner,
+                gamesLoser
+            })
+            : null;
+
+        const ntrpDeltaA = ntrpResult ? (winnerIsA ? ntrpResult.winnerDelta : ntrpResult.loserDelta) : null;
+        const ntrpDeltaB = ntrpResult ? (winnerIsA ? ntrpResult.loserDelta : ntrpResult.winnerDelta) : null;
+        const ntrpAfterA = ntrpResult ? (winnerIsA ? ntrpResult.newNtrpWinner : ntrpResult.newNtrpLoser) : null;
+        const ntrpAfterB = ntrpResult ? (winnerIsA ? ntrpResult.newNtrpLoser : ntrpResult.newNtrpWinner) : null;
+        // ⬆️ FIN CHANGE (Ranking → NTRP)
+
         const previousStatus = match.status;
         const previousScore = match.sets?.length
             ? match.sets.map(s => `${s.gamesA}-${s.gamesB}`).join(' ') + (match.superTieBreak?.played ? ` [${match.superTieBreak.pointsA}-${match.superTieBreak.pointsB}]` : '')
@@ -1129,10 +1238,67 @@ export const adminSetRankingResult = async (req, res) => {
         match.playedAt = match.playedAt || new Date();
         match.marginMultiplier = multiplier;
         match.ratingDelta = { playerA: deltaA, playerB: deltaB };
+
+
+        // 🆕 CHANGE (Ranking → NTRP): nuevo snapshot (interno, no se envía al jugador)
+        match.ntrpBefore = { playerA: ntrpBaseA, playerB: ntrpBaseB };
+        match.ntrpDelta = { playerA: ntrpDeltaA, playerB: ntrpDeltaB };
+        // ⬆️ FIN CHANGE
+
         // Rastro de auditoría: quién, cuándo, qué había antes y por qué (máx. 500, límite del modelo)
         const auditLine = `[${new Date().toISOString()}] Admin ${req.user._id}: ${previousStatus} (${previousScore}) → admin_resolved. Reason: ${reason}`;
         // La entrada más reciente primero; se conservan las anteriores mientras quepan
         match.notes = (match.notes ? `${auditLine}\n${match.notes}` : auditLine).slice(0, 500);
+
+                // =================================================================
+        // 🆕 CHANGE (Ranking → NTRP): por jugador, en orden:
+        //  a) si había ajuste anterior → NTRP base + quitar SU entrada
+        //     'Ranking-match' de este partido (las de votos/admin no se tocan)
+        //  b) si el nuevo cambio no es 0 → NTRP nuevo + entrada en el historial
+        // Son dos updateOne seguidos porque MongoDB no permite $pull y $push
+        // sobre el mismo array en una sola operación.
+        // =================================================================
+        const ntrpChanges = [
+            { userId: match.playerA, exists: !!ntrpUserA, hadPrev: hadPrevNtrpA, base: ntrpBaseA, change: ntrpDeltaA, current: ntrpAfterA },
+            { userId: match.playerB, exists: !!ntrpUserB, hadPrev: hadPrevNtrpB, base: ntrpBaseB, change: ntrpDeltaB, current: ntrpAfterB }
+        ];
+        const ntrpNow = new Date();
+
+        for (const c of ntrpChanges) {
+            if (!c.exists) continue; // cuenta borrada → nada que tocar
+
+            if (c.hadPrev) {
+                await User.updateOne(
+                    { _id: c.userId },
+                    {
+                        $set: { ntrplvl: c.base },
+                        $pull: { adjustmentHistory: { rankingMatch: match._id } }
+                    },
+                    { session }
+                );
+            }
+
+            if (c.change) {
+                await User.updateOne(
+                    { _id: c.userId },
+                    {
+                        $set: { ntrplvl: c.current },
+                        $push: {
+                            adjustmentHistory: {
+                                rankingMatch: match._id,
+                                previousNTRP: c.base,
+                                change: c.change,
+                                currentNTRP: c.current,
+                                reason: 'Ranking-match',
+                                at: ntrpNow
+                            }
+                        }
+                    },
+                    { session }
+                );
+            }
+        }
+        // ⬆️ FIN CHANGE (Ranking → NTRP)
 
         await Promise.all([
             match.save({ session }),
