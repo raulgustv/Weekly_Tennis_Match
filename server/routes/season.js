@@ -3,7 +3,7 @@ import { protect, verifyAdmin } from '../middlewares/auth.js';
 // CHANGE (NUEVO): + adminLimiter (cambio de fecha de cierre)
 import { adminLimiter, readLimiter } from '../config/expressLimit.js';
 // CHANGE (NUEVO): + updateRoundCloseDate
-import { activateSeason, createSeason, listSeasons, updateRoundCloseDate } from '../controller/season.js';
+import { activateSeason, createSeason, getUpcomingSeason, listSeasons, updateRoundCloseDate } from '../controller/season.js';
 // CHANGE (NUEVO): + validateFields
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 import { roundCloseDateValidator } from '../validator/SeasonValidator.js';
@@ -13,8 +13,11 @@ import { roundCloseDateValidator } from '../validator/SeasonValidator.js';
 const router = Router();
 
 router.get("/", protect, verifyAdmin, listSeasons)
+//user view seasons
+router.get('/upcoming', protect, readLimiter, getUpcomingSeason)
 router.post("/", protect, verifyAdmin, createSeason)
 router.post("/:id/activate", protect, verifyAdmin, validateObjectId("id"),  activateSeason)
+
 
 // CHANGE (NUEVO): el admin extiende/adelanta el cierre de la ronda en juego (lluvia, festivos...)
 router.patch("/:id/round-close", protect, verifyAdmin, adminLimiter, validateObjectId("id"), roundCloseDateValidator, validateFields, updateRoundCloseDate)

@@ -11,6 +11,7 @@ import RankingMyMatch from '../../components/RankingUser/RankingMyMatch'
 // [CAMBIO] NUEVO: página "under construction" (misma ruta que usabas en RankingRounds;
 // ajústala si RankingConstruction.jsx no está en la misma carpeta que este archivo)
 import RankingConstruction from './RankingConstruction'
+import RankingRegisteredPlayers from '../../components/RankingUser/RankingRegisteredPlayers'
 
 // [CAMBIO] NUEVO: false = los jugadores ven "under construction". Cambiar a true al lanzar.
 // Solo oculta la UI en el navegador: la API del ranking debe seguir protegida en el servidor.
@@ -64,6 +65,12 @@ const RankingRegistration = () => {
                                 key: 'standings',
                                 label: 'Standings',
                                 children: <RankPublickStands currentUserId={user?._id} />
+                            },
+                            {
+                                // 🟢 NUEVO: jugadores inscritos (GET /ranking/registered)
+                                key: 'players',
+                                label: 'Players',
+                                children: <RankingRegisteredPlayers currentUserId={user?._id} />
                             },
                             {
                                 key: 'registration',

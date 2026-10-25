@@ -107,3 +107,15 @@ export const updateRoundCloseDate = async(seasonId, values) =>{
     const {data} = await axiosInstance.patch(`/season/${encodeURIComponent(seasonId)}/round-close`, values);
     return data;
 }
+
+
+export const getUpcomingSeason = async() =>{
+    const {data} = await axiosInstance.get('/season/upcoming')
+    return data;
+}
+
+
+export const getRegisteredPlayers = async() =>{
+    const {data} = await axiosInstance.get('/ranking/registered');
+    return data;
+}

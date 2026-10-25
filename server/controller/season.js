@@ -195,6 +195,23 @@ export const updateRoundCloseDate = async (req, res) => {
     }
 };
 
+export const getUpcomingSeason = async(req, res) =>{
+    try {
+
+        const season = await Season.findOne({status: 'upcoming', startDate: {$ne: null}})
+                                    .sort({startDate: 1, createdAt: 1})
+                                    .select('name year type status startDate nextRoundCloseDate roundCloseTime roundIntervalDays registrationDeadline')
+                                    .lean();
+
+        return res.status(200).json({ok: true, season: season || null})
+
+        
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, message: 'Internal error obtaining  upcoming season' });
+    }
+}
+
 /*
 Suggested routes (server/routes/season.js):
 
