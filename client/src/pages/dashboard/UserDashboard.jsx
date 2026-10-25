@@ -7,6 +7,7 @@ import "../../styles/Loader.css";
 import TennisLoader from "../../components/Animations/TennisLoader";
 // 🔵 CAMBIO: import del nuevo aviso de suspensión (componente en su propia carpeta)
 import SuspensionNotice from "../../components/dashboard/SuspensionNotice";
+import RankingCountdown from "../../components/Ranking/RankingCountdown";
 
 const { Title } = Typography;
 
@@ -26,6 +27,8 @@ const UserDashboard = () => {
       {/* 🔵 CAMBIO: aviso de suspensión arriba del todo.
           Si el usuario no está suspendido, el componente no pinta nada. */}
       <SuspensionNotice user={user} />
+
+      <RankingCountdown showRankingLink />
 
       <Space
         style={{
