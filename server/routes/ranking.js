@@ -6,7 +6,7 @@ import { writeLimiter, adminLimiter, readLimiter } from '../config/expressLimit.
 import { validateFields, validateObjectId } from '../middlewares/validateFields.js';
 // CHANGE: añadidos getRoundOverview y discardRoundProposal
 // CHANGE (NUEVO): añadidos getMyRankingMatch, getPublicStandings y getPublicRoundMatches (vista del jugador)
-import { adminSetRankingResult, closeRoundNow, discardRoundProposal, generateRoundProposal, getMyRankingMatch, getPublicRoundMatches, getPublicStandings, getRoundOverview, publishRankingRound, rankingRegistration, submitRankingResult, unRegisterRanking } from '../controller/ranking.js';
+import { adminSetRankingResult, closeRoundNow, discardRoundProposal, generateRoundProposal, getMyRankingMatch, getPublicRoundMatches, getPublicStandings, getRegisteredPlayers, getRoundOverview, publishRankingRound, rankingRegistration, submitRankingResult, unRegisterRanking } from '../controller/ranking.js';
 // CHANGE: añadidos proposeRoundValidator, roundActionValidator y roundOverviewValidator
 // CHANGE (NUEVO): + adminResultValidator
 import { adminResultValidator, proposeRoundValidator, registerForRankingValidator, roundActionValidator, roundOverviewValidator, submitRankingResultValidator } from '../validator/rankingValidator.js';
@@ -22,6 +22,7 @@ router.post("/unregister", protect, writeLimiter, unRegisterRanking)
 router.get("/me/match", protect, readLimiter, getMyRankingMatch);
 // CHANGE (NUEVO): clasificación pública de la temporada activa (sin rating ni penalizaciones)
 router.get("/standings", protect, readLimiter, getPublicStandings);
+router.get('/registered', protect, readLimiter, getRegisteredPlayers)
 // CHANGE (NUEVO): partidos publicados de la temporada activa (todos los jugadores). ?round=N opcional
 // (roundOverviewValidator ya valida `round` como entero ≥ 1 en la query)
 router.get("/matches", protect, readLimiter, roundOverviewValidator, validateFields, getPublicRoundMatches);

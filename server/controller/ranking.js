@@ -21,6 +21,7 @@ import { computeNtrpDelta, computeRatingDelta, sumGames, undoNtrpDelta } from ".
 // CHANGE: versión del reglamento aceptada. Constante en vez de string suelto
 // dentro del controller; si cambia el reglamento, se sube aquí.
 export const RANKING_RULES_VERSION = 'v1';
+export const REGISTERED_PLAYERS_LIMIT = 150;
 
 // CHANGE: solo devolvemos los campos del ranking, no el documento User entero
 // (antes se devolvía `user` completo: notesHistory, walletBalance, etc. — el
@@ -838,6 +839,40 @@ export const getPublicRoundMatches = async (req, res) => {
         return res.status(500).json({ ok: false, message: 'Unable to load the round matches' });
     }
 };
+
+
+export const getRegisteredPlayers = async(req, res) =>{
+    try {
+
+        const isAdmin = req.user?.role === 'admin';
+
+        if(!req.user?.isRanked && !isAdmin){
+            return res.status(403).json({
+                ok: false,
+                message: 'Only admin or ranked players can see this list'
+            })
+        }
+
+        const users = await User.find({isRanked: true, isActive: true})
+                        .select('name lastname profilePicture.url')
+                        .sort({rankingRegisteredAt: 1, _id: 1})
+                        .limit(REGISTERED_PLAYERS_LIMIT)
+                        .lean()
+
+
+        const players = users.map(publicPlayer);
+
+        return res.status(200).json({
+            ok: true, 
+            total: players.length,
+            players
+        })
+        
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, message: 'Internal error obtaining ranked playes' });
+    }
+}
 
 // CHANGE (NUEVO): normaliza el súper tie break que se guarda. Antes se guardaba
 // `superTieBreak || match.superTieBreak` tal cual venía del body.
