@@ -20,7 +20,7 @@ import { computeNtrpDelta, computeRatingDelta, sumGames, undoNtrpDelta } from ".
 
 // CHANGE: versión del reglamento aceptada. Constante en vez de string suelto
 // dentro del controller; si cambia el reglamento, se sube aquí.
-export const RANKING_RULES_VERSION = 'v1';
+export const RANKING_RULES_VERSION = 'v2';
 export const REGISTERED_PLAYERS_LIMIT = 150;
 
 // CHANGE: solo devolvemos los campos del ranking, no el documento User entero

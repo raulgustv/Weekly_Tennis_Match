@@ -10,7 +10,7 @@ const WEIGHT_AT_NTRP_MAX = 1.6;
 const NTRP_NEUTRAL = 3; // nivel que produce peso = 1.0
 
 // impacto base y tope de seguridad por partido
-const VOTE_IMPACT = 0.1;
+const VOTE_IMPACT = 0.05;
 const MAX_DELTA_PER_MATCH = 0.15; // ningún voto, sin importar el peso, mueve más de esto en un solo partido
 
 // peso lineal centrado en NTRP_NEUTRAL, clamped a [WEIGHT_AT_NTRP_MIN, WEIGHT_AT_NTRP_MAX]
