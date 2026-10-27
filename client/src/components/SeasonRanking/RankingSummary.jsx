@@ -53,9 +53,22 @@ const sections = [
         label: "Ranking calculation",
         items: [
             "The ranking is updated when the next round is generated.",
-            "An internal rating system is used to create balanced matches. The ranking never changes your NTRP level.",
+            "An internal rating system is used to create balanced matches.",
+            "Your NTRP level is adjusted by an algorithm based on your ranking match results. It takes into account the score (a narrow win is not the same as a dominant one) and the NTRP difference between you and your opponent (beating a higher-rated player counts for more than beating a lower-rated one, and the reverse for a loss).",
+            "Adjustments are gradual: a single match can only move your level by a small amount. Walkovers and no-shows do not affect your NTRP.",
             "Retiring from the ranking means losing your ranking position.",
             "New and returning players start at the last ranking position.",
+        ],
+    },
+    {
+        key: "howItWorks",
+        label: "How your position changes",
+        items: [
+            "Your position is based on an internal rating that changes with your match results, not on your number of wins. Players with fewer wins can rank higher if they beat stronger opponents.",
+            "After every match, the winner gains rating points and the loser loses the same amount.",
+            "How much changes depends on two factors: who you played and how you played. Beating a higher-ranked player earns more than beating a lower-ranked one, and losing to a lower-ranked player costs more than losing to a higher-ranked one. A dominant score moves your rating more than a close one.",
+            "Positions are never swapped automatically. When you beat a higher-ranked player you move up as far as your new rating allows, which may or may not be enough to overtake them.",
+            "Example: the #5 player beats the #1 player. It is an unexpected result, so #5 gains a lot and #1 loses the same amount. If their ratings were close, #5 may take the top spot. If #1 was far ahead, #5 will climb several positions but may still end up below #1.",
         ],
     },
     {
