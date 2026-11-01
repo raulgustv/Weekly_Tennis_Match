@@ -4,16 +4,16 @@ import {
     Flex,
     Typography,
     Grid,
-    Input,
-    Select,
+    //Input,
+    //Select,
     Tooltip,
 } from "antd";
 import {
-    PlusCircleOutlined,
+    //PlusCircleOutlined,
     ReloadOutlined,
 } from "@ant-design/icons";
 import { useState } from "react";
-import { addFunds } from "../../actions/wallet";
+//import { addFunds } from "../../actions/wallet";
 import { toast } from "react-toastify";
 import { useWalletBalance } from "../../hooks/useTransactions";
 
@@ -26,9 +26,9 @@ const WalletBalance = ({
     const { useBreakpoint } = Grid;
     const screens = useBreakpoint();
 
-    const [showForm, setShowForm] = useState(false);
-    const [amount, setAmount] = useState("");
-    const [method, setMethod] = useState("bizum");
+    // const [showForm, setShowForm] = useState(false);
+    // const [amount, setAmount] = useState("");
+    // const [method, setMethod] = useState("bizum");
     const [refreshingBalance, setRefreshingBalance] =
         useState(false);
 
@@ -39,9 +39,9 @@ const WalletBalance = ({
         loadWallet,
     } = useWalletBalance();
 
-    const handleAddFunds = () => {
-        setShowForm((prev) => !prev);
-    };
+    // const handleAddFunds = () => {
+    //     setShowForm((prev) => !prev);
+    // };
 
     const handleRefreshBalance = async () => {
         try {
@@ -60,37 +60,37 @@ const WalletBalance = ({
         }
     };
 
-    const handleSubmit = async () => {
-        try {
-            setLoading(true);
+    // const handleSubmit = async () => {
+    //     try {
+    //         setLoading(true);
 
-            const payload = {
-                amount: Number(amount),
-                method,
-            };
+    //         const payload = {
+    //             amount: Number(amount),
+    //             method,
+    //         };
 
-            await addFunds(payload);
+    //         await addFunds(payload);
 
-            toast.success(
-                "Your request to send funds has been sent"
-            );
+    //         toast.success(
+    //             "Your request to send funds has been sent"
+    //         );
 
-            fetchTransactions();
-            setShowForm(false);
-        } catch ({ response }) {
-            console.log(response);
+    //         fetchTransactions();
+    //         setShowForm(false);
+    //     } catch ({ response }) {
+    //         console.log(response);
 
-            setLoading(false);
+    //         setLoading(false);
 
-            toast.error(
-                response?.data?.message
-            );
+    //         toast.error(
+    //             response?.data?.message
+    //         );
 
-            setShowForm(false);
-        } finally {
-            setLoading(false);
-        }
-    };
+    //         setShowForm(false);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
     return (
         <Card>
@@ -176,7 +176,7 @@ const WalletBalance = ({
 
                 {/* ================= ADD FUNDS ================= */}
 
-                <Button
+                {/* <Button
                     type="primary"
                     icon={<PlusCircleOutlined />}
                     size="large"
@@ -184,11 +184,11 @@ const WalletBalance = ({
                     onClick={handleAddFunds}
                 >
                     Add funds
-                </Button>
+                </Button> */}
 
                 {/* ================= FORM ================= */}
 
-                {showForm && (
+                {/* {showForm && (
                     <Flex
                         vertical={!screens.md}
                         gap={12}
@@ -247,7 +247,7 @@ const WalletBalance = ({
                             Cancel
                         </Button>
                     </Flex>
-                )}
+                )} */}
             </Flex>
         </Card>
     );
