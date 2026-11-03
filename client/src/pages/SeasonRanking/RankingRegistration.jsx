@@ -3,6 +3,8 @@ import { useAuth } from '../../context'
 import RankedUser from '../../components/SeasonRanking/RankedUser'
 import { Grid, Tabs } from 'antd' // [CAMBIO] añadido Tabs (pestañas para jugadores inscritos)
 import RankRegisterForm from '../../components/SeasonRanking/RankRegisterForm'
+// CHANGE (NUEVO): aviso para jugadores expulsados del ranking por un admin
+import RankingRemovedNotice from '../../components/SeasonRanking/RankingRemovedNotice'
 // [CAMBIO] NUEVO: vista del jugador (cada pestaña carga sus propios datos)
 import RankingRoundMatches from '../../components/RankingUser/RankingRoundMatches'
 import RankPublickStands from '../../components/RankingUser/RankingPublicStands'
@@ -32,10 +34,22 @@ const RankingRegistration = () => {
         return <RankingConstruction section="Season ranking" />
     }
 
+    // CHANGE (NUEVO): expulsado del ranking por un admin. Tiene prioridad sobre todo lo demás:
+    // ni pestañas ni formulario de inscripción. (El servidor también lo bloquea.)
+    const isRemoved = !!user?.rankingBan?.active
+
     return (
         <>
             {/* [CAMBIO] se pasa isMobile (RankingHeader ya lo aceptaba pero no se le pasaba) */}
             <RankingHeader isMobile={isMobile} />
+
+            {/* CHANGE (NUEVO): REMOVED USERS — nota con el motivo en lugar del formulario */}
+            {
+                isRemoved && (
+                    <RankingRemovedNotice ban={user.rankingBan} isMobile={isMobile} />
+                )
+            }
+
             {
                 //RANKED USERS
                 // [CAMBIO] antes solo se mostraba RankedUser. Ahora 4 pestañas:
@@ -44,7 +58,8 @@ const RankingRegistration = () => {
                 //   Standings (clasificación pública)
                 //   My registration (RankedUser SIN cambios: datos de alta + retirarse)
                 // [CAMBIO] user?.isRanked (antes user.isRanked → rompía si user era null)
-                user?.isRanked && (
+                // CHANGE (NUEVO): + !isRemoved
+                user?.isRanked && !isRemoved && (
                     <Tabs
                         defaultActiveKey="match"
                         size={isMobile ? 'middle' : 'large'}
@@ -84,7 +99,8 @@ const RankingRegistration = () => {
 
             {/* Not registerd */}
             {
-                !user?.isRanked && (
+                // CHANGE (NUEVO): + !isRemoved (un expulsado no ve el formulario)
+                !user?.isRanked && !isRemoved && (
                 <RankRegisterForm user={user} loading={loading} loadUser={loadUser} isMobile={isMobile} />
                 )
             }

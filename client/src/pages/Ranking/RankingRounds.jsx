@@ -8,6 +8,8 @@ import RankingRoundMatchList from "../../components/Ranking/RankingRoundList";
 import RankingRoundHeader from "../../components/Ranking/RankingRoundHeader";
 import RankingAdminResultModal from "../../components/modals/RankingAdminResultModal";
 import RankingRoundCloseModal from "../../components/modals/RankingRoundCloseModal";
+import RankingPenaltyModal from "../../components/modals/RankingPenaltyModal"; // CHANGE (NUEVO): modal de penalty points
+import RankingRemoveModal from "../../components/modals/RankingRemoveModal"; // CHANGE (NUEVO): modal de expulsión del ranking
 
 
 const getErrorMessage = (error, fallback) => {
@@ -39,8 +41,10 @@ const RankingRounds = () => {
     const [actionLoading, setActionLoading] = useState(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [activeTab, setActiveTab] = useState("matches"); // [NUEVO] pestaña visible
-    const [editingMatch, setEditingMatch] = useState(null);
-    const [closeDateOpen, setCloseDateOpen] = useState(false); // [CAMBIO] NUEVO: modal de fecha de cierre // [CAMBIO] NUEVO: partido cuyo resultado edita el admin
+    const [editingMatch, setEditingMatch] = useState(null); // [CAMBIO] NUEVO: partido cuyo resultado edita el admin
+    const [closeDateOpen, setCloseDateOpen] = useState(false); // [CAMBIO] NUEVO: modal de fecha de cierre
+    const [penaltyTarget, setPenaltyTarget] = useState(null); // CHANGE (NUEVO): fila a la que el admin da un penalty point
+    const [removeTarget, setRemoveTarget] = useState(null); // CHANGE (NUEVO): jugador que el admin expulsa del ranking
 
     // Recarga forzada tras una acción (propose/publish/discard/activate)
     const reload = useCallback((round = null) => {
@@ -102,6 +106,9 @@ const RankingRounds = () => {
     const handleActivate = () =>
         runAction("activate", () => activateSeason(seasonId), "Could not activate the season");
 
+    // CHANGE (NUEVO): las sanciones solo se aplican en la temporada activa (el servidor también lo exige)
+    const isActiveSeason = overview.season?.status === "active";
+
     return (
         <Flex vertical gap={24}>
             <RankingRoundHeader
@@ -152,6 +159,9 @@ const RankingRounds = () => {
                                 pendingPlayers={overview.pendingPlayers}
                                 loading={loading}
                                 error={error}
+                                // CHANGE (NUEVO): botones "Penalty" y "Remove". Solo en la temporada activa.
+                                onPenalty={isActiveSeason ? setPenaltyTarget : undefined}
+                                onRemove={isActiveSeason ? setRemoveTarget : undefined}
                             />
                         ),
                     },
@@ -181,6 +191,34 @@ const RankingRounds = () => {
                     onClose={() => setEditingMatch(null)}
                     onSaved={() => {
                         setEditingMatch(null);
+                        reload(overview.selectedRound);
+                    }}
+                />
+            )}
+
+            {/* CHANGE (NUEVO): al guardar se recarga la misma ronda (puntos y estado actualizados) */}
+            {penaltyTarget && (
+                <RankingPenaltyModal
+                    key={penaltyTarget._id}
+                    open
+                    player={penaltyTarget}
+                    onClose={() => setPenaltyTarget(null)}
+                    onSaved={() => {
+                        setPenaltyTarget(null);
+                        reload(overview.selectedRound);
+                    }}
+                />
+            )}
+
+            {/* CHANGE (NUEVO): al expulsar se recarga la misma ronda (los partidos cancelados y la clasificación cambian) */}
+            {removeTarget && (
+                <RankingRemoveModal
+                    key={removeTarget._id}
+                    open
+                    player={removeTarget}
+                    onClose={() => setRemoveTarget(null)}
+                    onSaved={() => {
+                        setRemoveTarget(null);
                         reload(overview.selectedRound);
                     }}
                 />

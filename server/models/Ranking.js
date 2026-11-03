@@ -35,8 +35,23 @@ const rankingSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['active', 'suspended', 'retired'],
+        enum: ['active', 'suspended', 'retired', 'removed'],
         default: 'active'
+    },
+    removedAt:{
+        type: Date,
+        default: null
+    },
+    removedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    removedReason:{
+        type: String,
+        trim: true,
+        maxLength: 1000,
+        default: null
     },
     dateOfLeave:{
         type: Date,
@@ -47,6 +62,11 @@ const rankingSchema = new mongoose.Schema({
     suspendedUntilRound:{
         type: Number,
         default: null
+    },
+    suspensionTier:{
+        type: Number,
+        default: 0,
+        min: 0
     },
     lastRoundPlayed: {
         type: Number,
