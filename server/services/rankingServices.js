@@ -9,6 +9,15 @@ import { generateRankingPairs, seedRatingFromNTRP } from "../utils/rankingEngine
 
 
 const DEFAULT_LOOKBACK_ROUNDS = 2;
+export const PENALTY_SUSPENSION_ROUNDS = { 3: 2, 4: 3 };
+export const PENALTY_REMOVAL_POINTS = 5;
+
+export const getPenaltyTier = (points = 0) => {
+    if (points >= 5) return 5;
+    if (points >= 4) return 4;
+    if (points >= 3) return 3;
+    return 0;
+};
 
 export const resolveSeason = async (seasonId) => {
     if (seasonId) {
@@ -20,6 +29,81 @@ export const resolveSeason = async (seasonId) => {
     const activeSeason = await Season.findOne({ status: 'active' });
     if (!activeSeason) throw new Error('There is no active season configured');
     return activeSeason;
+};
+
+export const applyPenaltySuspensions = async ({ seasonId } = {}) => {
+    const season = await resolveSeason(seasonId);
+
+    const candidates = await Ranking.find({
+        season: season._id,
+        status: { $in: ['active', 'suspended', 'retired'] },
+        penaltyPoints: { $gte: 3 }
+    }).select('_id userId status penaltyPoints suspensionTier suspendedUntilRound');
+
+    const pending = candidates.filter(r => getPenaltyTier(r.penaltyPoints) > (r.suspensionTier || 0));
+    if (!pending.length) return { sanctions: [] };
+
+    const lastPublished = await RankingMatch.findOne({ season: season._id, published: true })
+        .sort({ round: -1 })
+        .select('round')
+        .lean();
+    const lastRound = lastPublished?.round ?? 0;
+
+    const sanctions = [];
+    let activePlayersLeft = false;
+
+    for (const r of pending) {
+        const tier = getPenaltyTier(r.penaltyPoints);
+        // `$not: { $gte: tier }` también cubre documentos antiguos sin el campo
+        const guard = { _id: r._id, suspensionTier: { $not: { $gte: tier } } };
+
+        if (tier >= PENALTY_REMOVAL_POINTS) {
+            const result = await Ranking.updateOne(guard, {
+                $set: {
+                    status: 'removed',
+                    suspensionTier: tier,
+                    suspendedUntilRound: null,
+                    removedAt: new Date(),
+                    removedBy: null, // null = automático
+                    removedReason: 'Automatic removal: 5 penalty points (2-year suspension)'
+                }
+            });
+            if (result.modifiedCount === 1) {
+                sanctions.push({ userId: r.userId, action: 'removed', tier, suspendedUntilRound: null });
+                if (r.status === 'active') activePlayersLeft = true;
+            }
+            continue;
+        }
+
+        // Nunca se acorta una suspensión que ya tuviera
+        const firstRoundBack = Math.max(
+            r.suspendedUntilRound ?? 0,
+            lastRound + 1 + PENALTY_SUSPENSION_ROUNDS[tier]
+        );
+        const $set = { suspensionTier: tier, suspendedUntilRound: firstRoundBack };
+        if (r.status === 'active') $set.status = 'suspended';
+
+        const result = await Ranking.updateOne(guard, { $set });
+        if (result.modifiedCount === 1) {
+            sanctions.push({ userId: r.userId, action: 'suspended', tier, suspendedUntilRound: firstRoundBack });
+            if (r.status === 'active') activePlayersLeft = true;
+        }
+    }
+
+    // El jugador sancionado pierde su posición: se recalculan las de los activos
+    // (mismo criterio que tras un resultado: rating descendente)
+    if (activePlayersLeft) {
+        const actives = await Ranking.find({ season: season._id, status: 'active' })
+            .sort({ rating: -1 })
+            .select('_id');
+        if (actives.length) {
+            await Ranking.bulkWrite(actives.map((doc, index) => ({
+                updateOne: { filter: { _id: doc._id }, update: { $set: { rank: index + 1 } } }
+            })));
+        }
+    }
+
+    return { sanctions };
 };
 
 const getNextRoundNumber = async (seasonId) => {
@@ -63,11 +147,16 @@ export const generateRankingRoundProposal = async ({ seasonId, round } = {}) => 
         round = await getNextRoundNumber(season._id);
     }
 
-    const rankedUsers = await User.find({ isRanked: true, isActive: true }).select('_id ntrplvl');
+        // CHANGE (NUEVO): + 'rankingBan.active' — un expulsado nunca entra en una propuesta
+    const rankedUsers = await User.find({
+        isRanked: true,
+        isActive: true,
+        'rankingBan.active': { $ne: true }
+    }).select('_id ntrplvl');
 
-    // CHANGE: ahora también se lee `status`, para detectar jugadores que se
-    // retiraron y se han vuelto a apuntar (ver bloque de reactivación abajo).
-    const existing = await Ranking.find({ season: season._id }).select('userId rank status');
+    // CHANGE: ahora también se lee `suspendedUntilRound`, para devolver al ranking
+    // a los suspendidos cuya sanción ya terminó (ver bloque de reactivación abajo).
+    const existing = await Ranking.find({ season: season._id }).select('userId rank status suspendedUntilRound');
     const existingByUser = new Map(existing.map(r => [r.userId.toString(), r]));
 
     let nextRank = existing.length ? Math.max(...existing.map(r => r.rank)) : 0;
@@ -91,19 +180,29 @@ export const generateRankingRoundProposal = async ({ seasonId, round } = {}) => 
                 status: 'active'
             });
         } else if (current.status === 'retired') {
-            // CHANGE (BUG): NUEVO. Antes, si un jugador se daba de baja y luego se
-            // volvía a registrar en la misma temporada, ya existía su Ranking doc
-            // (status 'retired'), así que no se creaba otro y tampoco se reactivaba:
-            // quedaba isRanked=true pero NUNCA entraba en ninguna ronda.
-            // Reglamento: "New players and reactivated players will have the last
-            // ranking position" → se reactiva en la última posición. Se CONSERVA
-            // su rating (no se resetea), para que retirarse y volver no sirva
-            // para "limpiar" un rating bajo o alto. Los 'suspended' NO se tocan.
-            nextRank += 1;
             reactivations.push({
                 updateOne: {
                     filter: { _id: current._id, status: 'retired' },
                     update: { $set: { status: 'active', rank: nextRank, dateOfLeave: null } }
+                }
+            });
+        }        // CHANGE (NUEVO): suspensión por penalty points terminada.
+        // Reglamento: "Suspended players will lose their ranking position" → vuelve
+        // en la ÚLTIMA posición (igual que un reactivado), conservando su rating.
+        // `suspendedUntilRound` = primera ronda en la que puede jugar. Si es null
+        // (suspensión manual sin fecha) NO se toca: sigue suspendido hasta que un
+        // admin lo cambie. `suspensionTier` se conserva para no volver a sancionar
+        // el mismo tramo.
+        else if (
+            current.status === 'suspended' &&
+            current.suspendedUntilRound != null &&
+            current.suspendedUntilRound <= round
+        ) {
+            nextRank += 1;
+            reactivations.push({
+                updateOne: {
+                    filter: { _id: current._id, status: 'suspended' },
+                    update: { $set: { status: 'active', rank: nextRank, suspendedUntilRound: null } }
                 }
             });
         }
@@ -182,6 +281,19 @@ export const closeRound = async ({ seasonId } = {}) => {
         );
     }
 
+        // CHANGE (NUEVO): suspensión automática por penalty points (Reglamento).
+    // Va ANTES de proponer la ronda siguiente, para que los sancionados no
+    // entren en ella. Con try/catch a propósito: si fallara y se lanzara el
+    // error, el cron no avanzaría nextRoundCloseDate y reintentaría cada minuto.
+    // Al ser idempotente, un fallo aquí se recupera en la siguiente llamada.
+    let sanctionedCount = 0;
+    try {
+        const { sanctions } = await applyPenaltySuspensions({ seasonId: season._id });
+        sanctionedCount = sanctions.length;
+    } catch (suspensionError) {
+        console.log(suspensionError);
+    }
+
     // CHANGE (BUG, hueco nº 7): antes se generaba SIEMPRE una propuesta nueva. Si el
     // admin no había publicado la anterior, quedaban dos propuestas sin publicar
     // (y al publicar una ronda con la otra pendiente, partidos huérfanos). Ahora,
@@ -213,5 +325,5 @@ export const closeRound = async ({ seasonId } = {}) => {
         await season.save();
     }
 
-    return { disputedCount: unresolvedMatches.length, ...nextRoundResult };
+        return { disputedCount: unresolvedMatches.length, sanctionedCount, ...nextRoundResult }; // CHANGE: + sanctionedCount
 };
