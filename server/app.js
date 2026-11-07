@@ -16,6 +16,7 @@ import notificationRoutes from './routes/notification.js'
 import userNotificationRoutes from './routes/userNotification.js'
 import seasonRoutes from './routes/season.js'
 import rankingRoutes from './routes/ranking.js'
+import rankingPenaltyRoutes from './routes/rankingPenalty.js'
 import { globalLimiter } from './config/expressLimit.js';
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser';
@@ -56,6 +57,7 @@ app.use('/api/wallet', walletRoutes)
 app.use('/api/feedback', feedbackRoutes)
 app.use('/api/season', seasonRoutes)
 app.use('/api/ranking', rankingRoutes)
+app.use('/api/ranking-penalty', rankingPenaltyRoutes)
 app.use('/api/notification', notificationRoutes)
 app.use('/api/notifications', userNotificationRoutes)
 

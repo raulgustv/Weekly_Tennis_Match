@@ -70,6 +70,14 @@ export const rankingRegistration = async(req, res) =>{
             })
         }
 
+                // CHANGE (NUEVO): expulsado del ranking por un admin → no puede volver a inscribirse
+        if(user.rankingBan?.active){
+            return res.status(403).json({
+                ok: false,
+                message: `You have been removed from the MTC Ranking and can no longer take part. Reason: ${user.rankingBan.reason}`
+            })
+        }
+
         if(!user.ntrplvl){
              return res.status(400).json({
                 ok: false,
@@ -151,7 +159,10 @@ export const unRegisterRanking = async(req, res) =>{
         await user.save();
 
         await Ranking.updateMany(
-            {userId: user._id, status: {$ne: 'retired'}},
+            // CHANGE (SEGURIDAD): antes {$ne:'retired'} → un 'removed' (expulsado) o
+            // 'suspended' que se daba de baja pasaba a 'retired' y al volver a
+            // inscribirse se reactivaba, saltándose la sanción.
+            {userId: user._id, status: {$nin: ['retired', 'removed', 'suspended']}},
             {$set: {status: 'retired', dateOfLeave: Date.now()}},
         )
 

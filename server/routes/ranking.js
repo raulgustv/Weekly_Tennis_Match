@@ -42,6 +42,9 @@ router.post("/matches/result", protect, writeLimiter, submitRankingResultValidat
 // CHANGE (NUEVO): el admin fija o corrige el resultado de un partido (disputas, errores)
 router.put("/matches/:id/result", protect, verifyAdmin, adminLimiter, adminResultValidator, validateFields, adminSetRankingResult);
 
+//remove al jugador del ranking
+
+
 
 
 export default router;

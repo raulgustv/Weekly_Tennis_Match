@@ -5,6 +5,6 @@ walletBalance phone suspendedUntil
 termsAndConditions suspensionCategory suspensionNote createdAt
 walletPaymentAllowed isVerified isRanked rankingRegisteredAt
 rankingRulesAccepted rankingRulesAcceptedAt dateOfBirth
-termsVersion termsAcceptedAt
+termsVersion termsAcceptedAt rankingBan
 `
  

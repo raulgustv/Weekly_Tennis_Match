@@ -119,3 +119,17 @@ export const getRegisteredPlayers = async() =>{
     const {data} = await axiosInstance.get('/ranking/registered');
     return data;
 }
+
+
+//penalties
+export const issuePenalty = async(payload) =>{
+    const {data} = await axiosInstance.post('ranking-penalty/issue', payload)
+    return data;
+}
+
+// CHANGE (NUEVO): el admin expulsa a un jugador del ranking de forma permanente.
+// `reason` lo verá el propio jugador.
+export const removePlayerFromRanking = async(userId, reason) =>{
+    const {data} = await axiosInstance.post(`/ranking-penalty/player/${encodeURIComponent(userId)}/remove`, { reason });
+    return data;
+}

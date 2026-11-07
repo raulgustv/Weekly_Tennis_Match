@@ -1,4 +1,6 @@
 import { body, param, query } from 'express-validator'; // CHANGE: añadido `query` (roundOverviewValidator) // CHANGE (NUEVO): + `param` (adminResultValidator)
+// CHANGE (NUEVO): lista cerrada de motivos de penalización (misma que el modelo)
+import { PENALTY_CATEGORIES } from '../models/RankingPenalty.js';
 
 // server/validator/rankingValidator.js
 // Mismo estilo que server/validator/userValidator.js. Mensajes en inglés,
@@ -185,4 +187,39 @@ export const adminResultValidator = [
         .trim()
         .notEmpty().withMessage('Please explain why you are setting or changing this result')
         .isLength({ max: 300 }).withMessage('Reason cannot exceed 300 characters')
+];
+
+
+
+//PENALTIES
+// CHANGE (NUEVO): POST /ranking/penalties (solo admin)
+export const issuePenaltyValidator = [
+    body('userId')
+        .notEmpty().withMessage('Player id is required')
+        .bail()
+        .isMongoId().withMessage('Invalid player id'),
+
+    body('category')
+        .notEmpty().withMessage('A reason category is required')
+        .bail()
+        .isIn(PENALTY_CATEGORIES).withMessage('Invalid penalty category'),
+
+    body('note')
+        .isString().withMessage('A note is required')
+        .bail()
+        .trim()
+        .notEmpty().withMessage('Please explain why this penalty point is being issued')
+        .isLength({ max: 500 }).withMessage('Note cannot exceed 500 characters')
+];
+
+
+// CHANGE (NUEVO): POST /ranking/players/:userId/remove (solo admin)
+// OJO: este texto lo ve el propio jugador.
+export const removeFromRankingValidator = [
+    body('reason')
+        .isString().withMessage('A reason is required')
+        .bail()
+        .trim()
+        .notEmpty().withMessage('Please explain why this player is being removed from the ranking')
+        .isLength({ min: 10, max: 300 }).withMessage('The reason must be between 10 and 300 characters')
 ];

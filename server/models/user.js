@@ -343,6 +343,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    rankingBan: {
+        active: {type: Boolean, default: false},
+        reason: {type: String, trim: true, maxLength: 500, default: null},
+        bannedAt: {type: Date, default: null},
+        bannedBy: {type: mongoose.Schema.ObjectId, ref: 'User', default: null}
+    }, 
     dateOfBirth:{
         type: Date,
         default: null,

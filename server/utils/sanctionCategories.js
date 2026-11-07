@@ -5,6 +5,7 @@ export const SANCTION_CATEGORIES = [
     'backup_no_show',
     'offensive_behavior',
     'last_minute_cancel',
+    'app_misuse',
     'other'
 ]
 

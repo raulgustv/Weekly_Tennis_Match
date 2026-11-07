@@ -4,8 +4,10 @@
 // Debajo, los jugadores inscritos que aún no tienen posición (entran en la
 // última posición cuando se genere la próxima propuesta de ronda).
 // No llama a la API: recibe los datos de RankingRounds.jsx.
-import { Alert, Card, Empty, Flex, Grid, Table, Tag, Typography } from "antd";
-import { TrophyFilled } from "@ant-design/icons";
+// CHANGE (NUEVO): si el padre pasa `onPenalty` y/o `onRemove`, se añade la columna "Actions"
+// (solo temporada activa). Los modales y las llamadas a la API están en el padre.
+import { Alert, Button, Card, Empty, Flex, Grid, Table, Tag, Typography } from "antd"; // CHANGE (NUEVO): + Button
+import { TrophyFilled, UserDeleteOutlined, WarningOutlined } from "@ant-design/icons"; // CHANGE (NUEVO): + UserDeleteOutlined, WarningOutlined
 import ProfilePicture from "../uploads/ProfilePicture";
 import { BRAND } from "../../helpers/seasonConsants.js";
 import { fmtShortDate } from "../utils/Madridtime.js";
@@ -18,6 +20,7 @@ const STANDING_STATUS_META = {
     active: { label: "Active", color: "green" },
     suspended: { label: "Suspended", color: "red" },
     retired: { label: "Retired", color: "default" },
+    removed: { label: "Removed", color: "volcano" }, // CHANGE (NUEVO): expulsado del ranking por un admin
 };
 
 // Colores de las 3 primeras posiciones (oro, plata, bronce)
@@ -42,7 +45,8 @@ const PlayerCell = ({ player }) => (
     </Flex>
 );
 
-const RankingStandingsTable = ({ standings = [], pendingPlayers = [], loading = false, error = null }) => {
+// CHANGE (NUEVO): + props `onPenalty` y `onRemove`
+const RankingStandingsTable = ({ standings = [], pendingPlayers = [], loading = false, error = null, onPenalty, onRemove }) => {
     const screens = useBreakpoint();
     const isMobile = !screens.md;
 
@@ -120,6 +124,35 @@ const RankingStandingsTable = ({ standings = [], pendingPlayers = [], loading = 
             responsive: ["md"],
             render: (round) => (round ? round : <Text type="secondary">—</Text>),
         },
+        // CHANGE (NUEVO): columna de acciones del admin. Solo existe si el padre pasa
+        // `onPenalty` o `onRemove` (temporada activa). Un jugador ya expulsado no tiene acciones.
+        ...(onPenalty || onRemove
+            ? [
+                  {
+                      title: "Actions",
+                      key: "actions",
+                      width: 230,
+                      align: "center",
+                      render: (_, row) =>
+                          row.status === "removed" || !row.player ? (
+                              <Text type="secondary">—</Text>
+                          ) : (
+                              <Flex gap={6} justify="center" wrap>
+                                  {onPenalty && (
+                                      <Button size="small" danger icon={<WarningOutlined />} onClick={() => onPenalty(row)}>
+                                          Penalty
+                                      </Button>
+                                  )}
+                                  {onRemove && (
+                                      <Button size="small" type="primary" danger icon={<UserDeleteOutlined />} onClick={() => onRemove(row)}>
+                                          Remove
+                                      </Button>
+                                  )}
+                              </Flex>
+                          ),
+                  },
+              ]
+            : []),
     ];
 
     if (error) {
@@ -147,10 +180,24 @@ const RankingStandingsTable = ({ standings = [], pendingPlayers = [], loading = 
                         </Text>
                         <Flex wrap gap={8}>
                             {pendingPlayers.map((p) => (
-                                <Tag key={p._id}>
-                                    {fullName(p)}
-                                    {p.rankingRegisteredAt && ` · since ${fmtShortDate(p.rankingRegisteredAt)}`}
-                                </Tag>
+                                // CHANGE (NUEVO): se puede expulsar a un inscrito antes de que entre en una ronda.
+                                // Se pasa una "fila" con el mismo formato que la de la tabla.
+                                <Flex key={p._id} align="center" gap={2}>
+                                    <Tag style={{ marginInlineEnd: 0 }}>
+                                        {fullName(p)}
+                                        {p.rankingRegisteredAt && ` · since ${fmtShortDate(p.rankingRegisteredAt)}`}
+                                    </Tag>
+                                    {onRemove && (
+                                        <Button
+                                            type="link"
+                                            danger
+                                            size="small"
+                                            onClick={() => onRemove({ _id: p._id, player: p, penaltyPoints: 0, status: "pending" })}
+                                        >
+                                            Remove
+                                        </Button>
+                                    )}
+                                </Flex>
                             ))}
                         </Flex>
                     </Flex>

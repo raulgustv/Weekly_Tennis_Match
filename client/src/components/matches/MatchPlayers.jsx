@@ -40,6 +40,8 @@ import MatchPaymentCard from "./MatchPaymentCard";
 // 🔵 NUEVO: botones "Share" y "Show only my match"
 import ShareMatchButton from "./ShareMatchButton";
 import MyMatchFilterButton from "./MyMatchFilterButton";
+// 🔵 NUEVO: botón "Generate message" (solo admin). Antes estaba en la tabla de matches.
+import GenerateMessageButton from "./GenerateMessageButton";
 
 const { Title, Text } = Typography;
 
@@ -199,7 +201,10 @@ const MatchPlayers = () => {
         style={{ marginBottom: 32 }}
         gutter={[16, 16]}
       >
-        <Col xs={24} md={10}>
+        {/* 🔵 CAMBIO: para admin el título pasa de md=10 a md=8 para que quepan los
+            4 botones (Edit pairs + Generate matches + Generate Whatsapp message + Back)
+            en una sola fila (8+4+4+5+3 = 24). Para el resto de roles no cambia. */}
+        <Col xs={24} md={user?.role === 'admin' ? 8 : 10}>
           <Title level={3} style={{ marginBottom: 4 }}>
             🎾 {match?.location?.name}
           </Title>
@@ -247,6 +252,17 @@ const MatchPlayers = () => {
                 Generate matches
               </Button>
             </Tooltip>
+          </Col>
+        )}
+
+        {/* 🔵 NUEVO: "Generate Whatsapp message", al lado de "Generate matches".
+            Solo admin (el propio componente también lo comprueba) y solo
+            si el match está Open o Full. Si no aplica, no se renderiza la
+            columna para no dejar un hueco vacío.
+            🔵 CAMBIO: md=4 → md=5, el texto es más largo y en 4/24 quedaba apretado. */}
+        {user?.role === 'admin' && (match?.status === 'Open' || match?.status === 'Full') && (
+          <Col xs={24} md={5} style={{ textAlign: "right", marginTop: 12 }}>
+            <GenerateMessageButton match={match} />
           </Col>
         )}
 

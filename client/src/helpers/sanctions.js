@@ -26,6 +26,12 @@ export const SANCTION_CATEGORIES = [
         policy: '1st: warning - 2nd: 30 days (counts as no show)'
     },
     {
+        value: 'app_misuse',
+        label: 'App misuse',
+        policy: 'Subject to admin criteria. If you want to de-activate player, please go to players table'
+    },
+    
+    {
         value: 'offensive_behavior',
         label: 'Offensive behavior',
         policy: '30 days'
