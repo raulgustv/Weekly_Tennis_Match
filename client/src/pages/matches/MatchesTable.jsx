@@ -17,13 +17,13 @@ import { useNavigate } from "react-router-dom";
 import { useMatches } from "../../context/MatchContext";
 import dayjs from "dayjs";
 import {
-    generateMatch,
+    //generateMatch,
     removeMatchCourt,
     updateStatus,
     addMatchCourts,
 } from "../../actions/matches";
 import { toast } from "react-toastify";
-import colors from "../../themes/colors";
+//import colors from "../../themes/colors";
 import { adminRemovePlayer } from "../../actions/admin";
 import { useMemo, useState } from "react";
 import AddNewCourtsModal from "../../components/matches/AddNewCourtsModal";
@@ -86,15 +86,15 @@ const MatchesTable = () => {
         }
     };
 
-    const handleGenerateMatch = async (id) => {
-        try {
-            await generateMatch(id);
-            toast.success("Match successfully generated");
-            fetchMatches();
-        } catch (error) {
-            toast.error("Error generating match");
-        }
-    };
+    // const handleGenerateMatch = async (id) => {
+    //     try {
+    //         await generateMatch(id);
+    //         toast.success("Match successfully generated");
+    //         fetchMatches();
+    //     } catch (error) {
+    //         toast.error("Error generating match");
+    //     }
+    // };
 
     const handleRemovePlayer = async (matchId, playerId) => {
         try {
@@ -326,50 +326,50 @@ const MatchesTable = () => {
                 </Flex>
             ),
         },
-        {
-            title: "Generate Match",
-            key: "generateMatch",
-            render: (r) =>
-                (r.status === "Open" ||
-                    r.status === "Full") &&
-                r.players.length >= 4 && (
-                    <Button
-                        style={{
-                            backgroundColor:
-                                colors.yellow,
-                        }}
-                        onClick={() =>
-                            handleGenerateMatch(
-                                r._id
-                            )
-                        }
-                    >
-                        Generate match
-                    </Button>
-                ),
-        },
-        {
-            title: "Generate whatsapp message",
-            key: "generateMessage",
-            render: (r) =>
-                (r.status === "Open" ||
-                    r.status === "Full") && (
-                    <Button
-                        style={{
-                            backgroundColor:
-                                colors.blue,
-                        }}
-                        onClick={() => {
-                            setOpenMessageModal(
-                                true
-                            );
-                            setSelectedMatch(r);
-                        }}
-                    >
-                        Generate message
-                    </Button>
-                ),
-        },
+        // {
+        //     title: "Generate Match",
+        //     key: "generateMatch",
+        //     render: (r) =>
+        //         (r.status === "Open" ||
+        //             r.status === "Full") &&
+        //         r.players.length >= 4 && (
+        //             <Button
+        //                 style={{
+        //                     backgroundColor:
+        //                         colors.yellow,
+        //                 }}
+        //                 onClick={() =>
+        //                     handleGenerateMatch(
+        //                         r._id
+        //                     )
+        //                 }
+        //             >
+        //                 Generate match
+        //             </Button>
+        //         ),
+        // },
+        // {
+        //     title: "Generate whatsapp message",
+        //     key: "generateMessage",
+        //     render: (r) =>
+        //         (r.status === "Open" ||
+        //             r.status === "Full") && (
+        //             <Button
+        //                 style={{
+        //                     backgroundColor:
+        //                         colors.blue,
+        //                 }}
+        //                 onClick={() => {
+        //                     setOpenMessageModal(
+        //                         true
+        //                     );
+        //                     setSelectedMatch(r);
+        //                 }}
+        //             >
+        //                 Generate message
+        //             </Button>
+        //         ),
+        // },
         // 🔵 NUEVO: columna "Details" — abre /match/details/:id (MatchPlayers),
         // donde se gestionan los pagos y el método de pago de cada jugador.
         {
@@ -395,14 +395,14 @@ const MatchesTable = () => {
             title: "Match",
             key: "match-mobile",
             render: (r) => {
-                const canGenerateMatch =
-                    (r.status === "Open" ||
-                        r.status === "Full") &&
-                    r.players.length >= 4;
+                // const canGenerateMatch =
+                //     (r.status === "Open" ||
+                //         r.status === "Full") &&
+                //     r.players.length >= 4;
 
-                const canGenerateMessage =
-                    r.status === "Open" ||
-                    r.status === "Full";
+                // const canGenerateMessage =
+                //     r.status === "Open" ||
+                //     r.status === "Full";
 
                 return (
                     <Flex
@@ -488,13 +488,13 @@ const MatchesTable = () => {
                         </Text>
 
                         {/* Actions */}
-                        {(canGenerateMatch ||
+                        {/* {(canGenerateMatch ||
                             canGenerateMessage) && (
                             <Flex
                                 gap={8}
                                 wrap="wrap"
-                            >
-                                {canGenerateMatch && (
+                            > */}
+                                {/* {canGenerateMatch && (
                                     <Button
                                         block
                                         style={{
@@ -509,9 +509,9 @@ const MatchesTable = () => {
                                     >
                                         Generate match
                                     </Button>
-                                )}
+                                )} */}
 
-                                {canGenerateMessage && (
+                                {/* {canGenerateMessage && (
                                     <Button
                                         block
                                         style={{
@@ -529,9 +529,9 @@ const MatchesTable = () => {
                                     >
                                         Generate message
                                     </Button>
-                                )}
-                            </Flex>
-                        )}
+                                )} */}
+                            {/* </Flex>
+                        )} */}
 
                         {/* 🔵 NUEVO: botón "View details" en la vista móvil */}
                         <Button

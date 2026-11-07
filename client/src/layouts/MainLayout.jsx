@@ -78,7 +78,7 @@ const MainLayout = () => {
     icon: (
       <RiseOutlined />
     ),
-    label: 'Ranking'
+    label: 'Singles Ranking'
   }
 
   const menuItems = isAdmin
