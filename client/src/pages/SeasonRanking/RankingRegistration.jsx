@@ -14,6 +14,7 @@
     // ajústala si RankingConstruction.jsx no está en la misma carpeta que este archivo)
     //import RankingConstruction from './RankingConstruction'
     import RankingRegisteredPlayers from '../../components/RankingUser/RankingRegisteredPlayers'
+import RankingRulesDownload from '../../components/Ranking/RankingRulesDownload'
 
 
 
@@ -35,6 +36,8 @@
             <>
                 {/* [CAMBIO] se pasa isMobile (RankingHeader ya lo aceptaba pero no se le pasaba) */}
                 <RankingHeader isMobile={isMobile} />
+
+                <RankingRulesDownload />
 
                 {/* CHANGE (NUEVO): REMOVED USERS — nota con el motivo en lugar del formulario */}
                 {

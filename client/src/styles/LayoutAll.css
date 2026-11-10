@@ -1,0 +1,43 @@
+/* [NUEVO ARCHIVO] client/src/styles/layoutA11y.css
+   Estilos de accesibilidad del layout principal. */
+
+/* Skip link: invisible hasta que recibe el foco con el teclado (Tab) */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 2000;
+  padding: 10px 16px;
+  background: #F4D03F;
+  color: #0B2C3D;
+  font-weight: 600;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 8px;
+  outline: 3px solid #0B2C3D;
+  outline-offset: 2px;
+}
+
+/* El contenido principal recibe foco por código al cambiar de página;
+   no es interactivo, por eso no se pinta el contorno */
+#main-content:focus {
+  outline: none;
+}
+
+/* Contorno visible al navegar con teclado en los botones de la cabecera */
+.main-header-btn:focus-visible {
+  outline: 2px solid #F4D03F;
+  outline-offset: 2px;
+}
+
+/* Respeta a quien tiene desactivadas las animaciones en su sistema */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
