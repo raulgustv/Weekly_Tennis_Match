@@ -37,7 +37,9 @@ import RankingRulesDownload from '../../components/Ranking/RankingRulesDownload'
                 {/* [CAMBIO] se pasa isMobile (RankingHeader ya lo aceptaba pero no se le pasaba) */}
                 <RankingHeader isMobile={isMobile} />
 
-                <RankingRulesDownload />
+                <div style={{marginBottom: '6px'}}>
+                    <RankingRulesDownload />
+                </div>
 
                 {/* CHANGE (NUEVO): REMOVED USERS — nota con el motivo en lugar del formulario */}
                 {
