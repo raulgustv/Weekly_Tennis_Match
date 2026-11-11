@@ -1,48 +1,32 @@
-// [NUEVO ARCHIVO] client/src/components/Ranking/RankingRulesDownload.jsx
-// Botón para descargar el reglamento del ranking (PDF alojado en Cloudinary).
+// [CAMBIO] client/src/components/Ranking/RankingRulesDownload.jsx
+// Botón para descargar el reglamento del ranking (PDF público en Cloudinary).
+// [CAMBIO] La URL va escrita aquí (es pública y permanente, no es un secreto):
+//   - ya NO depende de REACT_APP_RANKING_RULES_URL ni de la configuración de Vercel
+//   - el botón se muestra SIEMPRE (antes se ocultaba si faltaba la variable)
+//   - ya NO usa client/public/
+// Para publicar un reglamento nuevo: súbelo a Cloudinary y cambia la URL de abajo
+// (la parte v1794347425 cambia con cada subida), o sube con el mismo nombre y overwrite.
 import { Button } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 
-const ALLOWED_HOST = "res.cloudinary.com";
-
-// [CAMBIO] Ahora devuelve { url, reason }: si la URL no es válida, "reason" explica por qué
-const buildDownloadUrl = (rawUrl) => {
-    if (!rawUrl) return { url: null, reason: "REACT_APP_RANKING_RULES_URL is empty or undefined (check client/.env and restart npm start)" };
-
-    try {
-        const parsed = new URL(rawUrl);
-
-        if (parsed.protocol !== "https:") return { url: null, reason: `URL must use https (got ${parsed.protocol})` };
-        if (parsed.hostname !== ALLOWED_HOST) return { url: null, reason: `Host not allowed: ${parsed.hostname} (expected ${ALLOWED_HOST})` };
-
-        if (parsed.pathname.includes("fl_attachment")) return { url: parsed.toString(), reason: null };
-
-        parsed.pathname = parsed.pathname.replace("/upload/", "/upload/fl_attachment/");
-        return { url: parsed.toString(), reason: null };
-    } catch {
-        return { url: null, reason: "REACT_APP_RANKING_RULES_URL is not a valid URL" };
-    }
-};
+// [NUEVO] Enlace verificado: abre/descarga el PDF por sí solo.
+// Los espacios van codificados como %20 (tal cual lo da Cloudinary).
+const RULES_URL =
+    "https://res.cloudinary.com/rgustv-personal/image/upload/v1794347425/Ranking%20rules/MTC%20Ranking%20Rules.pdf";
 
 const RankingRulesDownload = ({ label = "Download rules (PDF)", block = false }) => {
-    const { url: downloadUrl, reason } = buildDownloadUrl(process.env.REACT_APP_RANKING_RULES_URL);
-
-    if (!downloadUrl) {
-        // [NUEVO] Solo en desarrollo: dice en la consola del navegador por qué no se ve el botón
-        if (process.env.NODE_ENV !== "production") {
-            console.warn(`[RankingRulesDownload] Button hidden: ${reason}`);
-        }
-        return null;
-    }
-
     return (
         <Button
             type="primary"
             icon={<DownloadOutlined />}
-            href={downloadUrl}
+            href={RULES_URL}
+            // Pestaña nueva: si el navegador (iPhone, WhatsApp...) abre el PDF en vez de descargarlo,
+            // el usuario no sale de la app y puede guardarlo desde el visor.
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener noreferrer" // la pestaña nueva no accede a window.opener
+            aria-label="Download the MTC Ranking rules as a PDF file"
             block={block}
+            style={{ minHeight: 44 }} // objetivo táctil de 44 px en móvil
         >
             {label}
         </Button>
